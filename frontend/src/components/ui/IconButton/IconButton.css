@@ -1,0 +1,84 @@
+/* IconButton Styles */
+
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+/* Sizes */
+.icon-button-small {
+    width: 32px;
+    height: 32px;
+}
+
+.icon-button-small svg {
+    width: 18px;
+    height: 18px;
+}
+
+.icon-button-medium {
+    width: 40px;
+    height: 40px;
+}
+
+.icon-button-medium svg {
+    width: 22px;
+    height: 22px;
+}
+
+.icon-button-large {
+    width: 48px;
+    height: 48px;
+}
+
+.icon-button-large svg {
+    width: 26px;
+    height: 26px;
+}
+
+/* Colors */
+.icon-button-default {
+    color: #6b7280;
+}
+
+.icon-button-default:hover:not(:disabled) {
+    background: rgba(107, 114, 128, 0.1);
+    color: #374151;
+}
+
+.icon-button-primary {
+    color: #4f46e5;
+}
+
+.icon-button-primary:hover:not(:disabled) {
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.icon-button-secondary {
+    color: #6b7280;
+}
+
+.icon-button-secondary:hover:not(:disabled) {
+    background: rgba(107, 114, 128, 0.1);
+}
+
+.icon-button-error {
+    color: #dc2626;
+}
+
+.icon-button-error:hover:not(:disabled) {
+    background: rgba(220, 38, 38, 0.1);
+}
+
+/* Disabled */
+.icon-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

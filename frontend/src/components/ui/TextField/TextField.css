@@ -1,0 +1,125 @@
+/* TextField Styles */
+
+.textfield {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.textfield-full-width {
+    width: 100%;
+}
+
+/* Label */
+.textfield-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.textfield-error .textfield-label {
+    color: #dc2626;
+}
+
+/* Input Wrapper */
+.textfield-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Input */
+.textfield-input {
+    flex: 1;
+    width: 100%;
+    font-size: 1rem;
+    font-family: inherit;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    outline: none;
+    transition: all 0.2s ease;
+    background: #f9fafb;
+    color: #1a1a2e;
+    box-sizing: border-box;
+}
+
+/* Sizes */
+.textfield-small .textfield-input {
+    padding: 10px 14px;
+    font-size: 0.875rem;
+}
+
+.textfield-medium .textfield-input {
+    padding: 14px 16px;
+}
+
+/* With adornments */
+.textfield-input-wrapper:has(.textfield-start-adornment) .textfield-input {
+    padding-left: 44px;
+}
+
+.textfield-input-wrapper:has(.textfield-end-adornment) .textfield-input {
+    padding-right: 44px;
+}
+
+/* Focus State */
+.textfield-focused .textfield-input,
+.textfield-input:focus {
+    border-color: #4f46e5;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+/* Error State */
+.textfield-error .textfield-input {
+    border-color: #dc2626;
+}
+
+.textfield-error .textfield-input:focus {
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+/* Placeholder */
+.textfield-input::placeholder {
+    color: #9ca3af;
+}
+
+/* Adornments */
+.textfield-adornment {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+}
+
+.textfield-start-adornment {
+    left: 14px;
+}
+
+.textfield-end-adornment {
+    right: 14px;
+}
+
+/* Helper Text */
+.textfield-helper {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.textfield-helper-error {
+    color: #dc2626;
+}
+
+/* Filled Variant */
+.textfield-filled .textfield-input {
+    border: none;
+    border-bottom: 2px solid #e5e7eb;
+    border-radius: 8px 8px 0 0;
+    background: #f3f4f6;
+}
+
+.textfield-filled .textfield-input:focus {
+    border-bottom-color: #4f46e5;
+    box-shadow: none;
+}
