@@ -1,0 +1,59 @@
+/* Card Styles */
+
+.card {
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.card-elevation-0 {
+    box-shadow: none;
+    border: 1px solid #e5e7eb;
+}
+
+.card-elevation-1 {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card-elevation-2 {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.card-elevation-3 {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Card Header */
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.card-header-content {
+    flex: 1;
+}
+
+.card-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.card-subheader {
+    margin: 4px 0 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.card-header-action {
+    margin-left: 16px;
+}
+
+/* Card Content */
+.card-content {
+    padding: 24px;
+}
