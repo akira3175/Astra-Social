@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
+import { useCurrentUser } from "../../context/currentUserContext";
 import {
     Box,
     Card,
@@ -24,6 +25,7 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const userContext = useCurrentUser();
 
     const handleClickShowPassword = () => {
         setShowPassword(!showPassword);
@@ -36,6 +38,8 @@ export default function LoginPage() {
 
         try {
             await login({ email, password });
+            // Refresh user context to load profile data
+            await userContext?.refreshUser();
             navigate("/");
         } catch {
             setError("Đăng nhập thất bại! Vui lòng kiểm tra lại email và mật khẩu.");

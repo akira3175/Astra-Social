@@ -7,9 +7,19 @@ export type { BoxProps } from "./Box";
 export { Grid } from "./Grid";
 export type { GridProps } from "./Grid";
 
+export { Drawer } from "./Drawer/Drawer";
+
+export { List, ListItem, ListItemIcon, ListItemText } from "./List/List";
+
+export { Divider } from "./Divider/Divider";
+
 // Surfaces
 export { Card, CardHeader, CardContent } from "./Card";
 export type { CardProps, CardHeaderProps, CardContentProps } from "./Card";
+
+// Feedback
+export { Modal } from "./Modal";
+export type { ModalProps } from "./Modal";
 
 // Inputs
 export { Button } from "./Button";
@@ -21,9 +31,16 @@ export type { TextFieldProps } from "./TextField";
 export { IconButton } from "./IconButton";
 export type { IconButtonProps } from "./IconButton";
 
+export { Menu, MenuItem } from "./Menu/Menu";
+
 // Data Display
 export { Typography } from "./Typography";
 export type { TypographyProps } from "./Typography";
+
+export { Avatar } from "./Avatar/Avatar";
+export type { AvatarProps } from "./Avatar/Avatar";
+
+export { Badge } from "./Badge/Badge";
 
 // Icons
 export {
@@ -35,4 +52,16 @@ export {
     LockIcon,
     WarningIcon,
     PersonAddIcon,
+    ChatIcon,
+    SearchIcon,
+    SettingsIcon,
+    LogoutIcon,
+    MenuIcon,
+    HomeIcon,
+    GroupIcon,
+    BookmarkIcon,
+    ImageIcon,
+    SendIcon,
+    CloseIcon,
 } from "./Icons";
+
