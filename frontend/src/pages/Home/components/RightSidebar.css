@@ -1,0 +1,132 @@
+/* Right Sidebar Styles */
+.right-sidebar {
+    background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    padding: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.right-sidebar .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.right-sidebar .section-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(180deg, #4f46e5, #7c3aed);
+    border-radius: 2px;
+}
+
+/* Friend Item */
+.friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.friend-item:hover {
+    background: rgba(79, 70, 229, 0.06);
+    transform: translateX(4px);
+}
+
+.friend-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e2e8f0;
+    transition: border-color 0.2s ease;
+}
+
+.friend-item:hover .friend-avatar {
+    border-color: #4f46e5;
+}
+
+.friend-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.friend-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.friend-status {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.online-indicator {
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #22c55e;
+}
+
+/* Empty State */
+.empty-friends {
+    text-align: center;
+    padding: 24px 16px;
+    color: #94a3b8;
+}
+
+.empty-friends-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.empty-friends-text {
+    font-size: 0.9rem;
+}
+
+/* Footer */
+.sidebar-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-footer-text {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.sidebar-footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.sidebar-footer-links a {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.sidebar-footer-links a:hover {
+    color: #4f46e5;
+}

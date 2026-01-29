@@ -1,11 +1,10 @@
-/* IconButton Component */
-
 import React from "react";
 import "./IconButton.css";
 
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     size?: "small" | "medium" | "large";
     color?: "default" | "primary" | "secondary" | "error";
+    sx?: React.CSSProperties;
 }
 
 export const IconButton: React.FC<IconButtonProps> = ({
@@ -13,6 +12,8 @@ export const IconButton: React.FC<IconButtonProps> = ({
     size = "medium",
     color = "default",
     className = "",
+    sx,
+    style,
     ...props
 }) => {
     const classes = [
@@ -23,7 +24,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
     ].filter(Boolean).join(" ");
 
     return (
-        <button type="button" className={classes} {...props}>
+        <button type="button" className={classes} style={{ ...sx, ...style }} {...props}>
             {children}
         </button>
     );
