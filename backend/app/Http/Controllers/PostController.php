@@ -70,14 +70,40 @@ class PostController extends Controller
     }
 
     /**
-     * Create a new post.
+     * Get posts for the currently logged-in user.
+     */
+    public function myPosts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 999);
+
+        $result = $this->postService->getMyPosts($user->id, $page, $perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['posts'],
+            'pagination' => $result['pagination'],
+        ]);
+    }
+
+    /**
+     * Create a new post with optional file attachments.
      */
     public function store(CreatePostRequest $request): JsonResponse
     {
         $user = $request->user();
         $data = $request->validated();
+        $files = $request->file('files', []);
 
-        $result = $this->postService->createPost($user, $data);
+        $result = $this->postService->createPost($user, $data, $files);
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code']);
+        }
 
         return response()->json([
             'success' => true,
@@ -86,7 +112,7 @@ class PostController extends Controller
     }
 
     /**
-     * Update a post.
+     * Update a post (content and privacy only, files cannot be changed).
      */
     public function update(UpdatePostRequest $request, int $id): JsonResponse
     {
@@ -109,7 +135,7 @@ class PostController extends Controller
     }
 
     /**
-     * Delete a post.
+     * Delete a post and its attachments.
      */
     public function destroy(Request $request, int $id): JsonResponse
     {
