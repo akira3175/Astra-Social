@@ -1,0 +1,119 @@
+/* Left Sidebar Styles */
+.left-sidebar {
+    background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    padding: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.left-sidebar .sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.left-sidebar .sidebar-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Menu Items */
+.sidebar-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: #334155;
+    font-weight: 500;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.sidebar-menu-item:hover {
+    background: rgba(79, 70, 229, 0.08);
+    color: #4f46e5;
+    transform: translateX(4px);
+}
+
+.sidebar-menu-item.active {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(124, 58, 237, 0.08) 100%);
+    color: #4f46e5;
+    font-weight: 600;
+}
+
+.sidebar-menu-item.active .menu-icon {
+    color: #4f46e5;
+}
+
+.menu-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #64748b;
+    transition: color 0.2s ease;
+}
+
+.sidebar-menu-item:hover .menu-icon {
+    color: #4f46e5;
+}
+
+/* Create Post Button */
+.create-post-btn {
+    width: 100%;
+    padding: 14px 20px;
+    margin: 16px 0;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.create-post-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(79, 70, 229, 0.4);
+}
+
+.create-post-btn:active {
+    transform: translateY(0);
+}
+
+/* Divider */
+.sidebar-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
+    margin: 16px 0;
+}
+
+/* Section Title */
+.sidebar-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 14px;
+    margin-top: 8px;
+}

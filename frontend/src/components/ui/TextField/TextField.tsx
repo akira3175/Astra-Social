@@ -12,6 +12,7 @@ export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInput
     size?: "small" | "medium";
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
+    sx?: React.CSSProperties;
 }
 
 export const TextField: React.FC<TextFieldProps> = ({
@@ -25,6 +26,8 @@ export const TextField: React.FC<TextFieldProps> = ({
     endAdornment,
     className = "",
     id,
+    sx,
+    style,
     ...props
 }) => {
     const [focused, setFocused] = useState(false);
@@ -40,7 +43,7 @@ export const TextField: React.FC<TextFieldProps> = ({
     ].filter(Boolean).join(" ");
 
     return (
-        <div className={containerClasses}>
+        <div className={containerClasses} style={{ ...sx, ...style }}>
             {label && (
                 <label htmlFor={id} className="textfield-label">
                     {label}
