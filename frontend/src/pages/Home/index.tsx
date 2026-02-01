@@ -68,7 +68,12 @@ const HomePage: React.FC = () => {
                     {/* Main feed */}
                     <div className="main-feed">
                         <CreatePost onPostCreated={handlePostCreated} />
-                        <PostList posts={posts} isLoading={isLoading} />
+                        <PostList
+                            posts={posts}
+                            isLoading={isLoading}
+                            onPostUpdated={handlePostCreated}
+                            onPostDeleted={handlePostCreated}
+                        />
                     </div>
 
                     {/* Right sidebar */}
