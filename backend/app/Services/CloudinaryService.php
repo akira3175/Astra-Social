@@ -163,7 +163,15 @@ class CloudinaryService
     private function generateSignature(array $params): string
     {
         ksort($params);
-        $toSign = http_build_query($params);
+        
+        // Build query string manually without URL encoding
+        // Cloudinary expects raw values like "folder=posts/1" not "folder=posts%2F1"
+        $parts = [];
+        foreach ($params as $key => $value) {
+            $parts[] = $key . '=' . $value;
+        }
+        $toSign = implode('&', $parts);
+        
         return sha1($toSign . $this->apiSecret);
     }
 
