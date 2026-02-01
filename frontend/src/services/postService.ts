@@ -1,5 +1,5 @@
 import { api } from "../configs/api";
-import type { PostsResponse, PostResponse, CreatePostPayload } from "../types/post";
+import type { PostsResponse, PostResponse, CreatePostPayload, UpdatePostPayload } from "../types/post";
 
 /**
  * Post Service
@@ -11,6 +11,7 @@ import type { PostsResponse, PostResponse, CreatePostPayload } from "../types/po
 const ENDPOINTS = {
     POSTS: "/posts",
     MY_POSTS: "/posts/me",
+    POST_BY_ID: (id: number) => `/posts/${id}`,
 } as const;
 
 // ============ API Functions ============
@@ -38,6 +39,14 @@ export const getPosts = async (
     const response = await api.get<PostsResponse>(ENDPOINTS.POSTS, {
         params: { page, per_page: perPage },
     });
+    return response.data;
+};
+
+/**
+ * Get a single post by ID
+ */
+export const getPostById = async (id: number): Promise<PostResponse> => {
+    const response = await api.get<PostResponse>(ENDPOINTS.POST_BY_ID(id));
     return response.data;
 };
 
@@ -73,8 +82,30 @@ export const createPost = async (
     return response.data;
 };
 
+/**
+ * Update a post (content and privacy only, files cannot be changed)
+ */
+export const updatePost = async (
+    id: number,
+    payload: UpdatePostPayload
+): Promise<PostResponse> => {
+    const response = await api.patch<PostResponse>(ENDPOINTS.POST_BY_ID(id), payload);
+    return response.data;
+};
+
+/**
+ * Delete a post and its attachments
+ */
+export const deletePost = async (id: number): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete<{ success: boolean; message: string }>(ENDPOINTS.POST_BY_ID(id));
+    return response.data;
+};
+
 export default {
     getMyPosts,
     getPosts,
+    getPostById,
     createPost,
+    updatePost,
+    deletePost,
 };

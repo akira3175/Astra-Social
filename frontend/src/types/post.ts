@@ -81,3 +81,11 @@ export interface CreatePostPayload {
     privacy?: 'PUBLIC' | 'FRIENDS' | 'ONLY_ME';
     files?: File[];
 }
+
+/**
+ * Update post request payload
+ */
+export interface UpdatePostPayload {
+    content?: string;
+    privacy?: 'PUBLIC' | 'FRIENDS' | 'ONLY_ME';
+}
