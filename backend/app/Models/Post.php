@@ -82,6 +82,15 @@ class Post extends Model
     }
 
     /**
+     * Get the media attachments for this post.
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(MediaAttachment::class, 'entity_id')
+            ->where('entity_type', MediaAttachment::ENTITY_POST);
+    }
+
+    /**
      * Check if this post is a share.
      */
     public function isShare(): bool

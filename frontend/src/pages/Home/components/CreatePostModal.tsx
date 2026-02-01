@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
 import {
     Modal,
     Avatar,
@@ -7,13 +6,13 @@ import {
     SendIcon,
 } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
-// import { usePostStore } from "../../../stores/postStore";
-// import { uploadToCloudinary } from "../../../utils/uploadUtils";
+import { createPost } from "../../../services/postService";
 import "./CreatePostModal.css";
 
 interface CreatePostModalProps {
     open: boolean;
     onClose: () => void;
+    onPostCreated?: () => void;
 }
 
 interface FileWithPreview {
@@ -22,13 +21,12 @@ interface FileWithPreview {
     id: string;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose }) => {
-    const navigate = useNavigate();
+const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPostCreated }) => {
     const [content, setContent] = useState<string>("");
     const [filesWithPreview, setFilesWithPreview] = useState<FileWithPreview[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
     const { currentUser } = useCurrentUser() ?? {};
-    // const { addPost } = usePostStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Cleanup object URLs when component unmounts or files change
@@ -43,6 +41,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose }) => {
         filesWithPreview.forEach((f) => URL.revokeObjectURL(f.previewUrl));
         setContent("");
         setFilesWithPreview([]);
+        setError(null);
         // Reset file input
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
@@ -54,14 +53,21 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose }) => {
         if (!content.trim() && filesWithPreview.length === 0) return;
 
         setIsUploading(true);
+        setError(null);
+
         try {
-            // TODO: Implement actual upload and post creation
-            // const cloudinaryUrls = await uploadToCloudinary(filesWithPreview.map(f => f.file));
-            // await addPost(content, cloudinaryUrls);
-            console.log("Creating post:", { content, files: filesWithPreview.map(f => f.file) });
+            const files = filesWithPreview.map((f) => f.file);
+            await createPost({
+                content: content.trim() || undefined,
+                privacy: "PUBLIC",
+                files: files.length > 0 ? files : undefined,
+            });
+
             handleClose();
-        } catch (error) {
-            console.error("Error creating post:", error);
+            onPostCreated?.();
+        } catch (err: any) {
+            console.error("Error creating post:", err);
+            setError(err?.response?.data?.message || "Không thể đăng bài. Vui lòng thử lại.");
         } finally {
             setIsUploading(false);
         }
@@ -158,6 +164,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose }) => {
                                 </button>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {error && (
+                    <div className="create-post-error">
+                        {error}
                     </div>
                 )}
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import { Outlet } from "react-router-dom";
 import BasePage from "../Base";
 import { Box } from "../../components/ui";
@@ -8,25 +8,43 @@ import RightSidebar from "./components/RightSidebar";
 import CreatePost from "./components/CreatePost";
 import PostList from "./components/PostList";
 import MobileBottomNav from "./components/MobileBottomNav";
+import { getMyPosts } from "../../services/postService";
+import type { Post } from "../../types/post";
 import "./HomePage.css";
 
 const HomePage: React.FC = () => {
     const isMobile = useMediaQuery("(max-width: 900px)");
     const isSmallScreen = useMediaQuery("(max-width: 1200px)");
 
-    // Mock data for now
-    const [posts, setPosts] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isLayoutReady, setIsLayoutReady] = useState(false);
+
+    const fetchPosts = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const response = await getMyPosts(1, 20);
+            if (response.success) {
+                setPosts(response.data);
+            }
+        } catch (error) {
+            console.error("Error fetching posts:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     useLayoutEffect(() => {
         setIsLayoutReady(true);
     }, []);
 
     useEffect(() => {
-        setIsLoading(false);
-        setPosts([]);
-    }, []);
+        fetchPosts();
+    }, [fetchPosts]);
+
+    const handlePostCreated = useCallback(() => {
+        fetchPosts();
+    }, [fetchPosts]);
 
     if (!isLayoutReady) {
         return (
@@ -49,7 +67,7 @@ const HomePage: React.FC = () => {
 
                     {/* Main feed */}
                     <div className="main-feed">
-                        <CreatePost />
+                        <CreatePost onPostCreated={handlePostCreated} />
                         <PostList posts={posts} isLoading={isLoading} />
                     </div>
 
