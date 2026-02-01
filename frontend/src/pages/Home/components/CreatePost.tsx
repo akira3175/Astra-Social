@@ -4,7 +4,11 @@ import { useCurrentUser } from "../../../context/currentUserContext";
 import CreatePostModal from "./CreatePostModal";
 import "./CreatePost.css";
 
-const CreatePost: React.FC = () => {
+interface CreatePostProps {
+    onPostCreated?: () => void;
+}
+
+const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -51,7 +55,11 @@ const CreatePost: React.FC = () => {
                 </div>
             </div>
 
-            <CreatePostModal open={isModalOpen} onClose={handleCloseModal} />
+            <CreatePostModal
+                open={isModalOpen}
+                onClose={handleCloseModal}
+                onPostCreated={onPostCreated}
+            />
         </>
     );
 };
