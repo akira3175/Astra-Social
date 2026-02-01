@@ -1,35 +1,39 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
+import { useCurrentUser } from "../../../context/currentUserContext";
 import type { Post } from "../../../types/post";
+import PostDetailModal from "./PostDetailModal";
+import PostMenu from "./PostMenu";
 import "./PostList.css";
 
 interface PostListProps {
     posts: Post[];
     isLoading: boolean;
+    onPostUpdated?: () => void;
+    onPostDeleted?: () => void;
 }
 
 /**
- * Format relative time (e.g., "2 giờ trước")
+ * Format relative time
  */
 const formatRelativeTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    // Server returns local time with "Z" suffix (incorrectly marked as UTC)
+    // Remove "Z" to parse as local time
+    const localDateString = dateString.replace(/Z$/i, '');
+    const date = new Date(localDateString);
 
-    if (diffInSeconds < 60) {
-        return "Vừa xong";
-    } else if (diffInSeconds < 3600) {
-        const minutes = Math.floor(diffInSeconds / 60);
-        return `${minutes} phút trước`;
-    } else if (diffInSeconds < 86400) {
-        const hours = Math.floor(diffInSeconds / 3600);
-        return `${hours} giờ trước`;
-    } else if (diffInSeconds < 604800) {
-        const days = Math.floor(diffInSeconds / 86400);
-        return `${days} ngày trước`;
-    } else {
-        return date.toLocaleDateString("vi-VN");
-    }
+    if (isNaN(date.getTime())) return dateString;
+
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInSeconds = Math.floor(diffInMs / 1000);
+
+    if (diffInSeconds < 0) return "Vừa xong";
+    if (diffInSeconds < 60) return "Vừa xong";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} phút`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} giờ`;
+    return date.toLocaleDateString("vi-VN");
 };
 
 /**
@@ -47,16 +51,12 @@ const getDisplayName = (user: Post["user"]): string => {
  */
 const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments }) => {
     const images = attachments.filter((a) => a.file_type === "IMAGE");
-
     if (images.length === 0) return null;
 
     const gridClass =
-        images.length === 1
-            ? "post-media-grid single"
-            : images.length === 2
-                ? "post-media-grid double"
-                : images.length === 3
-                    ? "post-media-grid triple"
+        images.length === 1 ? "post-media-grid single"
+            : images.length === 2 ? "post-media-grid double"
+                : images.length === 3 ? "post-media-grid triple"
                     : "post-media-grid quad";
 
     return (
@@ -65,9 +65,7 @@ const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments
                 <div key={img.id} className="post-media-item">
                     <img src={img.url} alt={`Media ${index + 1}`} />
                     {images.length > 4 && index === 3 && (
-                        <div className="post-media-more">
-                            +{images.length - 4}
-                        </div>
+                        <div className="post-media-more">+{images.length - 4}</div>
                     )}
                 </div>
             ))}
@@ -75,7 +73,67 @@ const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments
     );
 };
 
-const PostList: React.FC<PostListProps> = ({ posts, isLoading }) => {
+const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted }) => {
+    const { currentUser } = useCurrentUser() ?? {};
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+    const [focusComment, setFocusComment] = useState(false);
+    const [editingPostId, setEditingPostId] = useState<number | null>(null);
+    const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
+
+    // Get post ID from URL
+    const postIdFromUrl = searchParams.get("post");
+
+    // Open modal when URL has post parameter
+    useEffect(() => {
+        if (postIdFromUrl && posts.length > 0) {
+            const post = posts.find(p => p.id.toString() === postIdFromUrl);
+            if (post) {
+                setSelectedPost(post);
+            }
+        }
+    }, [postIdFromUrl, posts]);
+
+    // Open modal normally and update URL
+    const handlePostClick = (post: Post) => {
+        setSelectedPost(post);
+        setFocusComment(false);
+        setSearchParams({ post: post.id.toString() });
+    };
+
+    // Open modal and focus on comment input
+    const handleCommentClick = (post: Post, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedPost(post);
+        setFocusComment(true);
+        setSearchParams({ post: post.id.toString() });
+    };
+
+    // Close modal and remove URL param
+    const handleCloseModal = () => {
+        setSelectedPost(null);
+        setFocusComment(false);
+        setEditingPostId(null);
+        setDeletingPostId(null);
+        // Remove post param from URL
+        searchParams.delete("post");
+        setSearchParams(searchParams);
+    };
+
+    // Handle edit click from PostMenu - open modal in edit mode
+    const handleEditClick = (post: Post) => {
+        setSelectedPost(post);
+        setEditingPostId(post.id);
+        setSearchParams({ post: post.id.toString() });
+    };
+
+    // Handle delete click from PostMenu - open modal with delete confirm
+    const handleDeleteClick = (post: Post) => {
+        setSelectedPost(post);
+        setDeletingPostId(post.id);
+        setSearchParams({ post: post.id.toString() });
+    };
+
     if (isLoading) {
         return (
             <div className="post-loading">
@@ -98,57 +156,89 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading }) => {
     }
 
     return (
-        <div className="post-list">
-            {posts.map((post) => (
-                <article key={post.id} className="post-card">
-                    <div className="post-header">
-                        <Avatar
-                            src={post.user.profile?.avatar_url || undefined}
-                            alt={post.user.username}
-                            width={44}
-                            height={44}
-                            className="post-avatar"
+        <>
+            <div className="post-list">
+                {posts.map((post) => {
+                    const isOwner = currentUser?.id?.toString() === post.user_id?.toString();
+
+                    return (
+                        <article
+                            key={post.id}
+                            className="post-card"
+                            onClick={() => handlePostClick(post)}
+                            style={{ cursor: "pointer" }}
                         >
-                            {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
-                        </Avatar>
-                        <div className="post-user-info">
-                            <span className="post-username">{getDisplayName(post.user)}</span>
-                            <span className="post-time">{formatRelativeTime(post.created_at)}</span>
-                        </div>
-                        <button className="post-menu-btn">⋯</button>
-                    </div>
+                            <div className="post-header">
+                                <Avatar
+                                    src={post.user.profile?.avatar_url || undefined}
+                                    alt={post.user.username}
+                                    width={44}
+                                    height={44}
+                                    className="post-avatar"
+                                >
+                                    {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
+                                </Avatar>
+                                <div className="post-user-info">
+                                    <span className="post-username">{getDisplayName(post.user)}</span>
+                                    <span className="post-time">{formatRelativeTime(post.created_at)}</span>
+                                </div>
 
-                    {post.content && (
-                        <div className="post-content">
-                            <p className="post-text">{post.content}</p>
-                        </div>
-                    )}
+                                {/* Reusable PostMenu component */}
+                                <PostMenu
+                                    isOwner={isOwner}
+                                    onEdit={() => handleEditClick(post)}
+                                    onDelete={() => handleDeleteClick(post)}
+                                />
+                            </div>
 
-                    {post.attachments && post.attachments.length > 0 && (
-                        <MediaGrid attachments={post.attachments} />
-                    )}
+                            {post.content && (
+                                <div className="post-content">
+                                    <p className="post-text">{post.content}</p>
+                                </div>
+                            )}
 
-                    <div className="post-stats">
-                        <span>{post.likes_count} lượt thích</span>
-                        <span>{post.comments_count} bình luận</span>
-                    </div>
-                    <div className="post-actions">
-                        <button className="post-action-btn">
-                            <span>👍</span>
-                            <span>Thích</span>
-                        </button>
-                        <button className="post-action-btn">
-                            <span>💬</span>
-                            <span>Bình luận</span>
-                        </button>
-                        <button className="post-action-btn">
-                            <span>↗️</span>
-                            <span>Chia sẻ</span>
-                        </button>
-                    </div>
-                </article>
-            ))}
-        </div>
+                            {post.attachments && post.attachments.length > 0 && (
+                                <MediaGrid attachments={post.attachments} />
+                            )}
+
+                            <div className="post-stats">
+                                <span>{post.likes_count} lượt thích</span>
+                                <span>{post.comments_count} bình luận</span>
+                            </div>
+
+                            <div className="post-actions" onClick={(e) => e.stopPropagation()}>
+                                <button className="post-action-btn">
+                                    <span>👍</span>
+                                    <span>Thích</span>
+                                </button>
+                                <button
+                                    className="post-action-btn"
+                                    onClick={(e) => handleCommentClick(post, e)}
+                                >
+                                    <span>💬</span>
+                                    <span>Bình luận</span>
+                                </button>
+                                <button className="post-action-btn">
+                                    <span>↗️</span>
+                                    <span>Chia sẻ</span>
+                                </button>
+                            </div>
+                        </article>
+                    );
+                })}
+            </div>
+
+            <PostDetailModal
+                open={selectedPost !== null}
+                onClose={handleCloseModal}
+                post={selectedPost}
+                onPostUpdated={onPostUpdated}
+                onPostDeleted={onPostDeleted}
+                focusComment={focusComment}
+                startEditing={editingPostId === selectedPost?.id}
+                startDeleting={deletingPostId === selectedPost?.id}
+            />
+        </>
     );
 };
 

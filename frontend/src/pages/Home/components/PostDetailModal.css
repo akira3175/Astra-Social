@@ -1,0 +1,578 @@
+/* PostDetailModal - Facebook Style v4 */
+
+/* Overlay */
+.pdm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: pdm-fadeIn 0.2s ease;
+}
+
+@keyframes pdm-fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Container */
+.pdm-container {
+    position: relative;
+    display: flex;
+    background: #fff;
+    border-radius: 8px;
+    width: 95%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: pdm-slideIn 0.25s ease;
+}
+
+.pdm-container.pdm-with-images {
+    max-width: 1200px;
+    height: 85vh;
+}
+
+@keyframes pdm-slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Close Button - positioned differently based on layout */
+.pdm-close-btn {
+    position: absolute;
+    z-index: 100;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Close button on left (over images) - dark gray bg white icon */
+.pdm-close-left {
+    top: 16px;
+    left: 16px;
+    background: rgba(50, 50, 50, 0.8);
+    color: #fff;
+}
+
+.pdm-close-left:hover {
+    background: rgba(30, 30, 30, 0.9);
+}
+
+/* Close button on right (for posts without images) - dark gray bg white icon */
+.pdm-close-right {
+    top: 12px;
+    right: 12px;
+    background: rgba(50, 50, 50, 0.8);
+    color: #fff;
+}
+
+.pdm-close-right:hover {
+    background: rgba(30, 30, 30, 0.9);
+}
+
+/* Images Section */
+.pdm-images-section {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Gallery Grid */
+.pdm-gallery {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    gap: 2px;
+}
+
+.pdm-gallery-1 {
+    grid-template-columns: 1fr;
+}
+
+.pdm-gallery-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.pdm-gallery-3 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.pdm-gallery-3 .pdm-gallery-item:first-child {
+    grid-row: span 2;
+}
+
+.pdm-gallery-4 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.pdm-gallery-item {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    background: #111;
+}
+
+.pdm-gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+}
+
+.pdm-gallery-item:hover img {
+    transform: scale(1.02);
+}
+
+.pdm-more-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Content Panel */
+.pdm-content-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    width: 100%;
+}
+
+.pdm-with-images .pdm-content-panel {
+    width: 400px;
+    min-width: 350px;
+    max-width: 450px;
+    border-left: 1px solid #ddd;
+}
+
+/* Header */
+.pdm-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    padding-right: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.pdm-user-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pdm-username {
+    font-weight: 600;
+    font-size: 15px;
+    color: #050505;
+}
+
+.pdm-time {
+    font-size: 13px;
+    color: #65676b;
+}
+
+/* Body */
+.pdm-body {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+/* Custom Scrollbar */
+.pdm-body::-webkit-scrollbar,
+.pdm-edit-textarea::-webkit-scrollbar,
+.pdm-comment-field::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pdm-body::-webkit-scrollbar-track,
+.pdm-edit-textarea::-webkit-scrollbar-track,
+.pdm-comment-field::-webkit-scrollbar-track {
+    background: #f0f2f5;
+    border-radius: 4px;
+}
+
+.pdm-body::-webkit-scrollbar-thumb,
+.pdm-edit-textarea::-webkit-scrollbar-thumb,
+.pdm-comment-field::-webkit-scrollbar-thumb {
+    background: #bcc0c4;
+    border-radius: 4px;
+}
+
+.pdm-body::-webkit-scrollbar-thumb:hover,
+.pdm-edit-textarea::-webkit-scrollbar-thumb:hover,
+.pdm-comment-field::-webkit-scrollbar-thumb:hover {
+    background: #8d9197;
+}
+
+.pdm-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #050505;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+}
+
+/* Edit Form */
+.pdm-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pdm-edit-textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    font-size: 15px;
+    line-height: 1.4;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    background: #f0f2f5;
+    color: #050505;
+    box-sizing: border-box;
+}
+
+.pdm-edit-textarea:focus {
+    outline: none;
+    border-color: #1877f2;
+    background: #fff;
+}
+
+.pdm-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* Stats */
+.pdm-stats {
+    display: flex;
+    gap: 16px;
+    padding: 10px 16px;
+    font-size: 15px;
+    color: #65676b;
+    border-top: 1px solid #eee;
+}
+
+/* Actions */
+.pdm-actions {
+    display: flex;
+    padding: 4px 8px;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+}
+
+.pdm-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #65676b;
+    transition: background 0.1s ease;
+}
+
+.pdm-action-btn:hover {
+    background: #f0f2f5;
+}
+
+/* Error */
+.pdm-error {
+    margin: 12px 16px;
+    padding: 12px;
+    background: #ffebee;
+    border-radius: 8px;
+    color: #e41e3f;
+    font-size: 14px;
+}
+
+/* Delete Confirm */
+.pdm-delete-confirm {
+    margin: 12px 16px;
+    padding: 16px;
+    background: #fff3e0;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.pdm-delete-confirm p {
+    margin: 0 0 12px 0;
+    font-weight: 500;
+    color: #e65100;
+}
+
+.pdm-delete-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Comments */
+.pdm-comments-section {
+    padding: 12px 16px;
+    border-top: 1px solid #eee;
+    margin-top: auto;
+}
+
+.pdm-comment-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pdm-comment-field {
+    flex: 1;
+    padding: 10px 14px;
+    background: #f0f2f5;
+    border: none;
+    border-radius: 20px;
+    font-size: 15px;
+    outline: none;
+    color: #050505;
+}
+
+.pdm-comment-field:focus {
+    background: #fff;
+    box-shadow: 0 0 0 2px #1877f2;
+}
+
+/* Buttons */
+.pdm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pdm-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pdm-btn-primary {
+    background: #1877f2;
+    color: #fff;
+}
+
+.pdm-btn-primary:hover:not(:disabled) {
+    background: #166fe5;
+}
+
+.pdm-btn-ghost {
+    background: transparent;
+    color: #1877f2;
+}
+
+.pdm-btn-ghost:hover:not(:disabled) {
+    background: #e7f3ff;
+}
+
+.pdm-btn-danger {
+    background: #e41e3f;
+    color: #fff;
+}
+
+.pdm-btn-danger:hover:not(:disabled) {
+    background: #c91836;
+}
+
+/* ============ LIGHTBOX ============ */
+.pdm-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.97);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: pdm-fadeIn 0.2s ease;
+}
+
+.pdm-lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #fff;
+    transition: background 0.2s ease;
+}
+
+.pdm-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.pdm-lightbox-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.pdm-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #fff;
+    font-size: 32px;
+    transition: background 0.2s ease;
+}
+
+.pdm-lightbox-nav:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.pdm-lightbox-prev {
+    left: 20px;
+}
+
+.pdm-lightbox-next {
+    right: 20px;
+}
+
+.pdm-lightbox-counter {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 20px;
+    color: #fff;
+    font-size: 14px;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 900px) {
+    .pdm-container.pdm-with-images {
+        flex-direction: column;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .pdm-with-images .pdm-images-section {
+        flex: 0 0 auto;
+        height: 45vh;
+        min-height: 200px;
+    }
+
+    .pdm-with-images .pdm-content-panel {
+        width: 100%;
+        min-width: auto;
+        max-width: none;
+        flex: 1;
+        border-left: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .pdm-overlay {
+        padding: 0;
+    }
+
+    .pdm-container {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+    }
+
+    .pdm-close-left,
+    .pdm-close-right {
+        top: 8px;
+    }
+
+    .pdm-close-left {
+        left: 8px;
+    }
+
+    .pdm-close-right {
+        right: 8px;
+    }
+
+    .pdm-lightbox-nav {
+        width: 44px;
+        height: 44px;
+        font-size: 28px;
+    }
+
+    .pdm-lightbox-prev {
+        left: 10px;
+    }
+
+    .pdm-lightbox-next {
+        right: 10px;
+    }
+}
