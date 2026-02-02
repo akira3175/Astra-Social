@@ -23,6 +23,7 @@ export interface UserProfileApiResponse {
         bio: string | null;
         avatar_url: string | null;
         cover_url: string | null;
+        cover_position: number;
         phone: string | null;
         address: string | null;
         birth_date: string | null;
@@ -46,6 +47,8 @@ export interface User {
     firstName?: string;
     lastName?: string;
     avatar?: string;
+    background?: string;
+    backgroundPosition?: number;
     bio?: string;
     isVerified?: boolean;
 }
