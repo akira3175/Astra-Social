@@ -1,13 +1,32 @@
 import React, { ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 import { Box } from "../../components/ui";
 import Navbar from "./components/Navbar";
 
 interface BasePageProps {
-    children: ReactNode;
-    maxWidth?: "xs" | "sm" | "md" | "lg" | "xl" | false;
-    disablePadding?: boolean;
+    children?: ReactNode;
 }
 
+/**
+ * BasePage - Layout component với Navbar
+ * 
+ * Có 2 cách sử dụng:
+ * 
+ * 1. Làm Layout Route (khuyến khích):
+ *    ```jsx
+ *    <Route element={<BasePage />}>
+ *      <Route path="/profile/:userId" element={<ProfilePage />} />
+ *      <Route path="/settings" element={<SettingsPage />} />
+ *    </Route>
+ *    ```
+ * 
+ * 2. Wrap trực tiếp (khi cần):
+ *    ```jsx
+ *    <BasePage>
+ *      <YourContent />
+ *    </BasePage>
+ *    ```
+ */
 const BasePage: React.FC<BasePageProps> = ({ children }) => {
     return (
         <Box
@@ -40,7 +59,8 @@ const BasePage: React.FC<BasePageProps> = ({ children }) => {
                     position: "relative"
                 }}
             >
-                {children}
+                {/* Render children nếu được truyền vào, hoặc Outlet cho nested routes */}
+                {children || <Outlet />}
             </Box>
         </Box>
     );

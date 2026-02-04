@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LoginPage } from "./pages/Auth";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
+import BasePage from "./pages/Base";
 import { CurrentUserProvider } from "./context/currentUserContext";
 import "./App.css";
 
@@ -10,10 +11,15 @@ function App() {
     <CurrentUserProvider>
       <Router>
         <Routes>
+          {/* Public routes - không có Navbar */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<HomePage />} />
-          <Route path="/profile/:userId" element={<ProfilePage />} />
-          {/* Add more routes as needed */}
+
+          {/* Protected routes - có Navbar thông qua BasePage layout */}
+          <Route element={<BasePage />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
+            {/* Thêm route mới ở đây, tự động có Navbar */}
+          </Route>
         </Routes>
       </Router>
     </CurrentUserProvider>
