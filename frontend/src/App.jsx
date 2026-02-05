@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LoginPage } from "./pages/Auth";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
+import MessagesPage from "./pages/Messages";
 import BasePage from "./pages/Base";
 import { CurrentUserProvider } from "./context/currentUserContext";
 import "./App.css";
@@ -18,6 +19,7 @@ function App() {
           <Route element={<BasePage />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/messages" element={<MessagesPage />} />
             {/* Thêm route mới ở đây, tự động có Navbar */}
           </Route>
         </Routes>
