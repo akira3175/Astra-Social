@@ -1,7 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import { Outlet } from "react-router-dom";
-import BasePage from "../Base";
-import { Box } from "../../components/ui";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import LeftSidebar from "./components/LeftSidebar";
 import RightSidebar from "./components/RightSidebar";
@@ -47,45 +45,39 @@ const HomePage: React.FC = () => {
     }, [fetchPosts]);
 
     if (!isLayoutReady) {
-        return (
-            <BasePage>
-                <div className="home-layout" style={{ visibility: "hidden" }} />
-            </BasePage>
-        );
+        return <div className="home-layout" style={{ visibility: "hidden" }} />;
     }
 
     return (
         <>
-            <BasePage>
-                <div className="home-layout">
-                    {/* Left sidebar */}
-                    {!isMobile && (
-                        <div className="sidebar-container sidebar-left">
-                            <LeftSidebar onToggleChat={() => { }} />
-                        </div>
-                    )}
-
-                    {/* Main feed */}
-                    <div className="main-feed">
-                        <CreatePost onPostCreated={handlePostCreated} />
-                        <PostList
-                            posts={posts}
-                            isLoading={isLoading}
-                            onPostUpdated={handlePostCreated}
-                            onPostDeleted={handlePostCreated}
-                        />
+            <div className="home-layout">
+                {/* Left sidebar */}
+                {!isMobile && (
+                    <div className="sidebar-container sidebar-left">
+                        <LeftSidebar onToggleChat={() => { }} />
                     </div>
+                )}
 
-                    {/* Right sidebar */}
-                    {!isSmallScreen && (
-                        <div className="sidebar-container sidebar-right">
-                            <RightSidebar />
-                        </div>
-                    )}
+                {/* Main feed */}
+                <div className="main-feed">
+                    <CreatePost onPostCreated={handlePostCreated} />
+                    <PostList
+                        posts={posts}
+                        isLoading={isLoading}
+                        onPostUpdated={handlePostCreated}
+                        onPostDeleted={handlePostCreated}
+                    />
                 </div>
 
-                {isMobile && <MobileBottomNav />}
-            </BasePage>
+                {/* Right sidebar */}
+                {!isSmallScreen && (
+                    <div className="sidebar-container sidebar-right">
+                        <RightSidebar />
+                    </div>
+                )}
+            </div>
+
+            {isMobile && <MobileBottomNav />}
             <Outlet />
         </>
     );

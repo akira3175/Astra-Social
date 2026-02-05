@@ -217,7 +217,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                             <MenuItem
                                 onClick={handleClose}
                                 component={Link}
-                                to={currentUser ? `/profile/${currentUser.email}` : "/profile"}
+                                to={currentUser ? `/profile/${currentUser.id}` : "/profile"}
                             >
                                 <PersonIcon size={20} style={{ marginRight: 8 }} />
                                 Trang cá nhân

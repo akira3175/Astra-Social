@@ -33,6 +33,8 @@ export const transformUserProfile = (data: UserProfileApiResponse) => ({
     firstName: data.profile.first_name || undefined,
     lastName: data.profile.last_name || undefined,
     avatar: data.profile.avatar_url || undefined,
+    background: data.profile.cover_url || undefined,
+    backgroundPosition: data.profile.cover_position ?? 50,
     bio: data.profile.bio || undefined,
     isVerified: data.user.is_verified,
 });

@@ -16,4 +16,7 @@ Route::get('/profile/{id}', [ProfileController::class, 'show'])->where('id', '[0
 Route::middleware('jwt.auth')->group(function () {
     Route::get('/profile/me', [ProfileController::class, 'me']);
     Route::patch('/profile/me', [ProfileController::class, 'update']);
+    Route::post('/profile/me/avatar', [ProfileController::class, 'uploadAvatar']);
+    Route::post('/profile/me/cover', [ProfileController::class, 'uploadCover']);
 });
+

@@ -9,6 +9,7 @@ import {
     GroupIcon,
 } from "../../../components/ui";
 import "./LeftSidebar.css";
+import { useCurrentUser } from "../../../context/currentUserContext";
 
 interface MenuItem {
     text: string;
@@ -23,13 +24,14 @@ interface LeftSidebarProps {
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ className }) => {
     const location = useLocation();
+    const { currentUser } = useCurrentUser() ?? {};
 
     const mainMenuItems: MenuItem[] = [
         { text: "Trang chủ", icon: <HomeIcon size={22} />, path: "/" },
         { text: "Thông báo", icon: <BookmarkIcon size={22} />, path: "/notifications" },
         { text: "Tin nhắn", icon: <ChatIcon size={22} />, path: "/messages" },
         { text: "Bạn bè", icon: <GroupIcon size={22} />, path: "/friends" },
-        { text: "Hồ sơ", icon: <PersonIcon size={22} />, path: "/profile" },
+        { text: "Hồ sơ", icon: <PersonIcon size={22} />, path: `/profile/${currentUser?.id}` },
         { text: "Cài đặt", icon: <SettingsIcon size={22} />, path: "/settings" },
     ];
 
