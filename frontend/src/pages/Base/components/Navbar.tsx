@@ -130,7 +130,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                         // @ts-ignore
                         to="/"
                         sx={{
-                            color: "#4f46e5",
+                            color: "#4f46e5 !important",
                             fontWeight: "bold",
                             textDecoration: "none",
                             flexGrow: isMobile ? 1 : 0,

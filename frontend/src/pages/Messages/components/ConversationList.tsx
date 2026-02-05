@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { SearchIcon } from "../../../components/ui";
+import { SearchIcon, PlusIcon } from "../../../components/ui";
 import type { Conversation } from "../../../types/message";
 
 interface ConversationListProps {
@@ -7,6 +7,7 @@ interface ConversationListProps {
     selectedId: string | null;
     onSelect: (conversation: Conversation) => void;
     currentUserId: string;
+    onCreateNewGroup?: () => void;
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({
@@ -14,6 +15,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
     selectedId,
     onSelect,
     currentUserId,
+    onCreateNewGroup,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -88,7 +90,18 @@ const ConversationList: React.FC<ConversationListProps> = ({
     return (
         <div className="conversation-list">
             <div className="conversation-list-header">
-                <h2>Tin nhắn</h2>
+                <div className="header-title-row">
+                    <h2>Tin nhắn</h2>
+                    {onCreateNewGroup && (
+                        <button
+                            className="create-group-btn"
+                            onClick={onCreateNewGroup}
+                            title="Tạo nhóm mới"
+                        >
+                            <PlusIcon size={20} />
+                        </button>
+                    )}
+                </div>
                 <div className="conversation-search">
                     <span className="search-icon">
                         <SearchIcon size={18} />

@@ -12,7 +12,24 @@ export type ConversationType = 'PRIVATE' | 'GROUP';
 /**
  * Message type enum
  */
-export type MessageType = 'TEXT' | 'IMAGE' | 'SYSTEM';
+export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE' | 'SYSTEM';
+
+/**
+ * Attachment type for messages
+ */
+export type AttachmentType = 'image' | 'video' | 'file';
+
+/**
+ * Message attachment interface
+ */
+export interface MessageAttachment {
+    id: string;
+    url: string;
+    type: AttachmentType;
+    name: string;
+    size: number;
+    mimeType?: string;
+}
 
 /**
  * Member role in conversation
@@ -51,6 +68,7 @@ export interface Message {
     sender?: MessageUser;
     content: string | null;
     type: MessageType;
+    attachments?: MessageAttachment[];
     isRead: boolean;
     createdAt: string;
 }

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useLayoutEffect } from "react";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import ConversationList from "./components/ConversationList";
 import ChatArea from "./components/ChatArea";
-import type { Conversation, Message, MessageUser } from "../../types/message";
+import type { Conversation, Message, MessageUser, MessageAttachment, AttachmentType, MessageType } from "../../types/message";
 import "./MessagesPage.css";
 
 // Mock data for UI demonstration
@@ -110,7 +110,32 @@ const mockMessages: Record<string, Message[]> = {
         { id: "2", conversationId: "1", senderId: "1", content: "Mình khỏe! Cảm ơn bạn", type: "TEXT", isRead: true, createdAt: "2026-02-05T07:05:00Z" },
         { id: "3", conversationId: "1", senderId: "1", content: "Còn bạn thì sao?", type: "TEXT", isRead: true, createdAt: "2026-02-05T07:06:00Z" },
         { id: "4", conversationId: "1", senderId: "2", content: "Mình cũng ổn!", type: "TEXT", isRead: true, createdAt: "2026-02-05T07:15:00Z" },
-        { id: "5", conversationId: "1", senderId: "2", content: "Chào bạn! Hôm nay thế nào?", type: "TEXT", isRead: false, createdAt: "2026-02-05T07:30:00Z" },
+        {
+            id: "5",
+            conversationId: "1",
+            senderId: "2",
+            content: "Xem ảnh này nè!",
+            type: "IMAGE",
+            attachments: [
+                { id: "a1", url: "https://picsum.photos/seed/msg1/400/300", type: "image", name: "photo1.jpg", size: 125000 },
+                { id: "a2", url: "https://picsum.photos/seed/msg2/400/300", type: "image", name: "photo2.jpg", size: 98000 },
+            ],
+            isRead: true,
+            createdAt: "2026-02-05T07:20:00Z"
+        },
+        {
+            id: "6",
+            conversationId: "1",
+            senderId: "2",
+            content: null,
+            type: "IMAGE",
+            attachments: [
+                { id: "a3", url: "https://picsum.photos/seed/msg3/400/300", type: "image", name: "screenshot.png", size: 256000 },
+            ],
+            isRead: true,
+            createdAt: "2026-02-05T07:25:00Z"
+        },
+        { id: "7", conversationId: "1", senderId: "2", content: "Chào bạn! Hôm nay thế nào?", type: "TEXT", isRead: false, createdAt: "2026-02-05T07:30:00Z" },
     ],
     "2": [
         { id: "10", conversationId: "2", senderId: "3", content: "Bạn có file thiết kế chưa?", type: "TEXT", isRead: true, createdAt: "2026-02-05T06:00:00Z" },
@@ -153,20 +178,91 @@ const MessagesPage: React.FC = () => {
         setMessages([]);
     }, []);
 
-    const handleSendMessage = useCallback((content: string) => {
-        if (!selectedConversation || !content.trim()) return;
+    const handleSendMessage = useCallback((content: string, files?: File[]) => {
+        if (!selectedConversation || (!content.trim() && (!files || files.length === 0))) return;
+
+        // Create attachments from files
+        const attachments: MessageAttachment[] = files?.slice(0, 4).map((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+            let attachmentType: AttachmentType = 'file';
+            if (isImage) attachmentType = 'image';
+            if (isVideo) attachmentType = 'video';
+
+            return {
+                id: `${Date.now()}-${index}`,
+                url: URL.createObjectURL(file),
+                type: attachmentType,
+                name: file.name,
+                size: file.size,
+                mimeType: file.type,
+            };
+        }) || [];
+
+        // Determine message type
+        let messageType: MessageType = 'TEXT';
+        if (attachments.length > 0) {
+            const hasOnlyImages = attachments.every(a => a.type === 'image');
+            const hasVideo = attachments.some(a => a.type === 'video');
+            if (hasVideo) {
+                messageType = 'VIDEO';
+            } else if (hasOnlyImages) {
+                messageType = 'IMAGE';
+            } else {
+                messageType = 'FILE';
+            }
+        }
 
         const newMessage: Message = {
             id: Date.now().toString(),
             conversationId: selectedConversation.id,
             senderId: "1", // Current user
-            content: content.trim(),
-            type: "TEXT",
+            content: content.trim() || null,
+            type: messageType,
+            attachments: attachments.length > 0 ? attachments : undefined,
             isRead: false,
             createdAt: new Date().toISOString(),
         };
 
         setMessages(prev => [...prev, newMessage]);
+    }, [selectedConversation]);
+
+    // Chat action handlers (placeholders - will integrate with backend later)
+    const handleAddMember = useCallback(() => {
+        console.log('Add member to group:', selectedConversation?.id);
+        alert('Chức năng thêm thành viên sẽ được tích hợp sau!');
+    }, [selectedConversation]);
+
+    const handleRenameGroup = useCallback(() => {
+        const newName = prompt('Nhập tên nhóm mới:', selectedConversation?.name || '');
+        if (newName) {
+            console.log('Rename group:', selectedConversation?.id, 'to', newName);
+            alert(`Đổi tên nhóm thành: ${newName}`);
+        }
+    }, [selectedConversation]);
+
+    const handleLeaveGroup = useCallback(() => {
+        if (confirm('Bạn có chắc muốn rời khỏi nhóm này?')) {
+            console.log('Leave group:', selectedConversation?.id);
+            alert('Bạn đã rời khỏi nhóm!');
+        }
+    }, [selectedConversation]);
+
+    const handleTransferAdmin = useCallback(() => {
+        console.log('Transfer admin in group:', selectedConversation?.id);
+        alert('Chức năng chuyển nhóm trưởng sẽ được tích hợp sau!');
+    }, [selectedConversation]);
+
+    const handleBlockUser = useCallback(() => {
+        if (confirm('Bạn có chắc muốn chặn người dùng này?')) {
+            console.log('Block user in conversation:', selectedConversation?.id);
+            alert('Đã chặn người dùng!');
+        }
+    }, [selectedConversation]);
+
+    const handleCreateGroup = useCallback(() => {
+        console.log('Create group from conversation:', selectedConversation?.id);
+        alert('Chức năng tạo nhóm chat sẽ được tích hợp sau!');
     }, [selectedConversation]);
 
     if (!isLayoutReady) {
@@ -183,6 +279,7 @@ const MessagesPage: React.FC = () => {
                         selectedId={null}
                         onSelect={handleSelectConversation}
                         currentUserId="1"
+                        onCreateNewGroup={handleCreateGroup}
                     />
                 ) : (
                     <ChatArea
@@ -192,6 +289,12 @@ const MessagesPage: React.FC = () => {
                         onSendMessage={handleSendMessage}
                         currentUserId="1"
                         isMobile={true}
+                        onAddMember={handleAddMember}
+                        onRenameGroup={handleRenameGroup}
+                        onLeaveGroup={handleLeaveGroup}
+                        onTransferAdmin={handleTransferAdmin}
+                        onBlockUser={handleBlockUser}
+                        onCreateGroup={handleCreateGroup}
                     />
                 )}
             </div>
@@ -207,6 +310,7 @@ const MessagesPage: React.FC = () => {
                     selectedId={selectedConversation?.id || null}
                     onSelect={handleSelectConversation}
                     currentUserId="1"
+                    onCreateNewGroup={handleCreateGroup}
                 />
             </div>
             <div className="messages-main">
@@ -217,6 +321,12 @@ const MessagesPage: React.FC = () => {
                         onSendMessage={handleSendMessage}
                         currentUserId="1"
                         isMobile={false}
+                        onAddMember={handleAddMember}
+                        onRenameGroup={handleRenameGroup}
+                        onLeaveGroup={handleLeaveGroup}
+                        onTransferAdmin={handleTransferAdmin}
+                        onBlockUser={handleBlockUser}
+                        onCreateGroup={handleCreateGroup}
                     />
                 ) : (
                     <div className="no-conversation-selected">
