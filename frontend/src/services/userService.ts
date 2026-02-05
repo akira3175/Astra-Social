@@ -33,7 +33,13 @@ export const transformUserProfile = (data: UserProfileApiResponse) => ({
     firstName: data.profile.first_name || undefined,
     lastName: data.profile.last_name || undefined,
     avatar: data.profile.avatar_url || undefined,
+    background: data.profile.cover_url || undefined,
+    backgroundPosition: data.profile.cover_position ?? 50,
     bio: data.profile.bio || undefined,
+    phone: data.profile.phone || undefined,
+    address: data.profile.address || undefined,
+    birthDate: data.profile.birth_date || undefined,
+    gender: data.profile.gender as 'MALE' | 'FEMALE' | 'OTHER' | undefined,
     isVerified: data.user.is_verified,
 });
 

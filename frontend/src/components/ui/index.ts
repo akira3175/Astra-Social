@@ -63,5 +63,11 @@ export {
     ImageIcon,
     SendIcon,
     CloseIcon,
+    MoreVertIcon,
+    EditIcon,
+    ExitIcon,
+    CrownIcon,
+    BlockIcon,
+    PlusIcon,
 } from "./Icons";
 

@@ -34,6 +34,7 @@ class Profile extends Model
         'bio',
         'avatar_url',
         'cover_url',
+        'cover_position',
         'phone',
         'address',
         'birth_date',

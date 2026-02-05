@@ -4,9 +4,14 @@ namespace App\Services;
 
 use App\Models\Profile;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 
 class ProfileService
 {
+    public function __construct(
+        private CloudinaryService $cloudinaryService
+    ) {}
+
     /**
      * Get user profile data.
      *
@@ -37,6 +42,7 @@ class ProfileService
                 'bio' => $profile->bio,
                 'avatar_url' => $profile->avatar_url,
                 'cover_url' => $profile->cover_url,
+                'cover_position' => $profile->cover_position,
                 'phone' => $profile->phone,
                 'address' => $profile->address,
                 'birth_date' => $profile->birth_date?->format('Y-m-d'),
@@ -71,6 +77,10 @@ class ProfileService
                 'bio' => $profile->bio,
                 'avatar_url' => $profile->avatar_url,
                 'cover_url' => $profile->cover_url,
+                'cover_position' => $profile->cover_position,
+                'phone' => $profile->phone,
+                'address' => $profile->address,
+                'birth_date' => $profile->birth_date?->format('Y-m-d'),
                 'gender' => $profile->gender,
             ],
         ];
@@ -131,4 +141,95 @@ class ProfileService
             'data' => $this->getUserProfile($user),
         ];
     }
+
+    /**
+     * Upload and update avatar.
+     *
+     * @param int $userId
+     * @param UploadedFile $file
+     * @return array{success: bool, data?: array, message?: string}
+     */
+    public function uploadAvatar(int $userId, UploadedFile $file): array
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'User not found',
+            ];
+        }
+
+        // Upload to Cloudinary
+        $result = $this->cloudinaryService->upload($file, 'avatars');
+
+        if (!$result['success']) {
+            return [
+                'success' => false,
+                'message' => $result['error'] ?? 'Failed to upload avatar',
+            ];
+        }
+
+        // Update profile
+        $profile = Profile::firstOrCreate(
+            ['user_id' => $userId],
+            []
+        );
+
+        $profile->avatar_url = $result['url'];
+        $profile->save();
+
+        return [
+            'success' => true,
+            'data' => $this->getUserProfile($user),
+        ];
+    }
+
+    /**
+     * Upload and update cover image.
+     *
+     * @param int $userId
+     * @param UploadedFile $file
+     * @param int|null $position Cover position (0-100)
+     * @return array{success: bool, data?: array, message?: string}
+     */
+    public function uploadCover(int $userId, UploadedFile $file, ?int $position = null): array
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'User not found',
+            ];
+        }
+
+        // Upload to Cloudinary
+        $result = $this->cloudinaryService->upload($file, 'covers');
+
+        if (!$result['success']) {
+            return [
+                'success' => false,
+                'message' => $result['error'] ?? 'Failed to upload cover',
+            ];
+        }
+
+        // Update profile
+        $profile = Profile::firstOrCreate(
+            ['user_id' => $userId],
+            []
+        );
+
+        $profile->cover_url = $result['url'];
+        if ($position !== null) {
+            $profile->cover_position = $position;
+        }
+        $profile->save();
+
+        return [
+            'success' => true,
+            'data' => $this->getUserProfile($user),
+        ];
+    }
 }
+

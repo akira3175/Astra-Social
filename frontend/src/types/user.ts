@@ -23,6 +23,7 @@ export interface UserProfileApiResponse {
         bio: string | null;
         avatar_url: string | null;
         cover_url: string | null;
+        cover_position: number;
         phone: string | null;
         address: string | null;
         birth_date: string | null;
@@ -46,6 +47,25 @@ export interface User {
     firstName?: string;
     lastName?: string;
     avatar?: string;
+    background?: string;
+    backgroundPosition?: number;
     bio?: string;
+    phone?: string;
+    address?: string;
+    birthDate?: string;
+    gender?: 'MALE' | 'FEMALE' | 'OTHER';
     isVerified?: boolean;
+}
+
+/**
+ * Data for updating profile
+ */
+export interface UpdateProfileData {
+    first_name?: string;
+    last_name?: string;
+    bio?: string;
+    phone?: string;
+    address?: string;
+    birth_date?: string;
+    gender?: 'MALE' | 'FEMALE' | 'OTHER';
 }
