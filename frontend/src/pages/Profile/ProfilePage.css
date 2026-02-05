@@ -71,12 +71,11 @@
 }
 
 .profile-cover-edit-btn {
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.9);
+    position: relative;
+    width: 48px;
+    height: 48px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.6);
     border: none;
     border-radius: 50%;
     cursor: pointer;
@@ -84,19 +83,71 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .profile-cover-edit-btn:hover {
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.8);
     transform: scale(1.05);
 }
 
 .profile-cover-edit-btn svg {
-    width: 20px;
-    height: 20px;
-    color: #374151;
+    width: 24px !important;
+    height: 24px !important;
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+/* Cover buttons container */
+.profile-cover-buttons {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+/* Reposition mode styles */
+.profile-cover--repositioning {
+    cursor: ns-resize;
+    user-select: none;
+}
+
+.profile-cover--repositioning .profile-cover-img {
+    pointer-events: none;
+}
+
+.profile-cover-reposition-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 20;
+}
+
+.profile-cover-reposition-hint {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 500;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    margin: 0;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.profile-cover-reposition-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.profile-cover-reposition-actions .btn {
+    min-width: 80px;
 }
 
 /* Profile Info Section */
@@ -144,9 +195,10 @@
     position: absolute;
     right: 0;
     bottom: 8px;
-    width: 36px;
-    height: 36px;
-    background: #ffffff;
+    padding: 12px;
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.6);
     border: none;
     border-radius: 50%;
     cursor: pointer;
@@ -154,18 +206,19 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .profile-avatar-edit-btn:hover {
-    background: #f3f4f6;
+    background: rgba(0, 0, 0, 0.8);
     transform: scale(1.05);
 }
 
 .profile-avatar-edit-btn svg {
-    width: 18px;
-    height: 18px;
-    color: #374151;
+    width: 24px !important;
+    height: 24px !important;
+    color: #ffffff !important;
+    fill: #ffffff !important;
 }
 
 /* Profile Name & Email */

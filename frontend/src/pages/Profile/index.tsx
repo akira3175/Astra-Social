@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProfileById, uploadAvatar, uploadCover } from "../../services/profileService";
+import { getProfileById, uploadAvatar, uploadCover, updateCoverPosition } from "../../services/profileService";
 import { useCurrentUser } from "../../context/currentUserContext";
 import type { User } from "../../types/user";
 import "./ProfilePage.css";
@@ -9,8 +9,15 @@ import "../../components/ui/Card/Card.css";
 
 // Camera Icon SVG
 const CameraIcon = () => (
-    <svg viewBox="0 0 24 24" fill="currentColor">
+    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
         <path d="M12 15.2c1.8 0 3.2-1.4 3.2-3.2S13.8 8.8 12 8.8 8.8 10.2 8.8 12s1.4 3.2 3.2 3.2zm9-9.6h-2.4l-1.6-2.4H7l-1.6 2.4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2v-12c0-1.1-.9-2-2-2zM12 17c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5z" />
+    </svg>
+);
+
+// Move Icon SVG for reposition
+const MoveIcon = () => (
+    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+        <path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z" />
     </svg>
 );
 
@@ -27,8 +34,20 @@ const ProfilePage = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+    // Cover reposition state
+    const [isRepositioning, setIsRepositioning] = useState(false);
+    const [tempPosition, setTempPosition] = useState<number>(50);
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartY = useRef<number>(0);
+    const dragStartPosition = useRef<number>(50);
+
+    // Pending cover upload state (preview before upload)
+    const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
+    const [pendingCoverPreview, setPendingCoverPreview] = useState<string | null>(null);
+
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
+    const coverRef = useRef<HTMLDivElement>(null);
 
     // Check if viewing own profile
     const isOwnProfile = currentUser && profile && String(currentUser.id) === String(profile.id);
@@ -46,6 +65,7 @@ const ProfilePage = () => {
                 setError(null);
                 const data = await getProfileById(userId);
                 setProfile(data);
+                setTempPosition(data.backgroundPosition ?? 50);
             } catch (err) {
                 console.error("Failed to load profile:", err);
                 setError("Profile not found");
@@ -102,30 +122,122 @@ const ProfilePage = () => {
         }
     };
 
-    // Handle cover upload
-    const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle cover file selection - create preview and enter reposition mode
+    const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(file);
+        setPendingCoverFile(file);
+        setPendingCoverPreview(previewUrl);
+        setTempPosition(50); // Start at center
+        setIsRepositioning(true);
+
+        // Reset input
+        if (coverInputRef.current) {
+            coverInputRef.current.value = "";
+        }
+    };
+
+    // Cleanup preview URL when component unmounts or preview changes
+    useEffect(() => {
+        return () => {
+            if (pendingCoverPreview) {
+                URL.revokeObjectURL(pendingCoverPreview);
+            }
+        };
+    }, [pendingCoverPreview]);
+
+    // Start reposition mode (for existing cover)
+    const handleStartReposition = () => {
+        setTempPosition(profile?.backgroundPosition ?? 50);
+        setIsRepositioning(true);
+    };
+
+    // Cancel reposition - clear pending file if any
+    const handleCancelReposition = () => {
+        // Cleanup preview URL
+        if (pendingCoverPreview) {
+            URL.revokeObjectURL(pendingCoverPreview);
+        }
+        setPendingCoverFile(null);
+        setPendingCoverPreview(null);
+        setTempPosition(profile?.backgroundPosition ?? 50);
+        setIsRepositioning(false);
+    };
+
+    // Save cover - upload new file or just update position
+    const handleSavePosition = async () => {
         try {
             setIsUploading(true);
-            const updatedProfile = await uploadCover(file, 50); // Default position 50%
+
+            let updatedProfile;
+            if (pendingCoverFile) {
+                // Upload new cover with position
+                updatedProfile = await uploadCover(pendingCoverFile, tempPosition);
+                // Cleanup preview URL
+                if (pendingCoverPreview) {
+                    URL.revokeObjectURL(pendingCoverPreview);
+                }
+                setPendingCoverFile(null);
+                setPendingCoverPreview(null);
+                setNotification({ type: "success", message: "Đã cập nhật ảnh bìa" });
+            } else {
+                // Just update position of existing cover
+                updatedProfile = await updateCoverPosition(tempPosition);
+                setNotification({ type: "success", message: "Đã cập nhật vị trí ảnh bìa" });
+            }
+
             setProfile(updatedProfile);
             if (refreshUser) {
                 refreshUser();
             }
-            setNotification({ type: "success", message: "Đã cập nhật ảnh bìa" });
+            setIsRepositioning(false);
         } catch (err) {
-            console.error("Failed to upload cover:", err);
+            console.error("Failed to save cover:", err);
             setNotification({ type: "error", message: "Không thể cập nhật ảnh bìa" });
         } finally {
             setIsUploading(false);
-            // Reset input
-            if (coverInputRef.current) {
-                coverInputRef.current.value = "";
-            }
         }
     };
+
+    // Drag handlers for cover reposition
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        if (!isRepositioning) return;
+        e.preventDefault();
+        setIsDragging(true);
+        dragStartY.current = e.clientY;
+        dragStartPosition.current = tempPosition;
+    }, [isRepositioning, tempPosition]);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!isDragging || !coverRef.current) return;
+
+        const coverHeight = coverRef.current.offsetHeight;
+        const deltaY = e.clientY - dragStartY.current;
+        // INVERTED: Kéo xuống → ảnh đi lên (giảm position)
+        // Kéo lên → ảnh đi xuống (tăng position)
+        const deltaPercent = (deltaY / coverHeight) * 100;
+        const newPosition = Math.max(0, Math.min(100, dragStartPosition.current - deltaPercent));
+        setTempPosition(Math.round(newPosition));
+    }, [isDragging]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    // Global mouse event listeners for dragging
+    useEffect(() => {
+        if (isRepositioning) {
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+            return () => {
+                window.removeEventListener("mousemove", handleMouseMove);
+                window.removeEventListener("mouseup", handleMouseUp);
+            };
+        }
+    }, [isRepositioning, handleMouseMove, handleMouseUp]);
 
     // Auto hide notification
     useEffect(() => {
@@ -185,25 +297,70 @@ const ProfilePage = () => {
             {/* Profile Header */}
             <div className="profile-header">
                 {/* Cover Image */}
-                <div className="profile-cover">
-                    {profile.background && (
+                <div
+                    ref={coverRef}
+                    className={`profile-cover ${isRepositioning ? 'profile-cover--repositioning' : ''}`}
+                    onMouseDown={handleMouseDown}
+                >
+                    {(pendingCoverPreview || profile.background) && (
                         <img
-                            src={profile.background}
+                            src={pendingCoverPreview || profile.background}
                             alt="Cover"
                             className="profile-cover-img"
                             style={{
-                                objectPosition: `center ${profile.backgroundPosition ?? 50}%`
+                                objectPosition: `center ${isRepositioning ? tempPosition : (profile.backgroundPosition ?? 50)}%`
                             }}
+                            draggable={false}
                         />
                     )}
-                    {isOwnProfile && (
-                        <button
-                            className="profile-cover-edit-btn"
-                            onClick={() => coverInputRef.current?.click()}
-                            disabled={isUploading}
-                        >
-                            <CameraIcon />
-                        </button>
+
+                    {/* Reposition mode overlay */}
+                    {isRepositioning && (
+                        <div className="profile-cover-reposition-overlay">
+                            <p className="profile-cover-reposition-hint">
+                                Kéo để điều chỉnh vị trí
+                            </p>
+                            <div className="profile-cover-reposition-actions">
+                                <button
+                                    className="btn btn-contained btn-primary btn-small"
+                                    onClick={handleSavePosition}
+                                    disabled={isUploading}
+                                >
+                                    Lưu
+                                </button>
+                                <button
+                                    className="btn btn-outlined btn-secondary btn-small"
+                                    onClick={handleCancelReposition}
+                                    disabled={isUploading}
+                                >
+                                    Hủy
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Edit buttons (only when not repositioning) */}
+                    {isOwnProfile && !isRepositioning && (
+                        <div className="profile-cover-buttons">
+                            <button
+                                className="profile-cover-edit-btn"
+                                onClick={() => coverInputRef.current?.click()}
+                                disabled={isUploading}
+                                title="Tải ảnh bìa mới"
+                            >
+                                <CameraIcon />
+                            </button>
+                            {profile.background && (
+                                <button
+                                    className="profile-cover-edit-btn profile-cover-reposition-btn"
+                                    onClick={handleStartReposition}
+                                    disabled={isUploading}
+                                    title="Điều chỉnh vị trí"
+                                >
+                                    <MoveIcon />
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
