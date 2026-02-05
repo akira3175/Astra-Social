@@ -119,7 +119,7 @@ erDiagram
         BigInt id PK
         BigInt receiver_id FK
         BigInt actor_id FK
-        Varchar entity_type "POST, FRIEND, SYSTEM"
+        Varchar entity_type "POST, FRIEND, SYSTEM, COMMENT"
         BigInt entity_id
         Varchar message
         Boolean is_read "Default: false"
