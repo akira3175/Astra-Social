@@ -4,6 +4,7 @@ import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
 import SearchPage from "./pages/Search";
+import FriendsPage from "./pages/Friends";
 import BasePage from "./pages/Base";
 import { CurrentUserProvider } from "./context/currentUserContext";
 import "./App.css";
@@ -22,6 +23,7 @@ function App() {
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/friends" element={<FriendsPage />} />
             {/* Thêm route mới ở đây, tự động có Navbar */}
           </Route>
         </Routes>
@@ -31,3 +33,4 @@ function App() {
 }
 
 export default App;
+
