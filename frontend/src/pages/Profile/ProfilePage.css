@@ -411,10 +411,91 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #ffffff;
     padding: 4px 12px;
-    background: #dbeafe;
-    color: #1d4ed8;
     border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* About Card Styles */
+.profile-about-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.profile-about-edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.profile-about-edit-btn:hover {
+    background: #f3f4f6;
+    color: #4f46e5;
+}
+
+.profile-about-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-about-bio {
+    margin-bottom: 8px;
+}
+
+.profile-about-bio p {
+    color: #374151;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.profile-about-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #374151;
+}
+
+.profile-about-item svg {
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.profile-about-item span {
+    font-size: 0.9375rem;
+}
+
+.profile-about-empty {
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    margin: 0;
+}
+
+.profile-about-add-btn {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: #4f46e5;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+}
+
+.profile-about-add-btn:hover {
+    background: #e5e7eb;
 }

@@ -1,5 +1,5 @@
 import { api } from "../configs/api";
-import type { UserProfileResponse } from "../types/user";
+import type { UserProfileResponse, UpdateProfileData } from "../types/user";
 import { transformUserProfile } from "./userService";
 
 /**
@@ -27,6 +27,19 @@ export const getProfileById = async (userId: number | string) => {
     }
 
     throw new Error(response.data.message || "Failed to get profile");
+};
+
+/**
+ * Update profile information
+ */
+export const updateProfile = async (data: UpdateProfileData) => {
+    const response = await api.patch<UserProfileResponse>(ENDPOINTS.PROFILE_ME, data);
+
+    if (response.data.success && response.data.data) {
+        return transformUserProfile(response.data.data);
+    }
+
+    throw new Error(response.data.message || "Failed to update profile");
 };
 
 /**
@@ -89,8 +102,8 @@ export const updateCoverPosition = async (position: number) => {
 
 export default {
     getProfileById,
+    updateProfile,
     uploadAvatar,
     uploadCover,
     updateCoverPosition,
 };
-

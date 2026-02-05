@@ -50,5 +50,22 @@ export interface User {
     background?: string;
     backgroundPosition?: number;
     bio?: string;
+    phone?: string;
+    address?: string;
+    birthDate?: string;
+    gender?: 'MALE' | 'FEMALE' | 'OTHER';
     isVerified?: boolean;
+}
+
+/**
+ * Data for updating profile
+ */
+export interface UpdateProfileData {
+    first_name?: string;
+    last_name?: string;
+    bio?: string;
+    phone?: string;
+    address?: string;
+    birth_date?: string;
+    gender?: 'MALE' | 'FEMALE' | 'OTHER';
 }

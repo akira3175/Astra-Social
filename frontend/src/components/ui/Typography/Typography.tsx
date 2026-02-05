@@ -15,7 +15,7 @@ export const Typography: React.FC<TypographyProps> = ({
     children,
     variant = "body1",
     component,
-    color = "inherit",
+    color = "",
     align = "left",
     gutterBottom = false,
     className = "",

@@ -78,6 +78,9 @@ class ProfileService
                 'avatar_url' => $profile->avatar_url,
                 'cover_url' => $profile->cover_url,
                 'cover_position' => $profile->cover_position,
+                'phone' => $profile->phone,
+                'address' => $profile->address,
+                'birth_date' => $profile->birth_date?->format('Y-m-d'),
                 'gender' => $profile->gender,
             ],
         ];
