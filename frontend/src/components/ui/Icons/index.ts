@@ -24,4 +24,12 @@ export {
     CrownIcon,
     BlockIcon,
     PlusIcon,
+    BellIcon,
+    HeartIcon,
+    HeartFilledIcon,
+    CommentIcon,
+    UserPlusIcon,
+    UserCheckIcon,
+    InfoIcon,
 } from "./Icons";
+

@@ -5,6 +5,7 @@ import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
 import SearchPage from "./pages/Search";
 import FriendsPage from "./pages/Friends";
+import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
 import { CurrentUserProvider } from "./context/currentUserContext";
 import "./App.css";
@@ -24,6 +25,7 @@ function App() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             {/* Thêm route mới ở đây, tự động có Navbar */}
           </Route>
         </Routes>
