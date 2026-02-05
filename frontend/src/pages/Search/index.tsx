@@ -1,57 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Avatar } from "../../components/ui";
+import { UserCard } from "../../components/common";
 import PostList from "../Home/components/PostList";
 import { searchUsers, searchPosts, type MockUser } from "./mockData";
 import type { Post } from "../../types/post";
 import "./SearchPage.css";
 
 type SearchTab = "all" | "users" | "posts";
-
-/**
- * User Card Component
- */
-const UserCard: React.FC<{ user: MockUser; onClick: () => void }> = ({ user, onClick }) => {
-    const displayName = `${user.lastName} ${user.firstName}`;
-
-    return (
-        <div className="user-card" onClick={onClick}>
-            <div className="user-card-avatar">
-                <Avatar
-                    src={user.avatarUrl || undefined}
-                    width={56}
-                    height={56}
-                >
-                    {displayName[0]?.toUpperCase() || "U"}
-                </Avatar>
-                {user.isVerified && (
-                    <span className="user-verified-badge">✓</span>
-                )}
-            </div>
-
-            <div className="user-card-info">
-                <div className="user-card-name">{displayName}</div>
-                {user.bio && (
-                    <div className="user-card-bio">{user.bio}</div>
-                )}
-                {user.mutualFriends > 0 && (
-                    <div className="user-card-mutual">
-                        {user.mutualFriends} bạn chung
-                    </div>
-                )}
-            </div>
-
-            <button
-                className="user-card-action"
-                onClick={(e) => {
-                    e.stopPropagation();
-                }}
-            >
-                Kết bạn
-            </button>
-        </div>
-    );
-};
 
 /**
  * Search Page Component
