@@ -31,5 +31,16 @@ export {
     UserPlusIcon,
     UserCheckIcon,
     InfoIcon,
+    DashboardIcon,
+    FlagIcon,
+    CheckCircleIcon,
+    TrashIcon,
+    EyeIcon,
+    FilterIcon,
+    ChartBarIcon,
+    TrendUpIcon,
+    RefreshIcon,
+    FileTextIcon,
 } from "./Icons";
+
 
