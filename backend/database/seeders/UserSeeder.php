@@ -27,6 +27,7 @@ class UserSeeder extends Seeder
                     'is_verified' => true,
                 ]
             );
+
         }
     }
 }
