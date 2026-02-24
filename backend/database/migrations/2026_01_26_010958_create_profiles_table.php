@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB; // Cần import DB để dùng SQL thuần
 
 return new class extends Migration
 {
@@ -25,6 +26,17 @@ return new class extends Migration
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
+
+        // 2. Tạo Trigger tự động thêm dòng vào profiles khi có user mới
+        DB::unprepared('
+            CREATE TRIGGER after_user_insert
+            AFTER INSERT ON users
+            FOR EACH ROW
+            BEGIN
+                INSERT INTO profiles (user_id)
+                VALUES (NEW.id);
+            END
+        ');
     }
 
     /**
@@ -32,6 +44,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Xóa trigger trước khi xóa bảng để tránh lỗi
+        DB::unprepared('DROP TRIGGER IF EXISTS after_user_insert');
         Schema::dropIfExists('profiles');
     }
 };
