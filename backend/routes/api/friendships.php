@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\FriendshipController;
+use App\Http\Controllers\FriendshipController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,6 +15,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('jwt.auth')->group(function () {
 
-    Route::post('/friendships/{userId}/request', [FriendshipController::class, 'sendRequest'])
-        ->where('userId', '[0-9]+');
+    Route::post('/friendships/request/{userId}', [FriendshipController::class, 'sendRequest']);
+    Route::post('/friendships/accept/{userId}',  [FriendshipController::class, 'acceptRequest']) ;
 });
