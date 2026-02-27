@@ -28,3 +28,33 @@
     - Trả về Token và thông tin User cơ bản.
 
 **Tables ảnh hưởng**: `users`, `auth_tokens`.
+
+## 1.3. Quy trình Lấy thông tin người dùng hiện tại (Get Current User / Me)
+**Mô tả**: Lấy thông tin chi tiết của user đang đăng nhập.
+**Input**: Bearer Token (Header).
+
+### Luồng xử lý:
+1. Middleware giải mã Token (JWT) để lấy `user_id`.
+2. Truy vấn bảng `Users` kết hợp (Join) với bảng `Profiles`.
+3. Trả về thông tin User (trừ password) và Profile tương ứng.
+
+**Tables ảnh hưởng**: `users`, `profiles`.
+
+## 1.4. Quy trình Quên mật khẩu (Forgot Password)
+**Mô tả**: User yêu cầu đặt lại mật khẩu khi bị quên.
+**Input**: Email.
+
+### Luồng xử lý:
+1.  **Yêu cầu mã (Request OTP)**:
+    -   User nhập Email đăng ký.
+    -   Kiểm tra Email có tồn tại trong hệ thống.
+    -   Sinh mã OTP/Token, lưu vào bảng `Auth_Tokens` (`type` = OTP_PASS).
+    -   Gửi Email chứa mã xác thực cho User.
+2.  **Đặt lại mật khẩu (Reset Password)**:
+    -   User nhập: Email, Mã xác thực (OTP), Mật khẩu mới.
+    -   Kiểm tra OTP trong bảng `Auth_Tokens` (đúng Email, chưa hết hạn, chưa dùng).
+    -   Mã hóa mật khẩu mới và Update vào bảng `Users`.
+    -   Đánh dấu OTP là đã sử dụng (`is_used` = true).
+    -   (Tùy chọn) Xóa các Refresh Token cũ để đăng xuất các phiên đăng nhập khác.
+
+**Tables ảnh hưởng**: `users`, `auth_tokens`.

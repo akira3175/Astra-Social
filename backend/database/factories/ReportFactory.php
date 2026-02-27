@@ -12,6 +12,8 @@ class ReportFactory extends Factory
     {
         return [
             'reporter_id'=> $this->faker->numberBetween(1,1),
+            'target_author_id'=> $this->faker->numberBetween(1,1),
+            'target_preview' => $this->faker->sentence(100),
             'target_type' => $this->faker->randomElement([
                 Report::TARGET_TYPE_POST,
                 Report::TARGET_TYPE_USER,

@@ -8,5 +8,6 @@ use Illuminate\Support\Facades\Route;
 
 // Protected routes
 Route::middleware('jwt.auth')->group(function () {
-	Route::get('/report', [ReportController::class, 'index']);
+	Route::get('/reports', [ReportController::class, 'index']);
+	Route::patch('/reports', [ReportController::class, 'handleStatus']);
 });

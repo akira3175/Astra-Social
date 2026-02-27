@@ -7,11 +7,27 @@
     border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
+/* Sections */
+.sidebar-section {
+    margin-bottom: 24px;
+}
+
+.sidebar-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
 .right-sidebar .section-title {
     font-size: 1rem;
     font-weight: 700;
     color: #1e293b;
-    margin-bottom: 16px;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -23,6 +39,35 @@
     height: 20px;
     background: linear-gradient(180deg, #4f46e5, #7c3aed);
     border-radius: 2px;
+}
+
+.section-link {
+    font-size: 0.85rem;
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.section-link:hover {
+    color: #7c3aed;
+}
+
+/* Suggestions List */
+.suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.suggestions-list .user-card {
+    padding: 16px;
+}
+
+/* Friends List */
+.friends-list {
+    display: flex;
+    flex-direction: column;
 }
 
 /* Friend Item */
