@@ -61,7 +61,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const commentInputRef = useRef<HTMLInputElement>(null);
-
+    const [showReportFrom, setShowReportForm] = useState(false);
     const isOwner = currentUser?.id?.toString() === post?.user_id?.toString();
     const hasImages = post?.attachments?.some(a => a.file_type === "IMAGE") ?? false;
     const images = post?.attachments?.filter(a => a.file_type === "IMAGE") ?? [];
@@ -142,6 +142,10 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
         setShowDeleteConfirm(true);
     };
 
+    const handleReportClick =()=>{
+        setShowReportForm(true);
+    }
+
     const handleConfirmDelete = async () => {
         if (!post) return;
         setIsLoading(true);
@@ -218,6 +222,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                                 isOwner={isOwner}
                                 onEdit={handleEditClick}
                                 onDelete={handleDeleteClick}
+                                onReport={handleReportClick}
                             />
                         )}
                     </div>
@@ -299,6 +304,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                             />
                         </div>
                     </div>
+
                 </div>
             </div>
 

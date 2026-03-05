@@ -16,3 +16,5 @@ require __DIR__ . '/api/profile.php';
 require __DIR__ . '/api/posts.php';
 require __DIR__ . '/api/report.php';
 require __DIR__ . '/api/friendships.php';
+require __DIR__ . '/api/role.php';
+require __DIR__ . '/api/permission.php';

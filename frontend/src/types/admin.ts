@@ -99,13 +99,21 @@ export interface Role {
     description: string;
     is_default: boolean;
     user_count: number;
-    permissions: number[];   // permission IDs
+    permissions: Permission[];
     created_at: string;
 }
 
+export interface RolesResponse{
+    success: boolean,
+    data: Role[],
+}
 export interface ReportsResponse{
     success: boolean,
     data: Report[],
     pagination: Pagination,
 }
 
+export interface PermissionsResponse{
+    success: boolean,
+    data: Permission[],
+}

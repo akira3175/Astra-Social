@@ -34,8 +34,8 @@ const AdminRoles: React.FC = () => {
     const loadData = async () => {
         try {
             const [rolesData, permsData] = await Promise.all([getRoles(), getPermissions()]);
-            setRoles(rolesData);
-            setPermissions(permsData);
+            setRoles(rolesData.data);
+            setPermissions(permsData.data);
         } catch (err) {
             console.error("Error loading roles:", err);
         } finally {
@@ -150,7 +150,7 @@ const AdminRoles: React.FC = () => {
             {/* Roles Grid */}
             <div className="roles-grid">
                 {roles.map((role) => (
-                    <div key={role.id} className={`role-card ${role.is_default ? "is-default" : ""}`}>
+                    <div key={`role_${role.id}`} className={`role-card ${role.is_default ? "is-default" : ""}`}>
                         <div className="role-card-top">
                             <div className="role-card-info">
                                 <h3>
@@ -190,8 +190,8 @@ const AdminRoles: React.FC = () => {
 
                         <div className="role-card-perms">
                             {role.permissions.slice(0, 5).map((pid) => (
-                                <span key={pid} className="role-perm-tag">
-                                    {getPermLabel(pid)}
+                                <span key={`role_${role.id}_permission_${pid.id}`} className="role-perm-tag">
+                                    {getPermLabel(pid.slug)}
                                 </span>
                             ))}
                             {role.permissions.length > 5 && (

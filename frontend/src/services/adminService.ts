@@ -8,11 +8,15 @@ import type {
     DashboardStats,
     DailyActivity,
     Permission,
+    PermissionsResponse,
     Role,
+    RolesResponse,
 } from "../types/admin";
 
 const ENDPOINTS = {
     REPORTS : "/reports",
+    ROLES : "/roles",
+    PERMISSIONS: '/permissions',
 };
 
 // ============ Mock Data ============
@@ -327,11 +331,12 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
     await delay(300);
+    let reports = await getReports(null,null, "ALL", 'PENDING', '');
     return {
         total_users: 1_247,
         total_posts: 8_563,
         total_comments: 24_891,
-        pending_reports: mockReports.filter((r) => r.status === "PENDING").length,
+        pending_reports: reports.pagination.total,
         user_growth: 12.5,
         post_growth: 8.3,
         comment_growth: 15.2,
@@ -462,13 +467,13 @@ export const changeUserRole = async (id: number, role: string): Promise<AdminUse
 // ============ Roles & Permissions CRUD ============
 
 export const getPermissions = async (): Promise<Permission[]> => {
-    await delay(200);
-    return [...mockPermissions];
+    const response = await api.get<PermissionsResponse>(ENDPOINTS.PERMISSIONS);
+    return response.data;
 };
 
 export const getRoles = async (): Promise<Role[]> => {
-    await delay(300);
-    return mockRoles.map(r => ({ ...r, permissions: [...r.permissions] }));
+    const response = await api.get<RolesResponse>(ENDPOINTS.ROLES);  
+    return response.data;
 };
 
 export const createRole = async (data: { name: string; description: string; permissions: number[] }): Promise<Role> => {

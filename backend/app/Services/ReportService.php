@@ -74,6 +74,7 @@ class ReportService{
         if ($targetType!=='ALL'){
             $query = $query->where('target_type', $targetType);
         }
+
         if ($status!=='ALL'){
             $query = $query->where('status', $status);
         }

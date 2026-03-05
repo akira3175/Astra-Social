@@ -134,8 +134,6 @@ const AdminDashboard: React.FC = () => {
                         <span className="stat-card-label">Báo cáo chờ xử lý</span>
                         <span className="stat-card-value">{stats.pending_reports}</span>
                         <span className={`stat-card-trend ${stats.report_change >= 0 ? "down" : "up"}`}>
-                            <TrendUpIcon size={14} style={stats.report_change >= 0 ? { transform: "scaleY(-1)" } : {}} />
-                            {stats.report_change > 0 ? "+" : ""}{stats.report_change}%
                         </span>
                     </div>
                     <div className="stat-card-icon reports">
