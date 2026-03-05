@@ -100,6 +100,11 @@ class AuthService
         // Generate tokens
         $tokens = $this->generateTokens($user);
 
+        Profile::firstOrCreate(
+            ['user_id' => $user->id],
+            []
+        );
+
         return [
             'success' => true,
             'data' => [
