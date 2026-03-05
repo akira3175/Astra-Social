@@ -1,4 +1,6 @@
+import { api } from "../configs/api";
 import type {
+    ReportsResponse,
     AdminPost,
     AdminComment,
     AdminReport,
@@ -8,6 +10,10 @@ import type {
     Permission,
     Role,
 } from "../types/admin";
+
+const ENDPOINTS = {
+    REPORTS : "/reports",
+};
 
 // ============ Mock Data ============
 
@@ -348,9 +354,23 @@ export const getAdminComments = async (): Promise<AdminComment[]> => {
     return [...mockComments];
 };
 
-export const getReports = async (): Promise<AdminReport[]> => {
-    await delay(300);
-    return [...mockReports];
+export const getReports = async (
+    page: number,
+    perPage: number,
+    targetType: string,
+    status: string,
+    searchQuery: string
+    ): Promise<ReportsResponse> => {
+    const response = await api.get<ReportsResponse>(ENDPOINTS.REPORTS,{
+        params:{
+            page:page,
+            per_page: perPage,
+            target_type: targetType,
+            status: status,
+            search: searchQuery
+        }
+    });
+    return response.data;
 };
 
 export const getRecentReports = async (limit: number = 5): Promise<AdminReport[]> => {
@@ -369,24 +389,16 @@ export const getRecentPosts = async (limit: number = 5): Promise<AdminPost[]> =>
         .slice(0, limit);
 };
 
-export const resolveReport = async (id: number): Promise<AdminReport> => {
+export const handleStatus = async (id: number, status: string, userId: number): Promise<AdminReport> => {
     await delay(300);
-    const report = mockReports.find((r) => r.id === id);
-    if (report) {
-        report.status = "RESOLVED";
-        report.resolved_at = new Date().toISOString();
-    }
-    return report!;
-};
-
-export const rejectReport = async (id: number): Promise<AdminReport> => {
-    await delay(300);
-    const report = mockReports.find((r) => r.id === id);
-    if (report) {
-        report.status = "REJECTED";
-        report.resolved_at = new Date().toISOString();
-    }
-    return report!;
+    const response = await api.patch<ReportsResponse>(ENDPOINTS.REPORTS,null,{
+        params:{
+            id:id,
+            status:status,
+            user_id: userId | null
+        }
+    });
+    return response.data;
 };
 
 export const deleteAdminPost = async (id: number): Promise<AdminPost> => {
@@ -502,8 +514,7 @@ export default {
     getReports,
     getRecentReports,
     getRecentPosts,
-    resolveReport,
-    rejectReport,
+    handleStatus,
     deleteAdminPost,
     restoreAdminPost,
     deleteAdminComment,

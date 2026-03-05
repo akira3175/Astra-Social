@@ -81,9 +81,11 @@ const AdminLayout: React.FC = () => {
                         >
                             <item.icon size={20} className="admin-nav-icon" />
                             <span className="admin-nav-label">{item.label}</span>
+                            {/* 
                             {item.badge && (
                                 <span className="admin-nav-badge">7</span>
-                            )}
+                            )} 
+                            */}
                         </NavLink>
                     ))}
                 </nav>

@@ -15,6 +15,7 @@ class UserSeeder extends Seeder
     {
         // Lấy role Dev
         $devRole = Role::where('name', 'Dev')->first();
+        $userRole = Role::where('name', 'User')->first();
 
         if ($devRole) {
             User::firstOrCreate(
@@ -27,6 +28,19 @@ class UserSeeder extends Seeder
                     'is_verified' => true,
                 ]
             );
+
         }
+        if ($userRole) {
+        User::firstOrCreate(
+            ['username' => 'user1'],
+            [
+                'email' => 'user1@example.com',
+                'password' => 'password',
+                'role_id' => $userRole->id,
+                'is_active' => true,
+                'is_verified' => false,
+            ]
+        );
+    }
     }
 }

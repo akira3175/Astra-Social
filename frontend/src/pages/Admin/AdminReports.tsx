@@ -6,13 +6,14 @@ import {
     EyeIcon,
     FlagIcon,
 } from "../../components/ui";
-import { getReports, resolveReport, rejectReport } from "../../services/adminService";
+import { getReports, handleStatus } from "../../services/adminService";
 import type { AdminReport } from "../../types/admin";
 import "./AdminTable.css";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 type TabType = "ALL" | "POST" | "COMMENT";
 
-const ITEMS_PER_PAGE = 5;
 
 const AdminReports: React.FC = () => {
     const [reports, setReports] = useState<AdminReport[]>([]);
@@ -21,17 +22,27 @@ const AdminReports: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>("ALL");
     const [statusFilter, setStatusFilter] = useState<string>("ALL");
     const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+    const [total, setTotal] = useState<number>(10);
+
+    const totalPages = Math.ceil(total / itemsPerPage);
 
     useEffect(() => {
-        loadReports();
-    }, []);
+        loadReports(currentPage, activeTab, statusFilter, searchQuery);
+    }, [currentPage, activeTab,  statusFilter, searchQuery]);
 
-    const loadReports = async () => {
+    const loadReports = async (page: number,
+        activeTab: string,
+        statusFilter: string,
+        searchQuery: string
+        ) => {
         setLoading(true);
         try {
-            const data = await getReports();
-            setReports(data);
+            const data = await getReports(page,null, activeTab, statusFilter, searchQuery);
+            setItemsPerPage(data.pagination.per_page);
+            setTotal(data.pagination.total);
+            setReports(data.data);
         } catch (error) {
             console.error("Error loading reports:", error);
         } finally {
@@ -39,50 +50,49 @@ const AdminReports: React.FC = () => {
         }
     };
 
-    const filteredReports = useMemo(() => {
-        setCurrentPage(1);
-        return reports.filter((report) => {
-            const matchesSearch = !searchQuery ||
-                report.target_preview.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                report.reporter.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                report.reason.toLowerCase().includes(searchQuery.toLowerCase());
-
-            const matchesTab = activeTab === "ALL" || report.target_type === activeTab;
-            const matchesStatus = statusFilter === "ALL" || report.status === statusFilter;
-
-            return matchesSearch && matchesTab && matchesStatus;
-        });
-    }, [reports, searchQuery, activeTab, statusFilter]);
-
-    const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
-    const paginatedReports = filteredReports.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
-    );
-
-    const tabCounts = useMemo(() => ({
-        ALL: reports.length,
-        POST: reports.filter((r) => r.target_type === "POST").length,
-        COMMENT: reports.filter((r) => r.target_type === "COMMENT").length,
-    }), [reports]);
-
     const pendingCount = useMemo(
         () => reports.filter((r) => r.status === "PENDING").length,
         [reports]
     );
 
     const handleResolve = async (id: number) => {
-        await resolveReport(id);
-        setReports((prev) =>
-            prev.map((r) => r.id === id ? { ...r, status: "RESOLVED" as const, resolved_at: new Date().toISOString() } : r)
-        );
+        const user = JSON.parse(localStorage.getItem("user"));
+        const result = await handleStatus(id, "RESOLVED", user.id);
+        if(result.success){
+            setReports((i)=>i.map((report)=>(
+                report.id===id ? 
+                    {...report, status: "RESOLVED"} :
+                    report
+                ))
+            );
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã xử lý báo cáo',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
     };
 
     const handleReject = async (id: number) => {
-        await rejectReport(id);
-        setReports((prev) =>
-            prev.map((r) => r.id === id ? { ...r, status: "REJECTED" as const, resolved_at: new Date().toISOString() } : r)
-        );
+        const result = await handleStatus(id, "REJECTED");
+        if(result.success){
+            setReports((i)=>i.map((report)=>(
+                report.id===id ? 
+                    {...report, status: "REJECTED"} :
+                    report
+                ))
+            );
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã từ chối báo cáo',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+
     };
 
     const formatDate = (dateStr: string) => {
@@ -113,21 +123,21 @@ const AdminReports: React.FC = () => {
                     onClick={() => setActiveTab("ALL")}
                 >
                     Tất cả
-                    <span className="admin-tab-badge">{tabCounts.ALL}</span>
+                    {/*<span className="admin-tab-badge">{tabCounts.ALL}</span>*/}
                 </button>
                 <button
                     className={`admin-tab ${activeTab === "POST" ? "active" : ""}`}
                     onClick={() => setActiveTab("POST")}
                 >
                     Bài viết
-                    <span className="admin-tab-badge">{tabCounts.POST}</span>
+                    {/*<span className="admin-tab-badge">{tabCounts.POST}</span>*/}
                 </button>
                 <button
                     className={`admin-tab ${activeTab === "COMMENT" ? "active" : ""}`}
                     onClick={() => setActiveTab("COMMENT")}
                 >
                     Bình luận
-                    <span className="admin-tab-badge">{tabCounts.COMMENT}</span>
+                    {/*<span className="admin-tab-badge">{tabCounts.COMMENT}</span>*/}
                 </button>
             </div>
 
@@ -182,7 +192,7 @@ const AdminReports: React.FC = () => {
                                     ))}
                                 </tr>
                             ))
-                        ) : filteredReports.length === 0 ? (
+                        ) : reports.length === 0 ? (
                             <tr>
                                 <td colSpan={8}>
                                     <div className="admin-empty">
@@ -192,7 +202,7 @@ const AdminReports: React.FC = () => {
                                 </td>
                             </tr>
                         ) : (
-                            paginatedReports.map((report) => (
+                            reports.map((report) => (
                                 <tr key={report.id}>
                                     <td className="cell-number">#{report.id}</td>
                                     <td>
@@ -205,7 +215,10 @@ const AdminReports: React.FC = () => {
                                     </td>
                                     <td>
                                         <span className={`status-badge ${report.target_type.toLowerCase()}`}>
-                                            {report.target_type === "POST" ? "Bài viết" : "Bình luận"}
+                                            {report.target_type === "POST" ? "Bài viết" :
+                                            report.target_type === "COMMENT" ? "Bình luận":
+                                            "Người dùng"
+                                            }
                                         </span>
                                     </td>
                                     <td>
@@ -254,25 +267,26 @@ const AdminReports: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                {!loading && filteredReports.length > 0 && (
+                {!loading && reports.length > 0 && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
-                            Hiển thị {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredReports.length)} / {filteredReports.length} báo cáo
+                            Hiển thị {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, reports.length)} báo cáo
                             {" · "}{pendingCount} đang chờ xử lý
                         </span>
                         <div className="admin-pagination-controls">
+                        {currentPage>1 &&(
                             <button
+                                onClick={()=>setCurrentPage(currentPage-1)}
                                 className="admin-pagination-btn nav-btn"
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(p => p - 1)}
                             >‹</button>
+                        )}
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
                                 if (totalPages <= 7 || page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
                                     return (
                                         <button
                                             key={page}
+                                            onClick={()=>setCurrentPage(page)}
                                             className={`admin-pagination-btn ${page === currentPage ? "active" : ""}`}
-                                            onClick={() => setCurrentPage(page)}
                                         >{page}</button>
                                     );
                                 }
@@ -280,11 +294,12 @@ const AdminReports: React.FC = () => {
                                 if (page === totalPages - 1 && currentPage < totalPages - 3) return <span key="e2" className="admin-pagination-ellipsis">…</span>;
                                 return null;
                             })}
-                            <button
-                                className="admin-pagination-btn nav-btn"
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(p => p + 1)}
-                            >›</button>
+                            {currentPage<totalPages &&(
+                                <button
+                                    onClick={()=>setCurrentPage(currentPage+1)}
+                                    className="admin-pagination-btn nav-btn"
+                                >›</button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -292,7 +307,8 @@ const AdminReports: React.FC = () => {
 
             {/* Detail Modal */}
             {selectedReport && (
-                <div className="admin-detail-overlay" onClick={() => setSelectedReport(null)}>
+                <div className="admin-detail-overlay" onClick={() => setSelectedReport(null)}
+                >
                     <div className="admin-detail-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="admin-detail-header">
                             <h3 className="admin-detail-title">Chi tiết báo cáo #{selectedReport.id}</h3>
@@ -308,12 +324,12 @@ const AdminReports: React.FC = () => {
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Loại</span>
                                 <span className="admin-detail-value">
-                                    {selectedReport.target_type === "POST" ? "Bài viết" : "Bình luận"} #{selectedReport.target_id}
+                                    {selectedReport.target_type === "POST" ? "Bài viết" : "Bình luận"} 
                                 </span>
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Tác giả</span>
-                                <span className="admin-detail-value">@{selectedReport.target_author}</span>
+                                <span className="admin-detail-value">@{selectedReport.target_author.username}</span>
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Nội dung</span>
@@ -353,7 +369,7 @@ const AdminReports: React.FC = () => {
                                         }}
                                         onClick={() => {
                                             handleResolve(selectedReport.id);
-                                            setSelectedReport({ ...selectedReport, status: "RESOLVED" });
+                                            setSelectedReport(null);
                                         }}
                                     >
                                         ✓ Xử lý vi phạm
@@ -366,7 +382,7 @@ const AdminReports: React.FC = () => {
                                         }}
                                         onClick={() => {
                                             handleReject(selectedReport.id);
-                                            setSelectedReport({ ...selectedReport, status: "REJECTED" });
+                                            setSelectedReport(null);
                                         }}
                                     >
                                         ✕ Từ chối báo cáo
