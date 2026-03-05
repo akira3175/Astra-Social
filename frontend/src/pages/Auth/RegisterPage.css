@@ -1,0 +1,271 @@
+/* Register Page Styles */
+
+.register-container {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.register-wrapper {
+    display: flex;
+    max-width: 1200px;
+    width: 100%;
+    gap: 60px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Left side - Branding */
+.register-branding {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.register-branding-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 30px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.register-branding-text {
+    margin-top: 24px;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    max-width: 400px;
+    line-height: 1.6;
+}
+
+/* Register Form Styles */
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.register-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.register-header-brand {
+    display: none;
+    color: #4f46e5;
+    font-weight: 700;
+}
+
+/* Step Indicator */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.step-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #d1d5db;
+    transition: all 0.3s ease;
+}
+
+.step-dot.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 12px;
+    height: 12px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.step-dot.completed {
+    background: #10b981;
+}
+
+.step-label {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin-left: 4px;
+    font-weight: 500;
+}
+
+/* Error Alert */
+.register-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    color: #dc2626;
+    font-size: 0.875rem;
+}
+
+/* Success Alert */
+.register-success {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    color: #16a34a;
+    font-size: 0.875rem;
+}
+
+/* OTP Input */
+.otp-input-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 8px 0;
+}
+
+.otp-input-container input {
+    width: 48px;
+    height: 56px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    outline: none;
+    transition: all 0.2s ease;
+    background: #f9fafb;
+    color: #1f2937;
+    font-family: 'Courier New', monospace;
+}
+
+.otp-input-container input:focus {
+    border-color: #667eea;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.otp-resend {
+    text-align: center;
+    margin-top: 4px;
+}
+
+.otp-resend button {
+    background: none;
+    border: none;
+    color: #4f46e5;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+    padding: 4px 8px;
+}
+
+.otp-resend button:hover:not(:disabled) {
+    color: #4338ca;
+    text-decoration: underline;
+}
+
+.otp-resend button:disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.otp-description {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 4px;
+}
+
+.otp-email {
+    font-weight: 600;
+    color: #4f46e5;
+}
+
+/* Navigation buttons */
+.register-nav-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.register-nav-buttons .btn-back {
+    flex: 0 0 auto;
+}
+
+/* Links */
+.register-login-link {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 0.9375rem;
+    color: #6b7280;
+}
+
+.register-login-link a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 4px;
+    transition: color 0.2s ease;
+}
+
+.register-login-link a:hover {
+    color: #4338ca;
+    text-decoration: underline;
+}
+
+/* Step transition */
+.step-content {
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .register-branding {
+        display: none;
+    }
+
+    .register-header-brand {
+        display: block;
+    }
+
+    .register-wrapper {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .register-container {
+        padding: 16px;
+    }
+
+    .otp-input-container input {
+        width: 40px;
+        height: 48px;
+        font-size: 1.25rem;
+    }
+}

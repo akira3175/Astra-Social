@@ -112,7 +112,7 @@ export default function LoginPage() {
                             />
 
                             <Box className="login-forgot-link">
-                                <a href="/forgot-password">Quên mật khẩu?</a>
+                                <a href="/forgot-password" onClick={(e) => { e.preventDefault(); navigate("/forgot-password"); }}>Quên mật khẩu?</a>
                             </Box>
 
                             <Button
