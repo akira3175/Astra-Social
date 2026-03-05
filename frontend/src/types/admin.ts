@@ -102,3 +102,10 @@ export interface Role {
     permissions: number[];   // permission IDs
     created_at: string;
 }
+
+export interface ReportsResponse{
+    success: boolean,
+    data: Report[],
+    pagination: Pagination,
+}
+

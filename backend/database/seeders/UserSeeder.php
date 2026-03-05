@@ -28,6 +28,7 @@ class UserSeeder extends Seeder
                     'is_verified' => true,
                 ]
             );
+
         }
         if ($userRole) {
         User::firstOrCreate(
