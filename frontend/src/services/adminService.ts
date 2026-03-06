@@ -16,6 +16,7 @@ import type {
 const ENDPOINTS = {
     REPORTS : "/reports",
     ROLES : "/roles",
+    ROLES_BY_ID: (id:number)=>`/roles/${id}`,
     PERMISSIONS: '/permissions',
 };
 
@@ -477,38 +478,30 @@ export const getRoles = async (): Promise<Role[]> => {
 };
 
 export const createRole = async (data: { name: string; description: string; permissions: number[] }): Promise<Role> => {
-    await delay(400);
     const newRole: Role = {
-        id: nextRoleId++,
         name: data.name,
         description: data.description,
-        is_default: false,
-        user_count: 0,
         permissions: [...data.permissions],
-        created_at: new Date().toISOString(),
     };
-    mockRoles.push(newRole);
-    return { ...newRole };
+    const response = await api.post<RolesResponse>(ENDPOINTS.ROLES, newRole);
+    return response.data;
 };
 
 export const updateRole = async (id: number, data: { name?: string; description?: string; permissions?: number[] }): Promise<Role> => {
-    await delay(400);
-    const role = mockRoles.find(r => r.id === id);
-    if (!role) throw new Error("Role not found");
-    if (data.name !== undefined) role.name = data.name;
-    if (data.description !== undefined) role.description = data.description;
-    if (data.permissions !== undefined) role.permissions = [...data.permissions];
-    return { ...role, permissions: [...role.permissions] };
+    const roleEdited: Role = {
+        id: id,
+        name: data.name,
+        description: data.description,
+        permissions: [...data.permissions],
+    };
+    const response = await api.patch<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id), roleEdited);
+    console.log(response.data);
+    return response.data;
 };
 
-export const deleteRole = async (id: number): Promise<{ success: boolean; error?: string }> => {
-    await delay(400);
-    const role = mockRoles.find(r => r.id === id);
-    if (!role) return { success: false, error: "Vai trò không tồn tại" };
-    if (role.is_default) return { success: false, error: "Không thể xóa vai trò mặc định" };
-    if (role.user_count > 0) return { success: false, error: `Có ${role.user_count} người dùng đang sử dụng vai trò này` };
-    mockRoles = mockRoles.filter(r => r.id !== id);
-    return { success: true };
+export const deleteRole = async (id: number): Promise<Role> => {
+    const response = await api.delete<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id));
+    return response.data;
 };
 
 export default {

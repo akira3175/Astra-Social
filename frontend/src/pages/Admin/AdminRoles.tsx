@@ -24,7 +24,7 @@ const AdminRoles: React.FC = () => {
     const [editingRole, setEditingRole] = useState<Role | null>(null);
     const [formName, setFormName] = useState("");
     const [formDesc, setFormDesc] = useState("");
-    const [formPerms, setFormPerms] = useState<Set<number>>(new Set());
+    const [formPerms, setFormPerms] = useState<number[]>([]);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -57,7 +57,7 @@ const AdminRoles: React.FC = () => {
         setEditingRole(null);
         setFormName("");
         setFormDesc("");
-        setFormPerms(new Set());
+        setFormPerms([]);
         setShowModal(true);
     };
 
@@ -65,28 +65,27 @@ const AdminRoles: React.FC = () => {
         setEditingRole(role);
         setFormName(role.name);
         setFormDesc(role.description);
-        setFormPerms(new Set(role.permissions));
+        setFormPerms(role.permissions.map(p=> p.id));
         setShowModal(true);
     };
 
     const togglePerm = (id: number) => {
         setFormPerms((prev) => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
+            let isChecked = prev.includes(id);
+            if(isChecked)
+                return prev.filter(p=>p!==id);
+            return [...prev, id];    
         });
     };
 
     const toggleGroup = (groupPerms: Permission[]) => {
-        const allSelected = groupPerms.every((p) => formPerms.has(p.id));
+        const allSelected = groupPerms.every((p) => formPerms.includes(p.id));
+        const groupPermsIds = groupPerms.map(g=>g.id);
         setFormPerms((prev) => {
-            const next = new Set(prev);
-            groupPerms.forEach((p) => {
-                if (allSelected) next.delete(p.id);
-                else next.add(p.id);
-            });
-            return next;
+            if (allSelected){
+                return prev.filter(p=> !groupPermsIds.includes(p));
+            }
+            return [...prev, ...groupPermsIds.filter(g=> !prev.includes(g))];
         });
     };
 
@@ -94,19 +93,28 @@ const AdminRoles: React.FC = () => {
         if (!formName.trim()) return;
         setSaving(true);
         try {
+            let result;
             if (editingRole) {
-                await updateRole(editingRole.id, {
+                result = await updateRole(editingRole.id, {
                     name: formName.trim(),
-                    description: formDesc.trim(),
+                    description: formDesc?.trim() | '',
                     permissions: [...formPerms],
                 });
-            } else {
-                await createRole({
+            } 
+            else {
+                result = await createRole({
                     name: formName.trim(),
-                    description: formDesc.trim(),
+                    description: formDesc?.trim() | '',
                     permissions: [...formPerms],
                 });
             }
+            if(!result.success){
+                setError(result.errors);
+                setTimeout(()=>{
+                    setError(null);
+                },3000);
+            }
+
             await loadData();
             setShowModal(false);
         } catch (err) {
@@ -119,8 +127,8 @@ const AdminRoles: React.FC = () => {
     const handleDelete = async (id: number) => {
         const result = await deleteRole(id);
         if (!result.success) {
-            setError(result.error || "Lỗi không xác định");
-            setTimeout(() => setError(null), 3500);
+            setError(result.errors);
+            setTimeout(() => setError(null), 3000);
             return;
         }
         await loadData();
@@ -155,7 +163,6 @@ const AdminRoles: React.FC = () => {
                             <div className="role-card-info">
                                 <h3>
                                     {role.name}
-                                    {role.is_default && <span className="role-default-badge">Mặc định</span>}
                                 </h3>
                                 <p>{role.description}</p>
                             </div>
@@ -237,24 +244,24 @@ const AdminRoles: React.FC = () => {
                                     type="text"
                                     className="roles-form-input"
                                     placeholder="Mô tả ngắn gọn về vai trò"
-                                    value={formDesc}
+                                    value={formDesc ??''}
                                     onChange={(e) => setFormDesc(e.target.value)}
                                 />
                             </div>
 
                             <div className="roles-form-group">
-                                <label>Quyền hạn ({formPerms.size}/{permissions.length})</label>
+                                <label>Quyền hạn ({formPerms.length}/{permissions.length})</label>
                                 <div className="perm-matrix">
                                     {Object.entries(permGroups).map(([group, groupPerms]) => {
-                                        const allSelected = groupPerms.every((p) => formPerms.has(p.id));
-                                        const someSelected = groupPerms.some((p) => formPerms.has(p.id));
+                                        const allSelected = groupPerms.every((p) => formPerms.includes(p.id));
+                                        const someSelected = groupPerms.some((p) => formPerms.includes(p.id));
                                         return (
                                             <div key={group} className="perm-group">
                                                 <div className="perm-group-header" onClick={() => toggleGroup(groupPerms)}>
                                                     <span className="perm-group-name">
                                                         {group}
                                                         <span className="perm-group-count">
-                                                            {groupPerms.filter((p) => formPerms.has(p.id)).length}/{groupPerms.length}
+                                                            {groupPerms.filter((p) => formPerms.includes(p.id)).length}/{groupPerms.length}
                                                         </span>
                                                     </span>
                                                     <button
@@ -271,7 +278,7 @@ const AdminRoles: React.FC = () => {
                                                             className="perm-item"
                                                             onClick={() => togglePerm(perm.id)}
                                                         >
-                                                            <div className={`perm-checkbox ${formPerms.has(perm.id) ? "checked" : ""}`} />
+                                                            <div className={`perm-checkbox ${formPerms.includes(perm.id) ? "checked" : ""}`} />
                                                             <div className="perm-detail">
                                                                 <div className="perm-slug">{perm.slug}</div>
                                                                 <div className="perm-desc">{perm.description}</div>
