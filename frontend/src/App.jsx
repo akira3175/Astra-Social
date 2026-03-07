@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { LoginPage } from "./pages/Auth";
+import { LoginPage, ProtectedRoute } from "./pages/Auth";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
@@ -8,12 +8,13 @@ import FriendsPage from "./pages/Friends";
 import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
 import { AdminLayout, AdminDashboard, AdminPosts, AdminComments, AdminReports, AdminRoles, AdminUsers } from "./pages/Admin";
-import { CurrentUserProvider } from "./context/currentUserContext";
+import { CurrentUserProvider, useCurrentUser } from "./context/currentUserContext";
 import "./App.css";
 
-function App() {
+
+const RouteApp=()=>{
+  const context = useCurrentUser();
   return (
-    <CurrentUserProvider>
       <Router>
         <Routes>
           {/* Public routes - không có Navbar */}
@@ -31,16 +32,27 @@ function App() {
           </Route>
 
           {/* Admin routes - có AdminLayout riêng */}
-          <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/posts" element={<AdminPosts />} />
-            <Route path="/admin/comments" element={<AdminComments />} />
-            <Route path="/admin/reports" element={<AdminReports />} />
-            <Route path="/admin/roles" element={<AdminRoles />} />
+
+          <Route element={<ProtectedRoute user={context.currentUser}
+                                          isLoading={context.isLoading}
+          />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/posts" element={<AdminPosts />} />
+              <Route path="/admin/comments" element={<AdminComments />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/admin/roles" element={<AdminRoles />} />
+            </Route>
           </Route>
         </Routes>
       </Router>
+  );
+}
+function App() {
+  return (
+    <CurrentUserProvider>
+      <RouteApp/>
     </CurrentUserProvider>
   );
 }

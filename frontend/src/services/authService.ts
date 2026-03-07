@@ -34,7 +34,6 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
     );
 
     const { data } = response;
-
     if (data.success && data.data) {
         // Save tokens to localStorage
         tokenService.setTokens({

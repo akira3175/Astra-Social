@@ -1,17 +1,11 @@
-/**
- * User Types
- * Types related to user profile and user data
- */
+import type {Role} from "./admin";
 
-/**
- * API response types from /profile/me
- */
 export interface UserProfileApiResponse {
     user: {
         id: number;
         username: string;
         email: string;
-        role: string | null;
+        role: Role | null;
         is_active: boolean;
         is_verified: boolean;
         last_login: string | null;

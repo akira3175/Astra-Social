@@ -3,18 +3,20 @@ import { Navigate, Outlet } from "react-router-dom";
 import { UserProfileApiResponse } from "../types/user";
 
 interface ProtectedRouteProps {
+  isLoading: boolean;
   user: User | null;
-  role?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, role }) => {
-  console.log(user);
-  console.log(role);
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, isLoading }) => {
+  if (isLoading)
+    return <div>Loading...</div>;
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-
-  if (role && user.username !== role) {
+  const allowed = ['Admin', 'Dev', 'Mod'];
+  
+  if (!allowed.includes(user.role.name)) {
     return <Navigate to="/" replace />;
   }
 

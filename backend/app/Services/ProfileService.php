@@ -30,7 +30,7 @@ class ProfileService
                 'id' => $user->id,
                 'username' => $user->username,
                 'email' => $user->email,
-                'role' => $user->role?->name,
+                'role' => $user->role,
                 'is_active' => $user->is_active,
                 'is_verified' => $user->is_verified,
                 'last_login' => $user->last_login,
