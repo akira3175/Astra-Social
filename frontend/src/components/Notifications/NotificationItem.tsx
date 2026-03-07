@@ -53,12 +53,12 @@ const getNotificationLink = (notification: Notification): string => {
     switch (notification.type) {
         case "LIKE":
         case "COMMENT":
-            return `/post/${notification.entityId}`;
+            return `/post/${notification.entity_id}`;
         case "REPLY":
-            return `/post/${notification.entityId}`;
+            return `/post/${notification.entity_id}`;
         case "FRIEND_REQ":
         case "FRIEND_ACCEPT":
-            return `/profile/${notification.actorId}`;
+            return `/profile/${notification.actor_id}`;
         case "SYSTEM":
         default:
             return "/notifications";
@@ -100,7 +100,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onCli
                     <p className="notification-message">
                         <span className="actor-name">{actorName}</span> {notification.message}
                     </p>
-                    <span className="notification-time">{getTimeAgo(notification.createdAt)}</span>
+                    <span className="notification-time">{getTimeAgo(notification.created_at)}</span>
                 </div>
                 {!notification.isRead && <div className="notification-unread-dot" />}
             </Link>

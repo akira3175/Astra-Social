@@ -404,6 +404,7 @@ export const handleStatus = async (id: number, status: string, userId: number): 
             user_id: userId | null
         }
     });
+    console.log(response);
     return response.data;
 };
 
@@ -495,7 +496,6 @@ export const updateRole = async (id: number, data: { name?: string; description?
         permissions: [...data.permissions],
     };
     const response = await api.patch<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id), roleEdited);
-    console.log(response.data);
     return response.data;
 };
 

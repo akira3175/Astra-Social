@@ -7,6 +7,10 @@ import type {
     EntityType,
 } from "../types/notification";
 
+const ENDPOINTS = {
+    NOTI : "/noti",
+};
+
 // Mock data for development (backend không có API notifications)
 const mockNotifications: Notification[] = [
     {
@@ -122,27 +126,17 @@ const mockNotifications: Notification[] = [
 const USE_MOCK = true;
 
 export const getNotifications = async (
+    user_id: number,
     page: number = 1,
     limit: number = 10
-): Promise<NotificationsResponse> => {
-    if (USE_MOCK) {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        const start = (page - 1) * limit;
-        const end = start + limit;
-        const data = mockNotifications.slice(start, end);
-        return {
-            success: true,
-            data,
-            meta: {
-                currentPage: page,
-                lastPage: Math.ceil(mockNotifications.length / limit),
-                total: mockNotifications.length,
-            },
-        };
-    }
-
-    const response = await api.get(`/notifications?page=${page}&limit=${limit}`);
+): Promise<Notification> => {
+    const response = await api.get<NotificationsResponse>(ENDPOINTS.NOTI,{
+        params:{
+            user_id: user_id,
+            limit: limit,
+        }
+    });
+    console.log(response.data);
     return response.data;
 };
 
@@ -171,13 +165,12 @@ export const markAllAsRead = async (): Promise<{ success: boolean }> => {
     return response.data;
 };
 
-export const getUnreadCount = async (): Promise<UnreadCountResponse> => {
-    if (USE_MOCK) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        const count = mockNotifications.filter((n) => !n.isRead).length;
-        return { success: true, count };
-    }
-
-    const response = await api.get("/notifications/unread-count");
+export const getUnreadCount = async (user_id: number, is_read : boolean): Promise<Notification> => {
+    const response = await api.get<NotificationsResponse>(`${ENDPOINTS.NOTI}/by-isread`,{
+        params:{
+            user_id: user_id,
+            is_read: is_read,
+        }
+    });
     return response.data;
 };
