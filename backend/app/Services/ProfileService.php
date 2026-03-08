@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use App\Models\Role_permissions;
 
 class ProfileService
 {
@@ -25,6 +26,10 @@ class ProfileService
             []
         );
 
+        $permissions = Role_permissions::where('role_id', $user->role->id)
+                                        ->with('permissions')
+                                        ->get();
+        $user->role->permissions= $permissions->pluck('permissions');
         return [
             'user' => [
                 'id' => $user->id,

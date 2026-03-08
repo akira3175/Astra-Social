@@ -14,13 +14,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, isLoading }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  const allowed = ['Admin', 'Dev', 'Mod'];
+  const allowed = ['admin', 'dev', 'mod'];
   
-  if (!allowed.includes(user.role.name)) {
-    return <Navigate to="/" replace />;
+  if (allowed.includes(user.role.name.toLowerCase())) {
+    return <Outlet />;
   }
 
-  return <Outlet />;
+  return <Navigate to="/" replace />;
 };
 
 export default ProtectedRoute;

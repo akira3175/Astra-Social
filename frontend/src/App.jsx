@@ -36,8 +36,8 @@ const RouteApp=()=>{
           <Route element={<ProtectedRoute user={context.currentUser}
                                           isLoading={context.isLoading}
           />}>
-            <Route element={<AdminLayout />}>
-              <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/posts" element={<AdminPosts />} />
               <Route path="/admin/comments" element={<AdminComments />} />

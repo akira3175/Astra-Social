@@ -1,3 +1,4 @@
+import { useCurrentUser } from "../../../context/currentUserContext";
 import React, { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
@@ -14,27 +15,27 @@ import {
 import "./AdminLayout.css";
 
 const navItems = [
-    { path: "/admin", label: "Tổng quan", icon: DashboardIcon, exact: true },
-    { path: "/admin/users", label: "Quản lý người dùng", icon: PersonIcon },
-    { path: "/admin/posts", label: "Quản lý bài viết", icon: FileTextIcon },
-    { path: "/admin/comments", label: "Quản lý bình luận", icon: CommentIcon },
-    { path: "/admin/reports", label: "Báo cáo vi phạm", icon: FlagIcon, badge: true },
-    { path: "/admin/roles", label: "Phân quyền", icon: SettingsIcon },
+    { role: "dashboard", path: "/admin/dashboard", label: "Tổng quan", icon: DashboardIcon, exact: true },
+    { role: "user", path: "/admin/users", label: "Quản lý người dùng", icon: PersonIcon },
+    { role: "post", path: "/admin/posts", label: "Quản lý bài viết", icon: FileTextIcon },
+    { role: "comment", path: "/admin/comments", label: "Quản lý bình luận", icon: CommentIcon },
+    { role: "report", path: "/admin/reports", label: "Báo cáo vi phạm", icon: FlagIcon, badge: true },
+    { role: "role", path: "/admin/roles", label: "Phân quyền", icon: SettingsIcon },
 ];
 
 const AdminLayout: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
-
     const today = new Date().toLocaleDateString("vi-VN", {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
     });
-
+    console.log(currentUser);
     const getPageTitle = () => {
-        if (location.pathname === "/admin") return "Tổng quan";
+        if (location.pathname === "/admin/dashboard") return "Tổng quan";
         if (location.pathname === "/admin/users") return "Quản lý người dùng";
         if (location.pathname === "/admin/posts") return "Quản lý bài viết";
         if (location.pathname === "/admin/comments") return "Quản lý bình luận";
@@ -70,6 +71,9 @@ const AdminLayout: React.FC = () => {
 
                 <nav className="admin-nav">
                     {navItems.map((item) => (
+                        currentUser.role.permissions.some(
+                            p => p.group.toLowerCase() === item.role.toLowerCase()
+                        ) &&(
                         <NavLink
                             key={item.path}
                             to={item.path}
@@ -81,13 +85,8 @@ const AdminLayout: React.FC = () => {
                         >
                             <item.icon size={20} className="admin-nav-icon" />
                             <span className="admin-nav-label">{item.label}</span>
-                            {/* 
-                            {item.badge && (
-                                <span className="admin-nav-badge">7</span>
-                            )} 
-                            */}
                         </NavLink>
-                    ))}
+                    )))}
                 </nav>
 
                 <div className="admin-sidebar-footer">

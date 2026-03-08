@@ -19,9 +19,6 @@ class RoleController extends Controller{
             $role->permissions = isset($permissions[$role->id])
                                 ?$permissions[$role->id]->pluck('permissions')->values()
                                 : collect();
-            // $role->permissions = $permissions[$role->id]
-            //                     ->pluck('permissions')->values()
-            //                     : collect();
             return $role;
         });
 
