@@ -20,6 +20,8 @@ const ENDPOINTS = {
     ROLES_BY_ID: (id:number)=>`/roles/${id}`,
     PERMISSIONS: '/permissions',
     USERS: '/users',
+    USERS_U_ACTIVE: '/users/update-active',
+    USERS_U_ROLE: '/users/update-role',
 };
 
 // ============ Mock Data ============
@@ -461,7 +463,7 @@ export const updateIsActiveUser = async(
     id: number,
     isActive: boolean
     ): Promise<AdminUser[]>=>{
-    let response = await api.patch<UsersResponse>(ENDPOINTS.USERS,{
+    let response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ACTIVE,{
         params:{
             id: id,
             is_active: isActive,
@@ -470,12 +472,14 @@ export const updateIsActiveUser = async(
     return response.data;
 };
 
-export const changeUserRole = async (id: number, role: string): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.role = role;
-    return { ...user };
+export const changeUserRole = async (id: number, roleId: number): Promise<AdminUser> => {
+    const response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ROLE,{
+        params:{
+            id: id,
+            role_id: roleId,
+        }
+    });
+    return response.data;
 };
 
 // ============ Roles & Permissions CRUD ============

@@ -9,5 +9,6 @@ use Illuminate\Support\Facades\Route;
 // Protected routes
 Route::middleware('jwt.auth')->group(function () {
 	Route::get('/users', [UserController::class, 'index']);
-	Route::patch('/users', [UserController::class, 'update']);
+	Route::patch('/users/update-active', [UserController::class, 'updateActive']);
+	Route::patch('/users/update-role', [UserController::class, 'updateRole']);
 });

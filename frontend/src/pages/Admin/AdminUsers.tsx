@@ -20,14 +20,14 @@ const AdminUsers: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>("");
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const [changingRole, setChangingRole] = useState<{ userId: number; newRole: string } | null>(null);
+    const [changingRole, setChangingRole] = useState<{ userId: number; roleId: number } | null>(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
                 loadData(currentPage, roleFilter, statusFilter, searchQuery);
             }, 400);
         return () => clearTimeout(timer);
-    }, [currentPage, roleFilter, statusFilter, searchQuery]);
+    }, [loading, currentPage, roleFilter, statusFilter, searchQuery]);
 
     const loadData = async (
         page: number,
@@ -35,7 +35,6 @@ const AdminUsers: React.FC = () => {
         statusFilter: string,
         searchQuery: string,
         ) => {
-        setLoading(true);
         try {
             const [usersData, rolesData] = await Promise.all([
                 getUsers(page, roleFilter, statusFilter, searchQuery),
@@ -45,7 +44,8 @@ const AdminUsers: React.FC = () => {
             setRoles(rolesData);
         } catch (error) {
             console.error("Error loading users:", error);
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
     };
@@ -61,15 +61,7 @@ const AdminUsers: React.FC = () => {
                 timer: 1500
             });
             setSelectedUser(null);
-            setUsers(prev => ({
-                ...prev,
-                data: {
-                    ...prev.data,
-                    data: prev.data.data.map(u =>
-                        u.id === id ? { ...u, is_active: false } : u
-                    )
-                }
-            }));
+            setLoading(true);
         }
     };
 
@@ -84,27 +76,24 @@ const AdminUsers: React.FC = () => {
                 timer: 1500
             });
             setSelectedUser(null);
-            setUsers(prev => ({
-                ...prev,
-                data: {
-                    ...prev.data,
-                    data: prev.data.data.map(u =>
-                        u.id === id ? { ...u, is_active: false } : u
-                    )
-                }
-            }));
+            setLoading(true);
         }
     };
 
     const handleRoleChange = async () => {
-        if (!changingRole) return;
-        await changeUserRole(changingRole.userId, changingRole.newRole);
-        setUsers(prev => prev.map(u => u.id === changingRole.userId ? { ...u, role: changingRole.newRole } : u));
-        if (selectedUser?.id === changingRole.userId) {
-            setSelectedUser(prev => prev ? { ...prev, role: changingRole.newRole } : null);
+        let result = await changeUserRole(Number(changingRole.userId), Number( changingRole.roleId));
+        if(result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã thay đổi quyền',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+            setChangingRole(null);
+            setSelectedUser(null);
+            setLoading(true);
         }
-        setChangingRole(null);
-        setLoading(true);
     };
 
     const formatDate = (dateStr: string) => {
@@ -405,7 +394,7 @@ const AdminUsers: React.FC = () => {
                                         fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
                                         minWidth: 120,
                                     }}
-                                    onClick={() => setChangingRole({ userId: selectedUser.id, newRole: selectedUser.role })}
+                                    onClick={() => setChangingRole({ userId: selectedUser.id, roleId: selectedUser.role.id })}
                                 >
                                     🔄 Đổi vai trò
                                 </button>
@@ -433,11 +422,11 @@ const AdminUsers: React.FC = () => {
                                 <select
                                     className="admin-filter-select"
                                     style={{ width: "100%" }}
-                                    value={changingRole.newRole}
-                                    onChange={(e) => setChangingRole({ ...changingRole, newRole: e.target.value })}
+                                    value={changingRole.roleId}
+                                    onChange={(e) => setChangingRole({ ...changingRole, roleId: e.target.value })}
                                 >
-                                    {roles.map(role => (
-                                        <option key={role.id} value={role.name}>{role.name} — {role.description}</option>
+                                    {roles.data.map(role => (
+                                        <option key={role.id} value={role.id}>{role.name} — {role.description}</option>
                                     ))}
                                 </select>
                             </div>
@@ -458,7 +447,7 @@ const AdminUsers: React.FC = () => {
                                         background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "white",
                                         fontWeight: 600, fontSize: 13, cursor: "pointer",
                                     }}
-                                    onClick={handleRoleChange}
+                                    onClick={()=> handleRoleChange()}
                                 >
                                     Xác nhận
                                 </button>
