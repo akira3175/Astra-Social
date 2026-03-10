@@ -16,11 +16,11 @@ class UserSeeder extends Seeder
         // Lấy role Dev
         $devRole = Role::where('name', 'Dev')->first();
         $userRole = Role::where('name', 'User')->first();
-
+        $adminRole = Role::where('name', 'Admin')->first();
         if ($devRole) {
             User::firstOrCreate(
-                ['username' => 'dev'],
                 [
+                    'username' => 'dev',
                     'email' => 'dev@example.com',
                     'password' => 'password', // Sẽ được hash tự động nhờ cast 'hashed'
                     'role_id' => $devRole->id,
@@ -28,19 +28,32 @@ class UserSeeder extends Seeder
                     'is_verified' => true,
                 ]
             );
-
         }
         if ($userRole) {
-        User::firstOrCreate(
-            ['username' => 'user1'],
-            [
-                'email' => 'user1@example.com',
-                'password' => 'password',
-                'role_id' => $userRole->id,
-                'is_active' => true,
-                'is_verified' => false,
-            ]
-        );
-    }
+            User::firstOrCreate(
+                [
+                    'username' => 'user1',
+                    'email' => 'user1@example.com',
+                    'password' => 'password',
+                    'role_id' => $userRole->id,
+                    'is_active' => true,
+                    'is_verified' => false,
+                ]
+            );
+        }
+        if ($adminRole) {
+            User::firstOrCreate(
+                [
+                    'username' => 'admin',
+                    'email' => 'admin@example.com',
+                    'password' => 'password', // Sẽ được hash tự động nhờ cast 'hashed'
+                    'role_id' => $adminRole->id,
+                    'is_active' => true,
+                    'is_verified' => true,
+                ]
+            );
+        }
+
+        User::factory()->count(20)->create();
     }
 }

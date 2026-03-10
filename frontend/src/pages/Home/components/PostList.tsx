@@ -4,14 +4,19 @@ import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import type { Post } from "../../../types/post";
 import PostDetailModal from "./PostDetailModal";
+import { createReport } from "../../../services/ReportService";
 import PostMenu from "./PostMenu";
+import PostReportModal from "./PostReportModal";
 import "./PostList.css";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 interface PostListProps {
     posts: Post[];
     isLoading: boolean;
     onPostUpdated?: () => void;
     onPostDeleted?: () => void;
+    onPostReported?: ()=>void;
 }
 
 /**
@@ -73,14 +78,15 @@ const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments
     );
 };
 
-const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted }) => {
+const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted, onPostReported }) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+    const [showReportForm, setShowReportForm] = useState(false);
     const [focusComment, setFocusComment] = useState(false);
     const [editingPostId, setEditingPostId] = useState<number | null>(null);
     const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
-
+    const [reportingPost, setReportingPost] = useState<Post | null>(null);
     // Get post ID from URL
     const postIdFromUrl = searchParams.get("post");
 
@@ -134,6 +140,33 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         setSearchParams({ post: post.id.toString() });
     };
 
+    const handleReportClick = (post: Post)=>{
+        setSelectedPost(null);
+        setShowReportForm(true);
+        setReportingPost(post);
+    }
+
+    const handleReportSubmit = async(reason: string, detail: string)=>{
+        let newReport = {
+            reporter_id:Number(currentUser.id),
+            target_author_id: reportingPost.user_id,
+            target_type: 'POST',
+            target_preview: detail,
+            target_id: reportingPost.id,
+            reason: reason,
+        }
+        let result = await createReport(newReport);
+        if(result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã báo cáo thành công',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+            setShowReportForm(false);
+        }
+    }
     if (isLoading) {
         return (
             <div className="post-loading">
@@ -188,6 +221,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                                     isOwner={isOwner}
                                     onEdit={() => handleEditClick(post)}
                                     onDelete={() => handleDeleteClick(post)}
+                                    onReport={() => handleReportClick(post)}
                                 />
                             </div>
 
@@ -228,16 +262,27 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 })}
             </div>
 
-            <PostDetailModal
-                open={selectedPost !== null}
-                onClose={handleCloseModal}
-                post={selectedPost}
-                onPostUpdated={onPostUpdated}
-                onPostDeleted={onPostDeleted}
-                focusComment={focusComment}
-                startEditing={editingPostId === selectedPost?.id}
-                startDeleting={deletingPostId === selectedPost?.id}
-            />
+            {selectedPost && (
+                <PostDetailModal
+                    open={selectedPost !== null}
+                    onClose={handleCloseModal}
+                    post={selectedPost}
+                    onPostUpdated={onPostUpdated}
+                    onPostDeleted={onPostDeleted}
+                    focusComment={focusComment}
+                    startEditing={editingPostId === selectedPost?.id}
+                    startDeleting={deletingPostId === selectedPost?.id}
+                />
+            )}
+
+            {showReportForm &&(
+                <PostReportModal
+                  open={showReportForm}
+                  postId={reportingPost.id}
+                  onClose={() => setShowReportForm(false)}
+                  onSubmit={async (reason, detail) => handleReportSubmit(reason, detail) }
+                />
+            )}
         </>
     );
 };

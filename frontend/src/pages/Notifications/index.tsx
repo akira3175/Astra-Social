@@ -5,12 +5,14 @@ import {
     markAsRead,
     markAllAsRead,
 } from "../../services/notificationService";
+import { useCurrentUser } from "../../context/currentUserContext";
 import type { Notification } from "../../types/notification";
 import "./NotificationsPage.css";
 
 type TabType = "all" | "unread";
 
 const NotificationsPage: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [activeTab, setActiveTab] = useState<TabType>("all");
     const [isLoading, setIsLoading] = useState(true);
@@ -25,8 +27,8 @@ const NotificationsPage: React.FC = () => {
             } else {
                 setIsLoadingMore(true);
             }
-
-            const response = await getNotifications(pageNum, 10);
+            const response = await getNotifications(Number(currentUser.id), pageNum, 10);
+            console.log(Number(currentUser.id));
             if (response.success) {
                 setNotifications((prev) =>
                     reset ? response.data : [...prev, ...response.data]

@@ -1,0 +1,95 @@
+.prm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 9999;
+  padding: 40px 0;
+  overflow: auto;
+}
+
+.prm-modal {
+  width: 500px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  animation: prmFade .2s ease;
+}
+
+@keyframes prmFade {
+  from {transform: scale(.95); opacity:0;}
+  to {transform: scale(1); opacity:1;}
+}
+
+.prm-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.prm-close {
+  background:none;
+  border:none;
+  font-size:20px;
+  cursor:pointer;
+}
+
+.prm-body {
+  padding:20px;
+}
+
+.prm-description {
+  margin-bottom:12px;
+  font-weight:500;
+}
+
+.prm-reasons {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.prm-reason {
+  display:flex;
+  gap:8px;
+  cursor:pointer;
+}
+
+.prm-textarea {
+  width:100%;
+  min-height:80px;
+  padding:10px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  resize:none;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.prm-footer {
+  padding:16px 20px;
+  border-top:1px solid #eee;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+.prm-btn {
+  padding:8px 16px;
+  border-radius:6px;
+  border:none;
+  cursor:pointer;
+}
+
+.prm-cancel {
+  background:#e4e6eb;
+}
+
+.prm-submit {
+  background:#1877f2;
+  color:white;
+}

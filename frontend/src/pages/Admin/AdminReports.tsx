@@ -11,11 +11,13 @@ import type { AdminReport } from "../../types/admin";
 import "./AdminTable.css";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useCurrentUser } from "../../context/currentUserContext";
 
 type TabType = "ALL" | "POST" | "COMMENT";
 
 
 const AdminReports: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [reports, setReports] = useState<AdminReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -25,11 +27,15 @@ const AdminReports: React.FC = () => {
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [itemsPerPage, setItemsPerPage] = useState<number>(10);
     const [total, setTotal] = useState<number>(10);
-
+    const [urlPostReported, setUrlPostReported] = useState<string>('');
     const totalPages = Math.ceil(total / itemsPerPage);
 
     useEffect(() => {
-        loadReports(currentPage, activeTab, statusFilter, searchQuery);
+        const timer = setTimeout(() => {
+            loadReports(currentPage, activeTab, statusFilter, searchQuery);
+        }, 400);
+        return () => clearTimeout(timer);
+
     }, [currentPage, activeTab,  statusFilter, searchQuery]);
 
     const loadReports = async (page: number,
@@ -56,8 +62,7 @@ const AdminReports: React.FC = () => {
     );
 
     const handleResolve = async (id: number) => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const result = await handleStatus(id, "RESOLVED", user.id);
+        const result = await handleStatus(id, "RESOLVED", Number(currentUser.id));
         if(result.success){
             setReports((i)=>i.map((report)=>(
                 report.id===id ? 
@@ -94,6 +99,12 @@ const AdminReports: React.FC = () => {
         }
 
     };
+
+    const onShowModal = (report)=>{
+        setSelectedReport(report);
+        let url = `${window.location.origin}/?post=${report.target_id}`;
+        setUrlPostReported(url);
+    }
 
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString("vi-VN", {
@@ -176,7 +187,6 @@ const AdminReports: React.FC = () => {
                             <th>ID</th>
                             <th>Người báo cáo</th>
                             <th>Loại</th>
-                            <th>Nội dung vi phạm</th>
                             <th>Lý do</th>
                             <th>Trạng thái</th>
                             <th>Ngày báo cáo</th>
@@ -222,9 +232,6 @@ const AdminReports: React.FC = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <div className="cell-content">{report.target_preview}</div>
-                                    </td>
-                                    <td>
                                         <div className="cell-content" style={{ maxWidth: 180 }}>{report.reason}</div>
                                     </td>
                                     <td>
@@ -238,28 +245,10 @@ const AdminReports: React.FC = () => {
                                             <button
                                                 className="action-btn view"
                                                 title="Xem chi tiết"
-                                                onClick={() => setSelectedReport(report)}
+                                                onClick={() => onShowModal(report)}
                                             >
                                                 <EyeIcon size={16} />
                                             </button>
-                                            {report.status === "PENDING" && (
-                                                <>
-                                                    <button
-                                                        className="action-btn resolve"
-                                                        title="Xử lý (xóa nội dung vi phạm)"
-                                                        onClick={() => handleResolve(report.id)}
-                                                    >
-                                                        <CheckCircleIcon size={16} />
-                                                    </button>
-                                                    <button
-                                                        className="action-btn reject"
-                                                        title="Từ chối báo cáo"
-                                                        onClick={() => handleReject(report.id)}
-                                                    >
-                                                        <CloseIcon size={16} />
-                                                    </button>
-                                                </>
-                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -332,12 +321,16 @@ const AdminReports: React.FC = () => {
                                 <span className="admin-detail-value">@{selectedReport.target_author.username}</span>
                             </div>
                             <div className="admin-detail-row">
-                                <span className="admin-detail-label">Nội dung</span>
-                                <span className="admin-detail-value">{selectedReport.target_preview}</span>
-                            </div>
+                                <span className="admin-detail-label">Nội dung</span>
+                                <a href={urlPostReported} className="admin-detail-value text-primary">Xem ở đây</a>
+                            </div>                            
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Lý do</span>
                                 <span className="admin-detail-value">{selectedReport.reason}</span>
+                            </div>
+                            <div className="admin-detail-row">
+                                <span className="admin-detail-label">Mô tả lý do</span>
+                                <span className="admin-detail-value">{selectedReport.target_preview !== '0' ? selectedReport.target_preview : '' }</span>
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Trạng thái</span>

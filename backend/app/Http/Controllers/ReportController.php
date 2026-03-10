@@ -39,14 +39,15 @@ class ReportController extends Controller{
             'success' =>$result['success'],
             'data' => $result['report'],
         ]);
-    } 
+    }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        //
+    public function store(Request $request){
+        $data = $request->all();
+        $result = $this->reportService->create($data['auth_user'], $data);
+        return $result;
     }
 
     /**

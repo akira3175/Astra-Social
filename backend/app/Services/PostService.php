@@ -222,7 +222,6 @@ class PostService
     public function deletePost(int $postId, int $userId): array
     {
         $post = Post::find($postId);
-
         if (!$post) {
             return [
                 'success' => false,

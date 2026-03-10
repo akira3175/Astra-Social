@@ -8,11 +8,18 @@ import type {
     DashboardStats,
     DailyActivity,
     Permission,
+    PermissionsResponse,
     Role,
+    RolesResponse,
+    UsersResponse,
 } from "../types/admin";
 
 const ENDPOINTS = {
     REPORTS : "/reports",
+    ROLES : "/roles",
+    ROLES_BY_ID: (id:number)=>`/roles/${id}`,
+    PERMISSIONS: '/permissions',
+    USERS: '/users',
 };
 
 // ============ Mock Data ============
@@ -327,11 +334,13 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
     await delay(300);
+    let reports = await getReports(null,null, "ALL", 'PENDING', '');
+    let users = await getUsers();
     return {
-        total_users: 1_247,
+        total_users: users.data.total,
         total_posts: 8_563,
         total_comments: 24_891,
-        pending_reports: mockReports.filter((r) => r.status === "PENDING").length,
+        pending_reports: reports.pagination.total,
         user_growth: 12.5,
         post_growth: 8.3,
         comment_growth: 15.2,
@@ -398,6 +407,7 @@ export const handleStatus = async (id: number, status: string, userId: number): 
             user_id: userId | null
         }
     });
+    console.log(response);
     return response.data;
 };
 
@@ -428,27 +438,36 @@ export const deleteAdminComment = async (id: number): Promise<{ success: boolean
     return { success: true };
 };
 
-// ============ Admin Users CRUD ============
+// Users CRUD 
 
-export const getAdminUsers = async (): Promise<AdminUser[]> => {
-    await delay(300);
-    return mockAdminUsers.map(u => ({ ...u }));
+export const getUsers = async (
+    page:number,
+    roleFilter: string,
+    statusFilter: string,
+    searchQuery: string,
+    ): Promise<AdminUser[]> => {
+    let response = await api.get<UsersResponse>(ENDPOINTS.USERS,{
+        params:{
+            page: page,
+            role: roleFilter,
+            status: statusFilter,
+            search: searchQuery,
+        }
+    });
+    return response.data;
 };
 
-export const banUser = async (id: number): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.is_active = false;
-    return { ...user };
-};
-
-export const unbanUser = async (id: number): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.is_active = true;
-    return { ...user };
+export const updateIsActiveUser = async(
+    id: number,
+    isActive: boolean
+    ): Promise<AdminUser[]>=>{
+    let response = await api.patch<UsersResponse>(ENDPOINTS.USERS,{
+        params:{
+            id: id,
+            is_active: isActive,
+        }
+    });
+    return response.data;
 };
 
 export const changeUserRole = async (id: number, role: string): Promise<AdminUser> => {
@@ -462,48 +481,39 @@ export const changeUserRole = async (id: number, role: string): Promise<AdminUse
 // ============ Roles & Permissions CRUD ============
 
 export const getPermissions = async (): Promise<Permission[]> => {
-    await delay(200);
-    return [...mockPermissions];
+    const response = await api.get<PermissionsResponse>(ENDPOINTS.PERMISSIONS);
+    return response.data;
 };
 
 export const getRoles = async (): Promise<Role[]> => {
-    await delay(300);
-    return mockRoles.map(r => ({ ...r, permissions: [...r.permissions] }));
+    const response = await api.get<RolesResponse>(ENDPOINTS.ROLES);  
+    return response.data;
 };
 
 export const createRole = async (data: { name: string; description: string; permissions: number[] }): Promise<Role> => {
-    await delay(400);
     const newRole: Role = {
-        id: nextRoleId++,
         name: data.name,
         description: data.description,
-        is_default: false,
-        user_count: 0,
         permissions: [...data.permissions],
-        created_at: new Date().toISOString(),
     };
-    mockRoles.push(newRole);
-    return { ...newRole };
+    const response = await api.post<RolesResponse>(ENDPOINTS.ROLES, newRole);
+    return response.data;
 };
 
 export const updateRole = async (id: number, data: { name?: string; description?: string; permissions?: number[] }): Promise<Role> => {
-    await delay(400);
-    const role = mockRoles.find(r => r.id === id);
-    if (!role) throw new Error("Role not found");
-    if (data.name !== undefined) role.name = data.name;
-    if (data.description !== undefined) role.description = data.description;
-    if (data.permissions !== undefined) role.permissions = [...data.permissions];
-    return { ...role, permissions: [...role.permissions] };
+    const roleEdited: Role = {
+        id: id,
+        name: data.name,
+        description: data.description,
+        permissions: [...data.permissions],
+    };
+    const response = await api.patch<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id), roleEdited);
+    return response.data;
 };
 
-export const deleteRole = async (id: number): Promise<{ success: boolean; error?: string }> => {
-    await delay(400);
-    const role = mockRoles.find(r => r.id === id);
-    if (!role) return { success: false, error: "Vai trò không tồn tại" };
-    if (role.is_default) return { success: false, error: "Không thể xóa vai trò mặc định" };
-    if (role.user_count > 0) return { success: false, error: `Có ${role.user_count} người dùng đang sử dụng vai trò này` };
-    mockRoles = mockRoles.filter(r => r.id !== id);
-    return { success: true };
+export const deleteRole = async (id: number): Promise<Role> => {
+    const response = await api.delete<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id));
+    return response.data;
 };
 
 export default {
@@ -518,9 +528,8 @@ export default {
     deleteAdminPost,
     restoreAdminPost,
     deleteAdminComment,
-    getAdminUsers,
-    banUser,
-    unbanUser,
+    updateIsActiveUser,
+    getUsers,
     changeUserRole,
     getPermissions,
     getRoles,

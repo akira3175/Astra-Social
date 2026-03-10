@@ -11,9 +11,11 @@ import {
     getUnreadCount,
 } from "../../services/notificationService";
 import type { Notification } from "../../types/notification";
+import { useCurrentUser } from "../../context/currentUserContext";
 import "./NotificationDropdown.css";
 
 const NotificationDropdown: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -22,18 +24,20 @@ const NotificationDropdown: React.FC = () => {
 
     // Fetch unread count on mount
     useEffect(() => {
+        if (!currentUser) return;
+
         const fetchUnreadCount = async () => {
             try {
-                const response = await getUnreadCount();
+                const response = await getUnreadCount(Number(currentUser.id), false);
                 if (response.success) {
-                    setUnreadCount(response.count);
+                    setUnreadCount(response.data);
                 }
             } catch (error) {
                 console.error("Error fetching unread count:", error);
             }
         };
         fetchUnreadCount();
-    }, []);
+    }, [currentUser]);
 
     // Fetch notifications when dropdown opens
     useEffect(() => {
