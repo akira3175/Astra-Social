@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('is_verified')->default(false);
             $table->timestamp('last_login')->nullable();
             $table->timestamp('created_at')->useCurrent();
+            $table->softDeletes();
         });
     }
 

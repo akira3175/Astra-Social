@@ -19,8 +19,8 @@ class UserSeeder extends Seeder
         $adminRole = Role::where('name', 'Admin')->first();
         if ($devRole) {
             User::firstOrCreate(
-                ['username' => 'dev'],
                 [
+                    'username' => 'dev',
                     'email' => 'dev@example.com',
                     'password' => 'password', // Sẽ được hash tự động nhờ cast 'hashed'
                     'role_id' => $devRole->id,
@@ -31,8 +31,8 @@ class UserSeeder extends Seeder
         }
         if ($userRole) {
             User::firstOrCreate(
-                ['username' => 'user1'],
                 [
+                    'username' => 'user1',
                     'email' => 'user1@example.com',
                     'password' => 'password',
                     'role_id' => $userRole->id,
@@ -43,8 +43,8 @@ class UserSeeder extends Seeder
         }
         if ($adminRole) {
             User::firstOrCreate(
-                ['username' => 'admin'],
                 [
+                    'username' => 'admin',
                     'email' => 'admin@example.com',
                     'password' => 'password', // Sẽ được hash tự động nhờ cast 'hashed'
                     'role_id' => $adminRole->id,
@@ -53,5 +53,7 @@ class UserSeeder extends Seeder
                 ]
             );
         }
+
+        User::factory()->count(20)->create();
     }
 }

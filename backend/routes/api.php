@@ -19,3 +19,4 @@ require __DIR__ . '/api/friendships.php';
 require __DIR__ . '/api/role.php';
 require __DIR__ . '/api/permission.php';
 require __DIR__ . '/api/noti.php';
+require __DIR__ . '/api/user.php';

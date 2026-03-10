@@ -33,7 +33,6 @@ const AdminLayout: React.FC = () => {
         month: "long",
         day: "numeric",
     });
-    console.log(currentUser);
     const getPageTitle = () => {
         if (location.pathname === "/admin/dashboard") return "Tổng quan";
         if (location.pathname === "/admin/users") return "Quản lý người dùng";

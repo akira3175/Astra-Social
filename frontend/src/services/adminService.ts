@@ -11,6 +11,7 @@ import type {
     PermissionsResponse,
     Role,
     RolesResponse,
+    UsersResponse,
 } from "../types/admin";
 
 const ENDPOINTS = {
@@ -18,6 +19,7 @@ const ENDPOINTS = {
     ROLES : "/roles",
     ROLES_BY_ID: (id:number)=>`/roles/${id}`,
     PERMISSIONS: '/permissions',
+    USERS: '/users',
 };
 
 // ============ Mock Data ============
@@ -333,8 +335,9 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const getDashboardStats = async (): Promise<DashboardStats> => {
     await delay(300);
     let reports = await getReports(null,null, "ALL", 'PENDING', '');
+    let users = await getUsers();
     return {
-        total_users: 1_247,
+        total_users: users.data.total,
         total_posts: 8_563,
         total_comments: 24_891,
         pending_reports: reports.pagination.total,
@@ -435,27 +438,36 @@ export const deleteAdminComment = async (id: number): Promise<{ success: boolean
     return { success: true };
 };
 
-// ============ Admin Users CRUD ============
+// Users CRUD 
 
-export const getAdminUsers = async (): Promise<AdminUser[]> => {
-    await delay(300);
-    return mockAdminUsers.map(u => ({ ...u }));
+export const getUsers = async (
+    page:number,
+    roleFilter: string,
+    statusFilter: string,
+    searchQuery: string,
+    ): Promise<AdminUser[]> => {
+    let response = await api.get<UsersResponse>(ENDPOINTS.USERS,{
+        params:{
+            page: page,
+            role: roleFilter,
+            status: statusFilter,
+            search: searchQuery,
+        }
+    });
+    return response.data;
 };
 
-export const banUser = async (id: number): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.is_active = false;
-    return { ...user };
-};
-
-export const unbanUser = async (id: number): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.is_active = true;
-    return { ...user };
+export const updateIsActiveUser = async(
+    id: number,
+    isActive: boolean
+    ): Promise<AdminUser[]>=>{
+    let response = await api.patch<UsersResponse>(ENDPOINTS.USERS,{
+        params:{
+            id: id,
+            is_active: isActive,
+        }
+    });
+    return response.data;
 };
 
 export const changeUserRole = async (id: number, role: string): Promise<AdminUser> => {
@@ -516,9 +528,8 @@ export default {
     deleteAdminPost,
     restoreAdminPost,
     deleteAdminComment,
-    getAdminUsers,
-    banUser,
-    unbanUser,
+    updateIsActiveUser,
+    getUsers,
     changeUserRole,
     getPermissions,
     getRoles,

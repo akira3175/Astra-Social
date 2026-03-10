@@ -31,7 +31,11 @@ const AdminReports: React.FC = () => {
     const totalPages = Math.ceil(total / itemsPerPage);
 
     useEffect(() => {
-        loadReports(currentPage, activeTab, statusFilter, searchQuery);
+        const timer = setTimeout(() => {
+            loadReports(currentPage, activeTab, statusFilter, searchQuery);
+        }, 400);
+        return () => clearTimeout(timer);
+
     }, [currentPage, activeTab,  statusFilter, searchQuery]);
 
     const loadReports = async (page: number,

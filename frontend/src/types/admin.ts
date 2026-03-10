@@ -1,7 +1,3 @@
-/**
- * Admin Types
- * Types for admin dashboard, post/comment management, and reports
- */
 
 export interface AdminUser {
     id: number;
@@ -10,7 +6,7 @@ export interface AdminUser {
     avatar_url: string | null;
     first_name: string | null;
     last_name: string | null;
-    role: string;
+    role: Role;
     is_active: boolean;
     is_verified: boolean;
     created_at: string;
@@ -116,4 +112,10 @@ export interface ReportsResponse{
 export interface PermissionsResponse{
     success: boolean,
     data: Permission[],
+}
+
+export interface UsersResponse{
+    success: boolean,
+    data: AdminUser[],
+    message: string | null,
 }
