@@ -49,12 +49,12 @@ class PostService
      */
     public function getPostById(int $id): array
     {
-        $post = Post::with([
-            'user:id,username',
-            'user.profile:user_id,first_name,last_name,avatar_url',
-            'attachments:id,url,file_type,entity_type,entity_id',
-        ])->find($id);
-
+        // $post = Post::with([
+        //     'user:id,username',
+        //     'user.profile:user_id,first_name,last_name,avatar_url',
+        //     'attachments:id,url,file_type,entity_type,entity_id',
+        // ])->find($id);
+        $post = Post::with(['user.profile', 'attachments'])->find($id);
         if (!$post) {
             return [
                 'success' => false,
@@ -247,5 +247,31 @@ class PostService
             'success' => true,
             'message' => 'Post deleted successfully',
         ];
+    }
+
+    public function getAdminPost(array $params){
+        $data = Post::query()->with('user');
+        if(empty($params['status'])){
+            $data->withTrashed();
+        } 
+        if(strtolower($params['status'])==='deleted'){
+            $data->onlyTrashed();
+        }
+        if(!empty($params['privacy'])){
+            $data->where('privacy', $params['privacy']);
+        }
+        if(!empty($params['search'])){
+            $data->where('content', 'like', '%'.$params['search'].'%');
+        }
+        return $data->paginate(10);
+    }
+
+    public function restorePostById(string $id){
+        $post = Post::withTrashed()->find((int)$id);
+        if($post){
+            $post->restore();
+            return $post;
+        }
+        return false;
     }
 }

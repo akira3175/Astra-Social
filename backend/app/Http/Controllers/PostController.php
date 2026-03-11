@@ -155,4 +155,37 @@ class PostController extends Controller
             'message' => $result['message'],
         ]);
     }
+
+    public function adminIndex(Request $request){
+        $params = $request->all();
+        $posts = $this->postService->getAdminPost($params);
+        if($posts){
+            return response()->json([
+                'success'=>true,
+                'data'=>$posts,
+            ]);
+        }
+        return response()->json([
+            'success'=>false,
+            'message'=> 'Không có bài viết nào',
+        ]);
+
+    }
+
+    public function restorePostById(string $id){
+        $result = $this->postService->restorePostById($id);
+        if ($result){
+            return response()->json([
+                'success'=>true,
+                'data'=>$result,
+                'message'=>'Khôi phục bài viết thành công',
+            ]);
+        }
+        return response()->json([
+            'success'=>false,
+            'message'=> 'Không có bài viết nào',
+        ]);
+
+
+    }
 }

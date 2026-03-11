@@ -16,8 +16,10 @@ Route::get('/users/{userId}/posts', [PostController::class, 'byUser'])->where('u
 
 // Protected routes
 Route::middleware('jwt.auth')->group(function () {
+    Route::get('posts-admin', [PostController::class, 'adminIndex']);
     Route::get('/posts/me', [PostController::class, 'myPosts']);
     Route::post('/posts', [PostController::class, 'store']);
     Route::patch('/posts/{id}', [PostController::class, 'update'])->where('id', '[0-9]+');
+    Route::patch('/post-restore/{id}', [PostController::class, 'restorePostById']);
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->where('id', '[0-9]+');
 });

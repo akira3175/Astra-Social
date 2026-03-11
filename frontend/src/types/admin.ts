@@ -21,13 +21,7 @@ export interface AdminPost {
     comments_count: number;
     created_at: string;
     deleted_at: string | null;
-    user: {
-        id: number;
-        username: string;
-        avatar_url: string | null;
-        first_name: string | null;
-        last_name: string | null;
-    };
+    user: AdminUser ;
     report_count: number;
 }
 
@@ -117,5 +111,11 @@ export interface PermissionsResponse{
 export interface UsersResponse{
     success: boolean,
     data: AdminUser[],
+    message: string | null,
+}
+
+export interface PostsResponse{
+    success: boolean,
+    data: AdminPost[],
     message: string | null,
 }

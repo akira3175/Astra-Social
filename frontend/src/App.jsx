@@ -7,6 +7,7 @@ import SearchPage from "./pages/Search";
 import FriendsPage from "./pages/Friends";
 import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
+import PostDetailPage from "./pages/Post";
 import { AdminLayout, AdminDashboard, AdminPosts, AdminComments, AdminReports, AdminRoles, AdminUsers } from "./pages/Admin";
 import { CurrentUserProvider, useCurrentUser } from "./context/currentUserContext";
 import "./App.css";
@@ -19,6 +20,7 @@ const RouteApp=()=>{
         <Routes>
           {/* Public routes - không có Navbar */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/posts/:id" element={<PostDetailPage />} />
 
           {/* Protected routes - có Navbar thông qua BasePage layout */}
           <Route element={<BasePage />}>

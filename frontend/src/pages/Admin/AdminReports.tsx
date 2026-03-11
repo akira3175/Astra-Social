@@ -102,7 +102,8 @@ const AdminReports: React.FC = () => {
 
     const onShowModal = (report)=>{
         setSelectedReport(report);
-        let url = `${window.location.origin}/?post=${report.target_id}`;
+        let url = `${window.location.origin}/posts/${report.target_id}`;
+        console.log(url);
         setUrlPostReported(url);
     }
 
@@ -241,7 +242,7 @@ const AdminReports: React.FC = () => {
                                     </td>
                                     <td className="cell-date">{formatDate(report.created_at)}</td>
                                     <td>
-                                        <div className="cell-actions">
+                                        <div className="cell-actions d-flex flex-row justify-content-center">
                                             <button
                                                 className="action-btn view"
                                                 title="Xem chi tiết"

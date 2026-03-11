@@ -2,6 +2,7 @@ import { api } from "../configs/api";
 import type {
     ReportsResponse,
     AdminPost,
+    PostsResponse,
     AdminComment,
     AdminReport,
     AdminUser,
@@ -14,7 +15,7 @@ import type {
     UsersResponse,
 } from "../types/admin";
 
-const ENDPOINTS = {
+export const ENDPOINTS = {
     REPORTS : "/reports",
     ROLES : "/roles",
     ROLES_BY_ID: (id:number)=>`/roles/${id}`,
@@ -22,6 +23,9 @@ const ENDPOINTS = {
     USERS: '/users',
     USERS_U_ACTIVE: '/users/update-active',
     USERS_U_ROLE: '/users/update-role',
+    POSTS: '/posts-admin',
+    POST_BY_ID: (id:number)=> `/posts/${id}`,
+    POST_RESTORE: (id:number)=> `/post-restore/${id}`,
 };
 
 // ============ Mock Data ============
@@ -337,16 +341,12 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const getDashboardStats = async (): Promise<DashboardStats> => {
     await delay(300);
     let reports = await getReports(null,null, "ALL", 'PENDING', '');
-    let users = await getUsers();
+    let users = await getUsers(1, '', '', '');
     return {
         total_users: users.data.total,
         total_posts: 8_563,
         total_comments: 24_891,
         pending_reports: reports.pagination.total,
-        user_growth: 12.5,
-        post_growth: 8.3,
-        comment_growth: 15.2,
-        report_change: -3.1,
     };
 };
 
@@ -358,6 +358,23 @@ export const getDailyActivity = async (): Promise<DailyActivity[]> => {
 export const getAdminPosts = async (): Promise<AdminPost[]> => {
     await delay(300);
     return [...mockPosts];
+};
+
+export const getPosts = async(
+    page:number,
+    privacy: string,
+    status: string,
+    search: string
+    ): Promise<AdminPost[]>=>{
+    let response = await api.get<PostsResponse>(ENDPOINTS.POSTS, {
+        params:{
+            page:page,
+            privacy: privacy,
+            status: status,
+            search: search
+        }
+    });
+    return response.data;
 };
 
 export const getAdminComments = async (): Promise<AdminComment[]> => {
@@ -409,26 +426,12 @@ export const handleStatus = async (id: number, status: string, userId: number): 
             user_id: userId | null
         }
     });
-    console.log(response);
     return response.data;
 };
 
-export const deleteAdminPost = async (id: number): Promise<AdminPost> => {
-    await delay(300);
-    const post = mockPosts.find((p) => p.id === id);
-    if (post) {
-        post.deleted_at = new Date().toISOString();
-    }
-    return post!;
-};
-
-export const restoreAdminPost = async (id: number): Promise<AdminPost> => {
-    await delay(300);
-    const post = mockPosts.find((p) => p.id === id);
-    if (post) {
-        post.deleted_at = null;
-    }
-    return post!;
+export const restorePost = async (id: number): Promise<AdminPost> => {
+    let response = await api.patch<PostsResponse>(ENDPOINTS.POST_RESTORE(id));
+    return response.data;
 };
 
 export const deleteAdminComment = async (id: number): Promise<{ success: boolean }> => {
@@ -523,14 +526,13 @@ export const deleteRole = async (id: number): Promise<Role> => {
 export default {
     getDashboardStats,
     getDailyActivity,
-    getAdminPosts,
+    getPosts,
     getAdminComments,
     getReports,
     getRecentReports,
     getRecentPosts,
     handleStatus,
-    deleteAdminPost,
-    restoreAdminPost,
+    restorePost,
     deleteAdminComment,
     updateIsActiveUser,
     getUsers,
@@ -540,4 +542,5 @@ export default {
     createRole,
     updateRole,
     deleteRole,
+    ENDPOINTS,
 };

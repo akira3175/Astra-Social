@@ -92,8 +92,6 @@ const AdminDashboard: React.FC = () => {
                         <span className="stat-card-label">Người dùng</span>
                         <span className="stat-card-value">{formatNumber(stats.total_users)}</span>
                         <span className={`stat-card-trend ${stats.user_growth >= 0 ? "up" : "down"}`}>
-                            <TrendUpIcon size={14} />
-                            {stats.user_growth > 0 ? "+" : ""}{stats.user_growth}%
                         </span>
                     </div>
                     <div className="stat-card-icon users">
@@ -106,8 +104,6 @@ const AdminDashboard: React.FC = () => {
                         <span className="stat-card-label">Bài viết</span>
                         <span className="stat-card-value">{formatNumber(stats.total_posts)}</span>
                         <span className={`stat-card-trend ${stats.post_growth >= 0 ? "up" : "down"}`}>
-                            <TrendUpIcon size={14} />
-                            {stats.post_growth > 0 ? "+" : ""}{stats.post_growth}%
                         </span>
                     </div>
                     <div className="stat-card-icon posts">
@@ -120,8 +116,6 @@ const AdminDashboard: React.FC = () => {
                         <span className="stat-card-label">Bình luận</span>
                         <span className="stat-card-value">{formatNumber(stats.total_comments)}</span>
                         <span className={`stat-card-trend ${stats.comment_growth >= 0 ? "up" : "down"}`}>
-                            <TrendUpIcon size={14} />
-                            {stats.comment_growth > 0 ? "+" : ""}{stats.comment_growth}%
                         </span>
                     </div>
                     <div className="stat-card-icon comments">

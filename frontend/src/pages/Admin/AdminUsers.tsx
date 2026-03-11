@@ -241,7 +241,7 @@ const AdminUsers: React.FC = () => {
                                         {user.last_login ? formatDate(user.last_login) : "—"}
                                     </td>
                                     <td>
-                                        <div className="cell-actions">
+                                        <div className="cell-actions d-flex flex-row justify-content-center">
                                             <button
                                                 className="action-btn view"
                                                 title="Xem chi tiết"
