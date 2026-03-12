@@ -342,9 +342,10 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     await delay(300);
     let reports = await getReports(null,null, "ALL", 'PENDING', '');
     let users = await getUsers(1, '', '', '');
+    let posts = await getPosts(1, '', '', '');
     return {
         total_users: users.data.total,
-        total_posts: 8_563,
+        total_posts: posts.data.total,
         total_comments: 24_891,
         pending_reports: reports.pagination.total,
     };

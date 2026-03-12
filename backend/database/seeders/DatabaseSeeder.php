@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RolePermissionsSeeder::class,
             // NotificationSeeder::class,
+            CommentSeeder::class,
         ]);
     }
 }
