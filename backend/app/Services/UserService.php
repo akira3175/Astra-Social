@@ -6,7 +6,9 @@ use App\Models\Role;
 
 class UserService{
     public function getUsers(array $params){
-        $users = User::query()->with('role');
+        $users = User::query()
+                    ->with('role')
+                    ->orderBy('created_at', 'desc');
         if(!empty($params['role']) ){
             $users->whereHas('role', function ($q) use ($params){
                 $q->where('name', $params['role']);

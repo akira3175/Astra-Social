@@ -252,7 +252,9 @@ class PostService{
     }
 
     public function getAdminPost(array $params){
-        $data = Post::query()->with('user');
+        $data = Post::query()
+                    ->with('user')
+                    ->orderBy('created_at', 'desc');
         if(empty($params['status'])){
             $data->withTrashed();
         } 

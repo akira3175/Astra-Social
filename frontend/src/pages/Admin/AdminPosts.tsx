@@ -82,7 +82,7 @@ const AdminPosts: React.FC = () => {
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString("vi-VN", {
+        return new Date(dateStr).toLocaleString("vi-VN", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
@@ -90,7 +90,7 @@ const AdminPosts: React.FC = () => {
             minute: "2-digit",
         });
     };
-
+    
     const getPrivacyLabel = (privacy: string) => {
         switch (privacy) {
             case "PUBLIC": return "Công khai";

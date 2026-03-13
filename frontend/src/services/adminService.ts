@@ -346,10 +346,10 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     let posts = await getPosts(1, '', '', '');
     let comments = await getComments(1, '', '');
     return {
-        total_users: users.data.total,
-        total_posts: posts.data.total,
-        total_comments: comments.data.total,
-        pending_reports: reports.pagination.total,
+        reports:reports,
+        posts:posts,
+        comments: comments,
+        users: users,
     };
 };
 
@@ -358,21 +358,6 @@ export const getDailyActivity = async (): Promise<DailyActivity[]> => {
     return mockDailyActivity;
 };
 
-export const getRecentReports = async (limit: number = 5): Promise<AdminReport[]> => {
-    await delay(200);
-    return mockReports
-        .filter((r) => r.status === "PENDING")
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, limit);
-};
-
-export const getRecentPosts = async (limit: number = 5): Promise<AdminPost[]> => {
-    await delay(200);
-    return mockPosts
-        .filter((p) => !p.deleted_at)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, limit);
-};
 
 // post
 
@@ -548,8 +533,6 @@ export default {
     getPosts,
     getComments,
     getReports,
-    getRecentReports,
-    getRecentPosts,
     getPermissions,
     getRoles,
     createRole,
