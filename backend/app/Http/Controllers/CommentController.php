@@ -66,11 +66,18 @@ class CommentController extends Controller{
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+    public function destroy(Request $request, string $id){
+        $params=$request->all();
+        $comment = $this->commentService->destroy($params['auth_user'], $id);
+        if(!empty($comment)){
+            return response()->json([
+                'success'=>true,
+                'message'=>'Xóa bình luận thành công',
+            ]);
+        }
+        return response()->json([
+            'success'=>false,
+            'message'=>'Xóa bình luận thất bại',
+        ]);
     }
 }

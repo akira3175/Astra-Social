@@ -8,7 +8,7 @@ import {
     CloseIcon,
     FileTextIcon,
 } from "../../components/ui";
-import {ENDPOINTS, getPosts, restorePost } from "../../services/adminService";
+import {ENDPOINTS, getPosts, deletePost, restorePost } from "../../services/adminService";
 import type { AdminPost } from "../../types/admin";
 import "./AdminTable.css";
 import Swal from 'sweetalert2';
@@ -48,20 +48,22 @@ const AdminPosts: React.FC = () => {
     }
     const navigate = useNavigate();
     const handleDelete = async (id: number) => {
-        Swal.fire({
-            title: 'Chú ý',
-            text: 'Không thể xóa trực tiếp, phải xem xét các lý do tố cáo bài viết này',
-            icon: 'info', // warning, error, success, info, question
-            showConfirmButton: false,
-            timer: 5000
-        });
-        setSelectedPost(null);
-        setLoading(true);
-        navigate(`/admin/${ENDPOINTS.REPORTS}`);
+        let result = await deletePost(id);
+        if (result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: result.message,
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 3000
+            });
+            setSelectedPost(null);
+            setLoading(true);
+        }
     };
 
     const handleView= (id:number)=>{
-        navigate(`${ENDPOINTS.POST_BY_ID(id)}`);
+        navigate(`${ENDPOINTS.POSTS_BY_ID(id)}`);
     }
     
     const handleRestore = async (id: number) => {

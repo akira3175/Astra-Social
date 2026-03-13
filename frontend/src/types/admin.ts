@@ -31,13 +31,7 @@ export interface AdminComment {
     post_id: number;
     parent_id: number | null;
     created_at: string;
-    user: {
-        id: number;
-        username: string;
-        avatar_url: string | null;
-        first_name: string | null;
-        last_name: string | null;
-    };
+    user: AdminUser;
     post_preview: string;
 }
 
@@ -117,5 +111,11 @@ export interface UsersResponse{
 export interface PostsResponse{
     success: boolean,
     data: AdminPost[],
+    message: string | null,
+}
+
+export interface CommentsResponse{
+    success: boolean,
+    data: AdminComment[],
     message: string | null,
 }

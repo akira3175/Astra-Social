@@ -22,4 +22,5 @@ Route::middleware('jwt.auth')->group(function () {
     Route::patch('/posts/{id}', [PostController::class, 'update'])->where('id', '[0-9]+');
     Route::patch('/post-restore/{id}', [PostController::class, 'restorePostById']);
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::delete('/posts-admin/{id}', [PostController::class, 'adminDestroy']);
 });

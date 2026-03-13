@@ -185,7 +185,21 @@ class PostController extends Controller
             'success'=>false,
             'message'=> 'Không có bài viết nào',
         ]);
-
-
     }
+
+    public function adminDestroy(Request $request, string $id){
+        $params=$request->all();
+        $post = $this->postService->adminDeletePostById($params['auth_user'], $id);
+        if(!empty($post)){
+            return response()->json([
+                'success'=>true,
+                'message'=>'Xóa bài viêt thành công',
+            ]);
+        }
+        return response()->json([
+            'success'=>false,
+            'message'=>'Xóa bài viết thất bại',
+        ]);
+    }
+
 }

@@ -3,13 +3,15 @@
 namespace App\Services;
 
 use App\Models\MediaAttachment;
-use App\Models\Post;
 use App\Models\User;
+use App\Models\Post;
+use App\Models\Notification;
+use App\Services\NotificationService;
 
-class PostService
-{
+class PostService{
     public function __construct(
-        private MediaService $mediaService
+        private MediaService $mediaService,
+        private NotificationService $notiService 
     ) {}
 
     /**
@@ -273,5 +275,22 @@ class PostService
             return $post;
         }
         return false;
+    }
+
+    public function adminDeletePostById(User $auth_user, string $id){
+        $post = Post::find($id);
+        if(empty($post)){
+            return false;
+        }
+        $post->delete();
+        $noti=[
+            'receiver_id'=>$post->user_id,
+            'actor_id'=>$auth_user->id,
+            'entity_type'=> Notification::ENTITY_TYPE_POST,
+            'entity_id'=>$id,
+            'message'=>'Bài viết của bạn đã bị gỡ bỏ',
+        ];
+        $result = $this->notiService->create($noti);
+        return $result;
     }
 }

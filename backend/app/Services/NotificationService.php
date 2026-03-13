@@ -42,4 +42,21 @@ class NotificationService{
             'success' => true,
             'data' => $data,
         ];
-    }}
+    }
+
+    public function create(array $noti){
+        try{
+            $result = Notification::create([
+                'receiver_id'=>$noti['receiver_id'],
+                'actor_id'=>$noti['actor_id'],
+                'entity_type'=>$noti['entity_type'],
+                'entity_id'=>$noti['entity_id'],
+                'message'=> $noti['message'],
+            ]);
+            return true;
+        }
+        catch (Exception $e) {
+            return false;
+        }
+    }
+}
