@@ -18,6 +18,7 @@ import type {
 
 export const ENDPOINTS = {
     REPORTS : "/reports",
+    COUNT_REPORTS_BY_DAYS: (days:number)=> `/count-reports-admin-days/${days}`,
     ROLES : "/roles",
     ROLES_BY_ID: (id:number)=>`/roles/${id}`,
     PERMISSIONS: '/permissions',
@@ -25,10 +26,12 @@ export const ENDPOINTS = {
     USERS_U_ACTIVE: '/users/update-active',
     USERS_U_ROLE: '/users/update-role',
     POSTS: '/posts-admin',
+    COUNT_POSTS_BY_DAYS: (days:number) => `/count-posts-admin-days/${days}`,
     POSTS_BY_ID: (id:number)=> `/posts/${id}`,
     POSTS_ADMIN_BY_ID: (id:number)=> `/posts-admin/${id}`,
     POST_RESTORE: (id:number)=> `/post-restore/${id}`,
     COMMENTS: '/comments',
+    COUNT_COMMENTS_BY_DAYS: (days:number)=> `/count-comments-admin-days/${days}`,
     COMMENTS_BY_ID: (id:number)=>`/comments/${id}`,
 };
 
@@ -353,11 +356,36 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     };
 };
 
-export const getDailyActivity = async (): Promise<DailyActivity[]> => {
-    await delay(200);
-    return mockDailyActivity;
-};
+export const getDailyActivity = async (days:number): Promise<any> => {
+    let postsCount = await api.get<any>(ENDPOINTS.COUNT_POSTS_BY_DAYS(days));
+    let reportsCount = await api.get<any>(ENDPOINTS.COUNT_REPORTS_BY_DAYS(days));
+    let commentsCount = await api.get<any>(ENDPOINTS.COUNT_COMMENTS_BY_DAYS(days));
 
+    let posts=postsCount.data.data;
+    let comments= commentsCount.data.data;
+    let reports = reportsCount.data.data;
+
+    let result ={};
+    const addData = (type: string, arr: any[])=>{
+        arr.forEach(item => {
+            if(!result[item.date]){
+                result[item.date]={
+                    date: item.date,
+                    posts:0,
+                    comments:0,
+                    reports:0,
+                };
+            }
+            result[item.date][type]=item.total;
+        });
+    };
+    addData('posts', posts);
+    addData('comments', comments);
+    addData('reports', reports);
+
+    let dailyActivity = Object.values(result);
+    return dailyActivity;
+};
 
 // post
 

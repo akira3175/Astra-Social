@@ -19,14 +19,14 @@ const AdminDashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [activity, setActivity] = useState<DailyActivity[]>([]);
     const [loading, setLoading] = useState(true);
-
+    const [days, setDays] =useState<number>(7);
     useEffect(() => {
         const loadData = async () => {
             try {
                 const [statsData, activityData] =
                     await Promise.all([
                         getDashboardStats(),
-                        getDailyActivity(),
+                        getDailyActivity(days),
                     ]);
                 setStats(statsData);
                 setActivity(activityData);
@@ -127,31 +127,31 @@ const AdminDashboard: React.FC = () => {
                 <div className="dashboard-card">
                     <div className="dashboard-card-header">
                         <div>
-                            <h3 className="dashboard-card-title">Hoạt động 7 ngày qua</h3>
+                            <h3 className="dashboard-card-title">Hoạt động {days} ngày qua</h3>
                             <p className="dashboard-card-subtitle">Thống kê bài viết, bình luận và báo cáo</p>
                         </div>
                     </div>
                     <div className="activity-chart">
                         {activity.map((day) => (
-                            <div key={day.day} className="chart-column">
+                            <div key={day.date} className="chart-column">
                                 <div className="chart-bars">
                                     <div
                                         className="chart-bar posts"
                                         style={{ height: `${(day.posts / maxActivity) * 100}%` }}
-                                        data-value={`${day.posts} bài`}
+                                        data-value={`${day.posts} bài viết`}
                                     />
                                     <div
                                         className="chart-bar comments"
                                         style={{ height: `${(day.comments / maxActivity) * 100}%` }}
-                                        data-value={`${day.comments} BL`}
+                                        data-value={`${day.comments} bình luận`}
                                     />
                                     <div
                                         className="chart-bar reports"
                                         style={{ height: `${(day.reports / maxActivity) * 100}%` }}
-                                        data-value={`${day.reports} BC`}
+                                        data-value={`${day.reports} báo cáo`}
                                     />
                                 </div>
-                                <span className="chart-day">{day.day}</span>
+                                <span className="chart-day">{day.date}</span>
                             </div>
                         ))}
                     </div>

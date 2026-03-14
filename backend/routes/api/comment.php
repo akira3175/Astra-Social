@@ -9,5 +9,6 @@ use Illuminate\Support\Facades\Route;
 // Protected routes
 Route::middleware('jwt.auth')->group(function () {
 	Route::get('/comments', [CommentController::class, 'index']);
+    Route::get('count-comments-admin-days/{days}', [CommentController::class, 'adminGetCountByDays']);
 	Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 });

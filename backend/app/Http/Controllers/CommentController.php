@@ -80,4 +80,12 @@ class CommentController extends Controller{
             'message'=>'Xóa bình luận thất bại',
         ]);
     }
+
+    public function adminGetCountByDays(int $days){
+        $result = $this->commentService->adminGetCountByDays($days);
+        return response()->json([
+            'data'=>$result,
+        ]);
+    }
+
 }

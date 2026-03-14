@@ -17,6 +17,7 @@ Route::get('/users/{userId}/posts', [PostController::class, 'byUser'])->where('u
 // Protected routes
 Route::middleware('jwt.auth')->group(function () {
     Route::get('posts-admin', [PostController::class, 'adminIndex']);
+    Route::get('count-posts-admin-days/{days}', [PostController::class, 'adminGetCountByDays']);
     Route::get('/posts/me', [PostController::class, 'myPosts']);
     Route::post('/posts', [PostController::class, 'store']);
     Route::patch('/posts/{id}', [PostController::class, 'update'])->where('id', '[0-9]+');

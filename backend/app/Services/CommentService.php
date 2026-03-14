@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\Comment;
 use App\Models\Notification;
 use App\Services\NotificationService;
@@ -45,5 +46,16 @@ class CommentService{
         ];
         $result = $this->notiService->create($noti);
         return $result;
+    }
+
+    public function adminGetCountByDays(int $days){
+        $count = Comment::select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('COUNT(*) as total')
+                )
+                ->where('created_at', '>=', now()->subDays($days))
+                ->groupBy('date')
+                ->get();
+        return $count;
     }
 }

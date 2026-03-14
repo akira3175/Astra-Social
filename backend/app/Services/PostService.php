@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\MediaAttachment;
 use App\Models\User;
 use App\Models\Post;
@@ -294,5 +295,16 @@ class PostService{
         ];
         $result = $this->notiService->create($noti);
         return $result;
+    }
+
+    public function adminGetCountByDays(int $days){
+        $count = Post::select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('COUNT(*) as total')
+                )
+                ->where('created_at', '>=', now()->subDays($days))
+                ->groupBy('date')
+                ->get();
+        return $count;
     }
 }

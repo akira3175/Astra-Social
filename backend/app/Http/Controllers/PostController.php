@@ -201,5 +201,11 @@ class PostController extends Controller
             'message'=>'Xóa bài viết thất bại',
         ]);
     }
+    public function adminGetCountByDays(int $days){
+        $result = $this->postService->adminGetCountByDays($days);
+        return response()->json([
+            'data'=>$result,
+        ]);
+    }
 
 }

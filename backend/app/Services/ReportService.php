@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\MediaAttachment;
 use App\Models\Report;
 use App\Models\Post;
@@ -116,5 +117,15 @@ class ReportService{
             'success' => true,
             'report' => $query,
         ];
+    }
+    public function adminGetCountByDays(int $days){
+        $count = Report::select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('COUNT(*) as total')
+                )
+                ->where('created_at', '>=', now()->subDays($days))
+                ->groupBy('date')
+                ->get();
+        return $count;
     }
 }
