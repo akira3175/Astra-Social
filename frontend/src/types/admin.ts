@@ -89,6 +89,7 @@ export interface Role {
 
 export interface RolesResponse{
     success: boolean,
+    message: string | null,
     data: Role[],
 }
 export interface ReportsResponse{

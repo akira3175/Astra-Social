@@ -341,8 +341,6 @@ let mockRoles: Role[] = [
 
 // daashboard
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export const getDashboardStats = async (): Promise<DashboardStats> => {
     let reports = await getReports(null,null, "ALL", 'PENDING', '');
     let users = await getUsers(1, '', '', '');
@@ -460,7 +458,6 @@ export const getReports = async (
 };
 
 export const handleStatus = async (id: number, status: string, userId: number): Promise<AdminReport> => {
-    await delay(300);
     const response = await api.patch<ReportsResponse>(ENDPOINTS.REPORTS,null,{
         params:{
             id:id,
@@ -535,10 +532,9 @@ export const createRole = async (data: { name: string; description: string; perm
     return response.data;
 };
 
-export const updateRole = async (id: number, data: { name?: string; description?: string; permissions?: number[] }): Promise<Role> => {
+export const updateRole = async (id: number, data: { description?: string; permissions?: number[] }): Promise<Role> => {
     const roleEdited: Role = {
         id: id,
-        name: data.name,
         description: data.description,
         permissions: [...data.permissions],
     };

@@ -11,9 +11,11 @@ import {ENDPOINTS, getComments, deleteComment } from "../../services/adminServic
 import type { AdminComment } from "../../types/admin";
 import "./AdminTable.css";
 import Swal from 'sweetalert2';
+import { useCurrentUser } from "../../context/currentUserContext";
 import withReactContent from 'sweetalert2-react-content';
 
 const AdminComments: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [comments, setComments] = useState<AdminComment[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");

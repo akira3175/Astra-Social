@@ -11,10 +11,12 @@ import {
 import {ENDPOINTS, getPosts, deletePost, restorePost } from "../../services/adminService";
 import type { AdminPost } from "../../types/admin";
 import "./AdminTable.css";
+import { useCurrentUser } from "../../context/currentUserContext";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
 const AdminPosts: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [posts, setPosts] = useState<AdminPost[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -213,13 +215,36 @@ const AdminPosts: React.FC = () => {
                                     </td>
                                     <td>
                                         <div className="cell-actions d-flex flex-row justify-content-center">
-                                            <button
-                                                className="action-btn view"
-                                                title="Xem chi tiết"
-                                                onClick={() => setSelectedPost(post)}
-                                            >
-                                                <EyeIcon size={16} />
-                                            </button>
+                                            {currentUser.role.permissions.find(p=>p.slug==='post.view') && (
+                                                <button
+                                                    className="action-btn view"
+                                                    title="Xem chi tiết"
+                                                    onClick={() => setSelectedPost(post)}
+                                                >
+                                                    <EyeIcon size={16} />
+                                                </button>
+                                            )}
+                                            {post.deleted_at ? (
+                                                currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                                    <button
+                                                        className="action-btn restore"
+                                                        title="Khôi phục"
+                                                        onClick={() => handleRestore(post.id)}
+                                                    >
+                                                        <RefreshIcon size={16} />
+                                                    </button>
+                                                )
+                                            ) : (
+                                                currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                                    <button
+                                                        className="action-btn delete"
+                                                        title="Xóa bài viết"
+                                                        onClick={() => handleDelete(post.id)}
+                                                    >
+                                                        <TrashIcon size={16} />
+                                                    </button>
+                                                )
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -311,31 +336,35 @@ const AdminPosts: React.FC = () => {
                             {/* Actions in modal */}
                             <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
                                 {selectedPost.deleted_at ? (
-                                    <button
-                                        style={{
-                                            display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
-                                            background: "white", color: "#ef4444",
-                                            fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
-                                            minWidth: 120, alignItems: "center", justifyContent: "center"
-                                        }}
-                                        onClick={() => handleRestore(selectedPost.id)}
-                                    >
-                                        <RefreshIcon size={16} />
-                                        Khôi phục bài viết
-                                    </button>
+                                    currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                        <button
+                                            style={{
+                                                display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
+                                                background: "white", color: "#ef4444",
+                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                                minWidth: 120, alignItems: "center", justifyContent: "center"
+                                            }}
+                                            onClick={() => handleRestore(selectedPost.id)}
+                                        >
+                                            <RefreshIcon size={16} />
+                                            Khôi phục bài viết
+                                        </button>
+                                    )
                                 ) : (
-                                    <button
-                                        style={{
-                                            display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
-                                            background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
-                                            fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
-                                            minWidth: 120, alignItems: "center", justifyContent: "center"
-                                        }}
-                                        onClick={() => handleDelete(selectedPost.id)}
-                                    >
-                                        <TrashIcon size={16} />
-                                        Xóa bài viết
-                                    </button>
+                                    currentUser.role.permissions.find(p=>p.slug==='post.delete') && (
+                                        <button
+                                            style={{
+                                                display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
+                                                background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
+                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                                minWidth: 120, alignItems: "center", justifyContent: "center"
+                                            }}
+                                            onClick={() => handleDelete(selectedPost.id)}
+                                        >
+                                            <TrashIcon size={16} />
+                                            Xóa bài viết
+                                        </button>
+                                    )
                                 )}
                                 <button
                                     style={{

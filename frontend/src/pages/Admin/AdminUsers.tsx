@@ -8,10 +8,12 @@ import {
 import { getUsers, updateIsActiveUser, changeUserRole, getRoles } from "../../services/adminService";
 import type { AdminUser, Role } from "../../types/admin";
 import "./AdminTable.css";
+import { useCurrentUser } from "../../context/currentUserContext";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
 const AdminUsers: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
@@ -120,7 +122,7 @@ const AdminUsers: React.FC = () => {
     if (!loading){
         activeCount = users.data.data.filter(u=>u.is_active===true).length;
     }
-
+    console.log(currentUser);
     return (
         <div>
             {/* Header */}
@@ -242,14 +244,37 @@ const AdminUsers: React.FC = () => {
                                     </td>
                                     <td>
                                         <div className="cell-actions d-flex flex-row justify-content-center">
-                                            <button
-                                                className="action-btn view"
-                                                title="Xem chi tiết"
-                                                onClick={() => setSelectedUser(user)}
-                                            >
-                                                <EyeIcon size={16} />
-                                            </button>
-                                            
+                                            {currentUser.role.permissions.find(p=>p.slug==='user.view') && (
+                                                <button
+                                                    className="action-btn view"
+                                                    title="Xem chi tiết"
+                                                    onClick={() => setSelectedUser(user)}
+                                                >
+                                                    <EyeIcon size={16} />
+                                                </button>
+                                                )
+                                            }
+
+                                            {currentUser.role.permissions.find(p=>p.slug==='user.ban') && (
+                                                user.is_active ? (
+                                                    <button
+                                                        className="action-btn delete"
+                                                        title="Khóa tài khoản"
+                                                        onClick={() => handleBan(user.id)}
+                                                    >
+                                                        🔒
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="action-btn restore"
+                                                        title="Mở khóa tài khoản"
+                                                        onClick={() => handleUnban(user.id)}
+                                                    >
+                                                        🔓
+                                                    </button>
+                                                )
+                                                )
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -362,7 +387,8 @@ const AdminUsers: React.FC = () => {
 
                             {/* Actions in modal */}
                             <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                                {selectedUser.is_active ? (
+                            {currentUser.role.permissions.find(p=> p.slug==='user.ban') && (
+                                selectedUser.is_active ? (
                                     <button
                                         style={{
                                             flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
@@ -386,7 +412,10 @@ const AdminUsers: React.FC = () => {
                                     >
                                         🔓 Mở khóa
                                     </button>
-                                )}
+                                )
+                                )
+                            }
+                            {currentUser.role.permissions.find(p=>p.slug==='user.assign_role') && (
                                 <button
                                     style={{
                                         flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
@@ -398,6 +427,8 @@ const AdminUsers: React.FC = () => {
                                 >
                                     🔄 Đổi vai trò
                                 </button>
+                                )
+                            }
                             </div>
                         </div>
                     </div>
