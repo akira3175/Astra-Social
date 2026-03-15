@@ -78,7 +78,6 @@ const AdminComments: React.FC = () => {
             minute: "2-digit",
         });
     };
-
     return (
         <div>
             {/* Header */}
@@ -169,6 +168,7 @@ const AdminComments: React.FC = () => {
                                     <td className="cell-date">{formatDate(comment.created_at)}</td>
                                     <td>
                                         <div className="cell-actions d-flex flex-row justify-content-center">
+                                        {currentUser.role.permissions.find(p=>p.slug==='comment.view') && (
                                             <button
                                                 className="action-btn view"
                                                 title="Xem chi tiết"
@@ -176,6 +176,17 @@ const AdminComments: React.FC = () => {
                                             >
                                                 <EyeIcon size={16} />
                                             </button>
+                                        )}
+                                        {currentUser.role.permissions.find(p=>p.slug==='comment.delete') && (
+                                            <button
+                                                className= "action-btn delete"
+                                                title="Xóa bình luận"
+                                                onClick={() => handleDelete(comment.id)}
+                                            >
+                                                <TrashIcon size={16} />
+                                            </button>
+                                        )}
+
                                         </div>
                                     </td>
                                 </tr>
@@ -259,6 +270,7 @@ const AdminComments: React.FC = () => {
                                 <span className="admin-detail-value">{formatDate(selectedComment.created_at)}</span>
                             </div>
                             <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                            {currentUser.role.permissions.find(p=>p.slug==='comment.delete') && (
                                 <button
                                     style={{
                                         display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
@@ -271,6 +283,7 @@ const AdminComments: React.FC = () => {
                                     <TrashIcon size={16} />
                                     Xóa bình luận
                                 </button>
+                            )}
                                 <button
                                     style={{
                                         display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,

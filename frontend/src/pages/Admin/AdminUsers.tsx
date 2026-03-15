@@ -122,7 +122,6 @@ const AdminUsers: React.FC = () => {
     if (!loading){
         activeCount = users.data.data.filter(u=>u.is_active===true).length;
     }
-    console.log(currentUser);
     return (
         <div>
             {/* Header */}

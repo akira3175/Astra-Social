@@ -169,9 +169,11 @@ const AdminRoles: React.FC = () => {
                     <h2>Quản lý phân quyền</h2>
                     <p>Tạo, chỉnh sửa vai trò và gán quyền hạn cho từng vai trò</p>
                 </div>
+                {currentUser.role.permissions.find(p=>p.slug==='role.create') && (
                 <button className="roles-btn-create" onClick={openCreate}>
                     + Tạo vai trò mới
                 </button>
+                )}
             </div>
 
             {/* Roles Grid */}
@@ -186,6 +188,7 @@ const AdminRoles: React.FC = () => {
                                 <p>{role.description}</p>
                             </div>
                             <div className="role-card-actions">
+                            {currentUser.role.permissions.find(p=>p.slug==='role.edit') && (
                                 <button
                                     className="role-action-btn"
                                     title="Chỉnh sửa"
@@ -193,6 +196,8 @@ const AdminRoles: React.FC = () => {
                                 >
                                     ✏️
                                 </button>
+                            )}
+                            {currentUser.role.permissions.find(p=>p.slug==='role.delete') && (
                                 <button
                                     className="role-action-btn delete"
                                     title="Xóa"
@@ -201,6 +206,7 @@ const AdminRoles: React.FC = () => {
                                 >
                                     🗑️
                                 </button>
+                            )}
                             </div>
                         </div>
 
