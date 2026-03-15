@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { LoginPage, ProtectedRoute } from "./pages/Auth";
+import { LoginPage, ProtectedRoute, PermissionRoute } from "./pages/Auth";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
@@ -38,13 +38,33 @@ const RouteApp=()=>{
           <Route element={<ProtectedRoute user={context.currentUser}
                                           isLoading={context.isLoading}
           />}>
+
             <Route path="/admin" element={<AdminLayout />}>
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/posts" element={<AdminPosts />} />
-              <Route path="/admin/comments" element={<AdminComments />} />
-              <Route path="/admin/reports" element={<AdminReports />} />
-              <Route path="/admin/roles" element={<AdminRoles />} />
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="dashboard" />}>
+              <Route path="dashboard" element={<AdminDashboard />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="user" />}>
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="posts" />}>
+              <Route path="posts" element={<AdminPosts />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="comments" />}>
+              <Route path="comments" element={<AdminComments />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="reports" />}>
+              <Route path="reports" element={<AdminReports />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="roles" />}>
+              <Route path="roles" element={<AdminRoles />} />
+            </Route>
+
             </Route>
           </Route>
         </Routes>
