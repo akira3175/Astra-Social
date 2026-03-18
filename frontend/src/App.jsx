@@ -9,6 +9,7 @@ import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
 import PostDetailPage from "./pages/Post";
 import SettingsPage from "./pages/Settings";
+import { AboutPage, TermsPage, PrivacyPage } from "./pages/Info";
 import { AdminLayout, AdminDashboard, AdminPosts, AdminComments, AdminReports, AdminRoles, AdminUsers } from "./pages/Admin";
 import { CurrentUserProvider, useCurrentUser } from "./context/currentUserContext";
 import "./App.css";
@@ -35,6 +36,9 @@ const RouteApp=()=>{
             <Route path="/friends" element={<FriendsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             {/* Thêm route mới ở đây, tự động có Navbar */}
           </Route>
 
