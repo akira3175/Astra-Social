@@ -29,6 +29,7 @@ export const getMyProfile = async (): Promise<UserProfileResponse> => {
 export const transformUserProfile = (data: UserProfileApiResponse) => ({
     id: String(data.user.id),
     email: data.user.email,
+    role: data.user.role,
     username: data.user.username,
     firstName: data.profile.first_name || undefined,
     lastName: data.profile.last_name || undefined,

@@ -1,6 +1,5 @@
 import { api } from "../configs/api";
 import type {
-    ReportsResponse,
     AdminPost,
     AdminComment,
     AdminReport,
@@ -9,10 +8,31 @@ import type {
     DailyActivity,
     Permission,
     Role,
+    PostsResponse,
+    CommentResponse,
+    PermissionsResponse,
+    ReportsResponse,
+    RolesResponse,
+    UsersResponse,
 } from "../types/admin";
 
-const ENDPOINTS = {
+export const ENDPOINTS = {
     REPORTS : "/reports",
+    COUNT_REPORTS_BY_DAYS: (days:number)=> `/count-reports-admin-days/${days}`,
+    ROLES : "/roles",
+    ROLES_BY_ID: (id:number)=>`/roles/${id}`,
+    PERMISSIONS: '/permissions',
+    USERS: '/users',
+    USERS_U_ACTIVE: '/users/update-active',
+    USERS_U_ROLE: '/users/update-role',
+    POSTS: '/posts-admin',
+    COUNT_POSTS_BY_DAYS: (days:number) => `/count-posts-admin-days/${days}`,
+    POSTS_BY_ID: (id:number)=> `/posts/${id}`,
+    POSTS_ADMIN_BY_ID: (id:number)=> `/posts-admin/${id}`,
+    POST_RESTORE: (id:number)=> `/post-restore/${id}`,
+    COMMENTS: '/comments',
+    COUNT_COMMENTS_BY_DAYS: (days:number)=> `/count-comments-admin-days/${days}`,
+    COMMENTS_BY_ID: (id:number)=>`/comments/${id}`,
 };
 
 // ============ Mock Data ============
@@ -319,40 +339,104 @@ let mockRoles: Role[] = [
     },
 ];
 
-let nextRoleId = 6;
-
-// ============ Service Functions ============
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// daashboard
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-    await delay(300);
+    let reports = await getReports(null,null, "ALL", 'PENDING', '');
+    let users = await getUsers(1, '', '', '');
+    let posts = await getPosts(1, '', '', '');
+    let comments = await getComments(1, '', '');
     return {
-        total_users: 1_247,
-        total_posts: 8_563,
-        total_comments: 24_891,
-        pending_reports: mockReports.filter((r) => r.status === "PENDING").length,
-        user_growth: 12.5,
-        post_growth: 8.3,
-        comment_growth: 15.2,
-        report_change: -3.1,
+        reports:reports,
+        posts:posts,
+        comments: comments,
+        users: users,
     };
 };
 
-export const getDailyActivity = async (): Promise<DailyActivity[]> => {
-    await delay(200);
-    return mockDailyActivity;
+export const getDailyActivity = async (days:number): Promise<any> => {
+    let postsCount = await api.get<any>(ENDPOINTS.COUNT_POSTS_BY_DAYS(days));
+    let reportsCount = await api.get<any>(ENDPOINTS.COUNT_REPORTS_BY_DAYS(days));
+    let commentsCount = await api.get<any>(ENDPOINTS.COUNT_COMMENTS_BY_DAYS(days));
+
+    let posts=postsCount.data.data;
+    let comments= commentsCount.data.data;
+    let reports = reportsCount.data.data;
+
+    let result ={};
+    const addData = (type: string, arr: any[])=>{
+        arr.forEach(item => {
+            if(!result[item.date]){
+                result[item.date]={
+                    date: item.date,
+                    posts:0,
+                    comments:0,
+                    reports:0,
+                };
+            }
+            result[item.date][type]=item.total;
+        });
+    };
+    addData('posts', posts);
+    addData('comments', comments);
+    addData('reports', reports);
+
+    let dailyActivity = Object.values(result);
+    return dailyActivity;
 };
 
-export const getAdminPosts = async (): Promise<AdminPost[]> => {
-    await delay(300);
-    return [...mockPosts];
+// post
+
+export const getPosts = async(
+    page:number,
+    privacy: string,
+    status: string,
+    search: string
+    ): Promise<AdminPost[]>=>{
+    let response = await api.get<PostsResponse>(ENDPOINTS.POSTS, {
+        params:{
+            page:page,
+            privacy: privacy,
+            status: status,
+            search: search
+        }
+    });
+    return response.data;
 };
 
-export const getAdminComments = async (): Promise<AdminComment[]> => {
-    await delay(300);
-    return [...mockComments];
+export const deletePost = async (id: number): Promise<AdminPost> => {
+    let response = await api.delete<PostsResponse>(ENDPOINTS.POSTS_ADMIN_BY_ID(id));
+    return response.data;
 };
+
+export const restorePost = async (id: number): Promise<AdminPost> => {
+    let response = await api.patch<PostsResponse>(ENDPOINTS.POST_RESTORE(id));
+    return response.data;
+};
+
+// comment
+
+export const getComments = async (
+    page: number,
+    type: string,
+    search: string
+    ): Promise<AdminComment[]> => {
+    let response = await api.get<CommentResponse>(ENDPOINTS.COMMENTS, {
+        params:{
+            page:page,
+            type:type,
+            search: search
+        }
+    });
+    return response.data;
+};
+
+export const deleteComment = async (id: number): Promise<AdminComment> => {
+    let response = await api.delete<CommentResponse>(ENDPOINTS.COMMENTS_BY_ID(id));
+    return response.data;
+};
+
+// report
 
 export const getReports = async (
     page: number,
@@ -373,24 +457,7 @@ export const getReports = async (
     return response.data;
 };
 
-export const getRecentReports = async (limit: number = 5): Promise<AdminReport[]> => {
-    await delay(200);
-    return mockReports
-        .filter((r) => r.status === "PENDING")
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, limit);
-};
-
-export const getRecentPosts = async (limit: number = 5): Promise<AdminPost[]> => {
-    await delay(200);
-    return mockPosts
-        .filter((p) => !p.deleted_at)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, limit);
-};
-
 export const handleStatus = async (id: number, status: string, userId: number): Promise<AdminReport> => {
-    await delay(300);
     const response = await api.patch<ReportsResponse>(ENDPOINTS.REPORTS,null,{
         params:{
             id:id,
@@ -401,130 +468,101 @@ export const handleStatus = async (id: number, status: string, userId: number): 
     return response.data;
 };
 
-export const deleteAdminPost = async (id: number): Promise<AdminPost> => {
-    await delay(300);
-    const post = mockPosts.find((p) => p.id === id);
-    if (post) {
-        post.deleted_at = new Date().toISOString();
-    }
-    return post!;
+// User 
+
+export const getUsers = async (
+    page:number,
+    roleFilter: string,
+    statusFilter: string,
+    searchQuery: string,
+    ): Promise<AdminUser[]> => {
+    let response = await api.get<UsersResponse>(ENDPOINTS.USERS,{
+        params:{
+            page: page,
+            role: roleFilter,
+            status: statusFilter,
+            search: searchQuery,
+        }
+    });
+    return response.data;
 };
 
-export const restoreAdminPost = async (id: number): Promise<AdminPost> => {
-    await delay(300);
-    const post = mockPosts.find((p) => p.id === id);
-    if (post) {
-        post.deleted_at = null;
-    }
-    return post!;
+export const updateIsActiveUser = async(
+    id: number,
+    isActive: boolean
+    ): Promise<AdminUser[]>=>{
+    let response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ACTIVE,{
+        params:{
+            id: id,
+            is_active: isActive,
+        }
+    });
+    return response.data;
 };
 
-export const deleteAdminComment = async (id: number): Promise<{ success: boolean }> => {
-    await delay(300);
-    const index = mockComments.findIndex((c) => c.id === id);
-    if (index !== -1) {
-        mockComments.splice(index, 1);
-    }
-    return { success: true };
+export const changeUserRole = async (id: number, roleId: number): Promise<AdminUser> => {
+    const response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ROLE,{
+        params:{
+            id: id,
+            role_id: roleId,
+        }
+    });
+    return response.data;
 };
 
-// ============ Admin Users CRUD ============
-
-export const getAdminUsers = async (): Promise<AdminUser[]> => {
-    await delay(300);
-    return mockAdminUsers.map(u => ({ ...u }));
-};
-
-export const banUser = async (id: number): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.is_active = false;
-    return { ...user };
-};
-
-export const unbanUser = async (id: number): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.is_active = true;
-    return { ...user };
-};
-
-export const changeUserRole = async (id: number, role: string): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.role = role;
-    return { ...user };
-};
-
-// ============ Roles & Permissions CRUD ============
+// role
 
 export const getPermissions = async (): Promise<Permission[]> => {
-    await delay(200);
-    return [...mockPermissions];
+    const response = await api.get<PermissionsResponse>(ENDPOINTS.PERMISSIONS);
+    return response.data;
 };
 
 export const getRoles = async (): Promise<Role[]> => {
-    await delay(300);
-    return mockRoles.map(r => ({ ...r, permissions: [...r.permissions] }));
+    const response = await api.get<RolesResponse>(ENDPOINTS.ROLES);  
+    return response.data;
 };
 
 export const createRole = async (data: { name: string; description: string; permissions: number[] }): Promise<Role> => {
-    await delay(400);
     const newRole: Role = {
-        id: nextRoleId++,
         name: data.name,
         description: data.description,
-        is_default: false,
-        user_count: 0,
         permissions: [...data.permissions],
-        created_at: new Date().toISOString(),
     };
-    mockRoles.push(newRole);
-    return { ...newRole };
+    const response = await api.post<RolesResponse>(ENDPOINTS.ROLES, newRole);
+    return response.data;
 };
 
-export const updateRole = async (id: number, data: { name?: string; description?: string; permissions?: number[] }): Promise<Role> => {
-    await delay(400);
-    const role = mockRoles.find(r => r.id === id);
-    if (!role) throw new Error("Role not found");
-    if (data.name !== undefined) role.name = data.name;
-    if (data.description !== undefined) role.description = data.description;
-    if (data.permissions !== undefined) role.permissions = [...data.permissions];
-    return { ...role, permissions: [...role.permissions] };
+export const updateRole = async (id: number, data: { description?: string; permissions?: number[] }): Promise<Role> => {
+    const roleEdited: Role = {
+        id: id,
+        description: data.description,
+        permissions: [...data.permissions],
+    };
+    const response = await api.patch<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id), roleEdited);
+    return response.data;
 };
 
-export const deleteRole = async (id: number): Promise<{ success: boolean; error?: string }> => {
-    await delay(400);
-    const role = mockRoles.find(r => r.id === id);
-    if (!role) return { success: false, error: "Vai trò không tồn tại" };
-    if (role.is_default) return { success: false, error: "Không thể xóa vai trò mặc định" };
-    if (role.user_count > 0) return { success: false, error: `Có ${role.user_count} người dùng đang sử dụng vai trò này` };
-    mockRoles = mockRoles.filter(r => r.id !== id);
-    return { success: true };
+export const deleteRole = async (id: number): Promise<Role> => {
+    const response = await api.delete<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id));
+    return response.data;
 };
 
 export default {
+    handleStatus,
+    restorePost,
+    changeUserRole,
     getDashboardStats,
     getDailyActivity,
-    getAdminPosts,
-    getAdminComments,
+    getUsers,
+    getPosts,
+    getComments,
     getReports,
-    getRecentReports,
-    getRecentPosts,
-    handleStatus,
-    deleteAdminPost,
-    restoreAdminPost,
-    deleteAdminComment,
-    getAdminUsers,
-    banUser,
-    unbanUser,
-    changeUserRole,
     getPermissions,
     getRoles,
     createRole,
+    updateIsActiveUser,
     updateRole,
     deleteRole,
-};
+    deletePost,
+    ENDPOINTS,
+}

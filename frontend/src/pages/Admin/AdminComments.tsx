@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState, useMemo } from "react";
 import {
     SearchIcon,
@@ -6,28 +7,36 @@ import {
     CloseIcon,
     CommentIcon,
 } from "../../components/ui";
-import { getAdminComments, deleteAdminComment } from "../../services/adminService";
+import {ENDPOINTS, getComments, deleteComment } from "../../services/adminService";
 import type { AdminComment } from "../../types/admin";
 import "./AdminTable.css";
-
-const ITEMS_PER_PAGE = 5;
+import Swal from 'sweetalert2';
+import { useCurrentUser } from "../../context/currentUserContext";
+import withReactContent from 'sweetalert2-react-content';
 
 const AdminComments: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [comments, setComments] = useState<AdminComment[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [typeFilter, setTypeFilter] = useState<string>("ALL");
+    const [typeFilter, setTypeFilter] = useState<string>("");
     const [selectedComment, setSelectedComment] = useState<AdminComment | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
-        loadComments();
-    }, []);
+        const timer = setTimeout(() => {
+            loadComments(currentPage, typeFilter, searchQuery);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [loading,currentPage, typeFilter, searchQuery]);
 
-    const loadComments = async () => {
-        setLoading(true);
+    const loadComments = async (
+        currentPage:number,
+        typeFilter: string,
+        searchQuery: string
+        ) => {
         try {
-            const data = await getAdminComments();
+            const data = await getComments(currentPage, typeFilter, searchQuery);
             setComments(data);
         } catch (error) {
             console.error("Error loading comments:", error);
@@ -35,32 +44,30 @@ const AdminComments: React.FC = () => {
             setLoading(false);
         }
     };
+    let totalPages;
+    if(!loading){
+        totalPages =comments.data.last_page;
+    }
 
-    const filteredComments = useMemo(() => {
-        setCurrentPage(1);
-        return comments.filter((comment) => {
-            const matchesSearch = !searchQuery ||
-                comment.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                comment.user.username.toLowerCase().includes(searchQuery.toLowerCase());
-
-            const matchesType = typeFilter === "ALL" ||
-                (typeFilter === "ROOT" && !comment.parent_id) ||
-                (typeFilter === "REPLY" && comment.parent_id);
-
-            return matchesSearch && matchesType;
-        });
-    }, [comments, searchQuery, typeFilter]);
-
-    const totalPages = Math.ceil(filteredComments.length / ITEMS_PER_PAGE);
-    const paginatedComments = filteredComments.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
-    );
-
+    const navigate = useNavigate();
     const handleDelete = async (id: number) => {
-        await deleteAdminComment(id);
-        setComments((prev) => prev.filter((c) => c.id !== id));
+        let result = await deleteComment(id);
+        if(result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: result.message,
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 3000
+            });
+            setSelectedComment(null);
+            setLoading(true);
+        }
     };
+
+    const handleView= (id:number)=>{
+        navigate(`${ENDPOINTS.POSTS_BY_ID(id)}`);
+    }
 
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString("vi-VN", {
@@ -71,7 +78,6 @@ const AdminComments: React.FC = () => {
             minute: "2-digit",
         });
     };
-
     return (
         <div>
             {/* Header */}
@@ -83,7 +89,10 @@ const AdminComments: React.FC = () => {
                             type="text"
                             placeholder="Tìm kiếm bình luận..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
                         />
                     </div>
                 </div>
@@ -91,9 +100,12 @@ const AdminComments: React.FC = () => {
                     <select
                         className="admin-filter-select"
                         value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
+                        onChange={(e) => {
+                            setTypeFilter(e.target.value);
+                            setCurrentPage(1);
+                        }}
                     >
-                        <option value="ALL">Tất cả loại</option>
+                        <option value="">Tất cả loại</option>
                         <option value="ROOT">Bình luận gốc</option>
                         <option value="REPLY">Trả lời</option>
                     </select>
@@ -104,14 +116,13 @@ const AdminComments: React.FC = () => {
             <div className="admin-table-container">
                 <table className="admin-table">
                     <thead>
-                        <tr>
+                        <tr >
                             <th>ID</th>
                             <th>Người viết</th>
                             <th>Nội dung</th>
-                            <th>Bài viết</th>
                             <th>Loại</th>
                             <th>Ngày tạo</th>
-                            <th>Hành động</th>
+                            <th className='text-center'>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -123,7 +134,7 @@ const AdminComments: React.FC = () => {
                                     ))}
                                 </tr>
                             ))
-                        ) : filteredComments.length === 0 ? (
+                        ) : !comments.success ? (
                             <tr>
                                 <td colSpan={7}>
                                     <div className="admin-empty">
@@ -133,7 +144,7 @@ const AdminComments: React.FC = () => {
                                 </td>
                             </tr>
                         ) : (
-                            paginatedComments.map((comment) => (
+                            comments.data.data.map((comment) => (
                                 <tr key={comment.id}>
                                     <td className="cell-number">#{comment.id}</td>
                                     <td>
@@ -148,11 +159,6 @@ const AdminComments: React.FC = () => {
                                         <div className="cell-content">{comment.content}</div>
                                     </td>
                                     <td>
-                                        <div className="cell-content" style={{ fontSize: 12, color: "#94a3b8" }}>
-                                            #{comment.post_id} — {comment.post_preview}
-                                        </div>
-                                    </td>
-                                    <td>
                                         {comment.parent_id ? (
                                             <span className="status-badge comment">Trả lời #{comment.parent_id}</span>
                                         ) : (
@@ -161,7 +167,8 @@ const AdminComments: React.FC = () => {
                                     </td>
                                     <td className="cell-date">{formatDate(comment.created_at)}</td>
                                     <td>
-                                        <div className="cell-actions">
+                                        <div className="cell-actions d-flex flex-row justify-content-center">
+                                        {currentUser.role.permissions.find(p=>p.slug==='comment.view') && (
                                             <button
                                                 className="action-btn view"
                                                 title="Xem chi tiết"
@@ -169,13 +176,17 @@ const AdminComments: React.FC = () => {
                                             >
                                                 <EyeIcon size={16} />
                                             </button>
+                                        )}
+                                        {currentUser.role.permissions.find(p=>p.slug==='comment.delete') && (
                                             <button
-                                                className="action-btn delete"
-                                                title="Xóa bình luận"
+                                                className= "action-btn delete"
+                                                title="Xóa bình luận"
                                                 onClick={() => handleDelete(comment.id)}
                                             >
                                                 <TrashIcon size={16} />
                                             </button>
+                                        )}
+
                                         </div>
                                     </td>
                                 </tr>
@@ -183,17 +194,19 @@ const AdminComments: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                {!loading && filteredComments.length > 0 && (
+                {!loading && comments.success && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
-                            Hiển thị {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredComments.length)} / {filteredComments.length} bình luận
+                            Hiển thị {comments.data.data.length} / {comments.data.total} bình luận
                         </span>
                         <div className="admin-pagination-controls">
+                            {comments.data.prev_page_url && (
                             <button
                                 className="admin-pagination-btn nav-btn"
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(p => p - 1)}
                             >‹</button>
+                            )}
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
                                 if (totalPages <= 7 || page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
                                     return (
@@ -208,11 +221,13 @@ const AdminComments: React.FC = () => {
                                 if (page === totalPages - 1 && currentPage < totalPages - 3) return <span key="e2" className="admin-pagination-ellipsis">…</span>;
                                 return null;
                             })}
+                            {comments.data.next_page_url && (
                             <button
                                 className="admin-pagination-btn nav-btn"
                                 disabled={currentPage === totalPages}
                                 onClick={() => setCurrentPage(p => p + 1)}
                             >›</button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -242,7 +257,7 @@ const AdminComments: React.FC = () => {
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Bài viết</span>
-                                <span className="admin-detail-value">#{selectedComment.post_id} — {selectedComment.post_preview}</span>
+                                <span className="admin-detail-value">#{selectedComment.post_id} — {selectedComment.post.content}</span>
                             </div>
                             {selectedComment.parent_id && (
                                 <div className="admin-detail-row">
@@ -254,6 +269,35 @@ const AdminComments: React.FC = () => {
                                 <span className="admin-detail-label">Ngày tạo</span>
                                 <span className="admin-detail-value">{formatDate(selectedComment.created_at)}</span>
                             </div>
+                            <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                            {currentUser.role.permissions.find(p=>p.slug==='comment.delete') && (
+                                <button
+                                    style={{
+                                        display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
+                                        background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
+                                        fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                        minWidth: 120, alignItems: "center", justifyContent: "center"
+                                    }}
+                                    onClick={() => handleDelete(selectedComment.id)}
+                                >
+                                    <TrashIcon size={16} />
+                                    Xóa bình luận
+                                </button>
+                            )}
+                                <button
+                                    style={{
+                                        display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
+                                        background: "white", color: "#6366f1",
+                                        fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                        minWidth: 120, alignItems: "center", justifyContent: "center"
+                                    }}
+                                        onClick={() => handleView(selectedComment.post_id)}
+                                >
+                                    <EyeIcon size={16} />
+                                    Nguồn bài viết
+                                </button>
+                            </div>
+
                         </div>
                     </div>
                 </div>

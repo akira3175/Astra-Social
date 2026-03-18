@@ -4,16 +4,10 @@ namespace App\Services;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\Report;
-use App\Services\PostService;
-// use App\Services\CommentService;
-// use App\Services\UserService;
+use App\Models\Post;
+use App\Services\Comment;
 
 class NotificationService{
-    public function __construct(
-        private PostService $postService,
-        // private CommentService $commentService,
-        // private UserService $userService
-    ){}
 
     public function notifyResolvedReport(int $userId, array $data){
         $result = Notification::create([
@@ -21,30 +15,48 @@ class NotificationService{
             'actor_id' => $userId,
             'entity_type' => $data['target_type'],
             'entity_id' => $data['target_id'],
-            'message' =>  $data['target_preview'],
+            'message' =>  $data['reason'],
         ]);
 
         if($data['target_type']===Report::TARGET_TYPE_POST){
             $result->update([
-                'message'=>'Bài viết của bạn đã bị gỡ bỏ do '.$data['target_preview'],
+                'message'=>'Bài viết của bạn đã bị gỡ bỏ do '.$data['reason'],
             ]);
-            // $this->postService->deletePost($result->entity_id, $result->receiver_id);
+            Post::find($data['target_id'])->delete();
         }
+        
         else if($data['target_type']===Report::TARGET_TYPE_COMMENT){
             $result->update([
-                'message'=>'Bình luận của bạn đã bị gỡ bỏ do '.$data['target_preview'],
+                'message'=>'Bình luận của bạn đã bị gỡ bỏ do '.$data['reason'],
             ]);
-            // $this->commentService->deleteComment($result->entity_id, $result->receiver_id);
+            User::find($data['target_id'])->delete();
         }
+
         else if($data['target_type']===Report::TARGET_TYPE_USER){
             $result->update([
-                'message'=>'Tài khoản của bạn đã bị khóa do '.$data['target_preview'],
+                'message'=>'Tài khoản của bạn đã bị khóa do '.$data['reason'],
             ]);            
-            // $this->userService->deleteUser($result->entity_id, $result->receiver_id);
+            Comment::find($data['target_id'])->delete();
         }
         return [
             'success' => true,
             'data' => $data,
         ];
+    }
+
+    public function create(array $noti){
+        try{
+            $result = Notification::create([
+                'receiver_id'=>$noti['receiver_id'],
+                'actor_id'=>$noti['actor_id'],
+                'entity_type'=>$noti['entity_type'],
+                'entity_id'=>$noti['entity_id'],
+                'message'=> $noti['message'],
+            ]);
+            return true;
+        }
+        catch (Exception $e) {
+            return false;
+        }
     }
 }

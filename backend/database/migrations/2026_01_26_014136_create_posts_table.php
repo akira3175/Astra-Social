@@ -19,7 +19,7 @@ return new class extends Migration
             $table->enum('privacy', ['PUBLIC', 'FRIENDS', 'ONLY_ME'])->default('PUBLIC');
             $table->integer('likes_count')->default(0);
             $table->integer('comments_count')->default(0);
-            $table->timestamp('created_at')->useCurrent();
+            $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

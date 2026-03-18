@@ -18,24 +18,18 @@ import "./AdminDashboard.css";
 const AdminDashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [activity, setActivity] = useState<DailyActivity[]>([]);
-    const [recentReports, setRecentReports] = useState<AdminReport[]>([]);
-    const [recentPosts, setRecentPosts] = useState<AdminPost[]>([]);
     const [loading, setLoading] = useState(true);
-
+    const [days, setDays] =useState<number>(7);
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [statsData, activityData, reportsData, postsData] =
+                const [statsData, activityData] =
                     await Promise.all([
                         getDashboardStats(),
-                        getDailyActivity(),
-                        getRecentReports(5),
-                        getRecentPosts(5),
+                        getDailyActivity(days),
                     ]);
                 setStats(statsData);
                 setActivity(activityData);
-                setRecentReports(reportsData);
-                setRecentPosts(postsData);
             } catch (error) {
                 console.error("Error loading dashboard:", error);
             } finally {
@@ -62,7 +56,6 @@ const AdminDashboard: React.FC = () => {
     const maxActivity = Math.max(
         ...activity.map((d) => Math.max(d.posts, d.comments, d.reports))
     );
-
     if (loading) {
         return (
             <div>
@@ -90,11 +83,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="stat-card">
                     <div className="stat-card-info">
                         <span className="stat-card-label">Người dùng</span>
-                        <span className="stat-card-value">{formatNumber(stats.total_users)}</span>
-                        <span className={`stat-card-trend ${stats.user_growth >= 0 ? "up" : "down"}`}>
-                            <TrendUpIcon size={14} />
-                            {stats.user_growth > 0 ? "+" : ""}{stats.user_growth}%
-                        </span>
+                        <span className="stat-card-value">{formatNumber(stats.users.data.total)}</span>
                     </div>
                     <div className="stat-card-icon users">
                         <PersonIcon size={24} />
@@ -104,11 +93,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="stat-card">
                     <div className="stat-card-info">
                         <span className="stat-card-label">Bài viết</span>
-                        <span className="stat-card-value">{formatNumber(stats.total_posts)}</span>
-                        <span className={`stat-card-trend ${stats.post_growth >= 0 ? "up" : "down"}`}>
-                            <TrendUpIcon size={14} />
-                            {stats.post_growth > 0 ? "+" : ""}{stats.post_growth}%
-                        </span>
+                        <span className="stat-card-value">{formatNumber(stats.posts.data.total)}</span>
                     </div>
                     <div className="stat-card-icon posts">
                         <FileTextIcon size={24} />
@@ -118,11 +103,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="stat-card">
                     <div className="stat-card-info">
                         <span className="stat-card-label">Bình luận</span>
-                        <span className="stat-card-value">{formatNumber(stats.total_comments)}</span>
-                        <span className={`stat-card-trend ${stats.comment_growth >= 0 ? "up" : "down"}`}>
-                            <TrendUpIcon size={14} />
-                            {stats.comment_growth > 0 ? "+" : ""}{stats.comment_growth}%
-                        </span>
+                        <span className="stat-card-value">{formatNumber(stats.comments.data.total)}</span>
                     </div>
                     <div className="stat-card-icon comments">
                         <CommentIcon size={24} />
@@ -132,11 +113,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="stat-card">
                     <div className="stat-card-info">
                         <span className="stat-card-label">Báo cáo chờ xử lý</span>
-                        <span className="stat-card-value">{stats.pending_reports}</span>
-                        <span className={`stat-card-trend ${stats.report_change >= 0 ? "down" : "up"}`}>
-                            <TrendUpIcon size={14} style={stats.report_change >= 0 ? { transform: "scaleY(-1)" } : {}} />
-                            {stats.report_change > 0 ? "+" : ""}{stats.report_change}%
-                        </span>
+                        <span className="stat-card-value">{formatNumber(stats.reports.pagination.total)}</span>
                     </div>
                     <div className="stat-card-icon reports">
                         <FlagIcon size={24} />
@@ -150,31 +127,31 @@ const AdminDashboard: React.FC = () => {
                 <div className="dashboard-card">
                     <div className="dashboard-card-header">
                         <div>
-                            <h3 className="dashboard-card-title">Hoạt động 7 ngày qua</h3>
+                            <h3 className="dashboard-card-title">Hoạt động {days} ngày qua</h3>
                             <p className="dashboard-card-subtitle">Thống kê bài viết, bình luận và báo cáo</p>
                         </div>
                     </div>
                     <div className="activity-chart">
                         {activity.map((day) => (
-                            <div key={day.day} className="chart-column">
+                            <div key={day.date} className="chart-column">
                                 <div className="chart-bars">
                                     <div
                                         className="chart-bar posts"
                                         style={{ height: `${(day.posts / maxActivity) * 100}%` }}
-                                        data-value={`${day.posts} bài`}
+                                        data-value={`${day.posts} bài viết`}
                                     />
                                     <div
                                         className="chart-bar comments"
                                         style={{ height: `${(day.comments / maxActivity) * 100}%` }}
-                                        data-value={`${day.comments} BL`}
+                                        data-value={`${day.comments} bình luận`}
                                     />
                                     <div
                                         className="chart-bar reports"
                                         style={{ height: `${(day.reports / maxActivity) * 100}%` }}
-                                        data-value={`${day.reports} BC`}
+                                        data-value={`${day.reports} báo cáo`}
                                     />
                                 </div>
-                                <span className="chart-day">{day.day}</span>
+                                <span className="chart-day">{day.date}</span>
                             </div>
                         ))}
                     </div>
@@ -203,7 +180,8 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     </div>
                     <div className="recent-list">
-                        {recentReports.map((report) => (
+                    {stats.reports.data.length>0 ? (
+                        stats.reports.data.map((report) => (
                             <div key={report.id} className="recent-item">
                                 <div className="recent-item-avatar report">
                                     <FlagIcon size={16} />
@@ -220,7 +198,11 @@ const AdminDashboard: React.FC = () => {
                                     Chờ xử lý
                                 </span>
                             </div>
-                        ))}
+                        ))
+                    ) : (
+                        <div className='justify-content-center d-flex fst-italic text-secondary'>Không có báo cáo nào</div>
+                    )}
+
                     </div>
                 </div>
 
@@ -229,11 +211,12 @@ const AdminDashboard: React.FC = () => {
                     <div className="dashboard-card-header">
                         <div>
                             <h3 className="dashboard-card-title">Bài viết mới nhất</h3>
-                            <p className="dashboard-card-subtitle">5 bài viết gần đây nhất</p>
+                            <p className="dashboard-card-subtitle">{stats.posts.data.data.length} bài viết gần đây nhất</p>
                         </div>
                     </div>
                     <div className="recent-list">
-                        {recentPosts.map((post) => (
+                    {stats.posts.success ? (
+                        stats.posts.data.data.map((post) => (
                             <div key={post.id} className="recent-item">
                                 <div className="recent-item-avatar post">
                                     {post.user.first_name?.[0] || post.user.username[0].toUpperCase()}
@@ -253,7 +236,10 @@ const AdminDashboard: React.FC = () => {
                                     {post.privacy === "PUBLIC" ? "Công khai" : post.privacy === "FRIENDS" ? "Bạn bè" : "Riêng tư"}
                                 </span>
                             </div>
-                        ))}
+                        ))                        
+                    ) : (
+                        <div className='justify-content-center d-flex fst-italic text-secondary'>Không có bài viết nào</div>
+                    )}
                     </div>
                 </div>
             </div>

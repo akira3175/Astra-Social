@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('reporter_id');
             $table->unsignedBigInteger('target_author_id');
-            $table->text('target_preview');
+            $table->text('target_preview')->nullable();
             $table->enum('target_type', ['POST', 'USER', 'COMMENT']);
             $table->unsignedBigInteger('target_id');
             $table->text('reason');

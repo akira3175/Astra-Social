@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\MediaAttachment;
 use App\Models\Report;
 use App\Models\Post;
@@ -26,8 +27,8 @@ class ReportService{
     		}
     	}
     	if($data['target_type']===Report::TARGET_TYPE_USER){
-    		$user = User::find($data['target_id']);
-    		if(!$user){
+    		$tempUser = User::find($data['target_id']);
+    		if(!$tempUser){
     			return [
                     'success' => false,
                     'message' => 'User not found',
@@ -45,18 +46,20 @@ class ReportService{
     			];
     		}
     	}
-    	$report = Report::create([
-    		'reporter_id'=>$user->id,
-    		'target_type'=>$data['target_type'],
-    		'target_id' => $data['target_id'],
-    		'reason' => $data['reason'],
-    		'status' =>$data['status']
-    	]);
 
-    	return [
+    	$report = Report::create([
+    		'reporter_id'=>$user['id'],
+            'target_author_id' => $data['target_author_id'],
+            'target_type'=>$data['target_type'],
+            'target_preview' => $data['target_preview'],
+    		'target_id' => $data['target_id'],
+            'reason' => $data['reason'],
+    	]);
+        
+    	return response()->json([
             'success' => true,
             'data' => $data,
-    	];
+    	]);
     }
 
     public function getReports(int $page,
@@ -66,7 +69,7 @@ class ReportService{
             string $search = '',
         ){
 
-        $query = Report::query();
+        $query = Report::query()->orderBy('created_at', 'desc');
 
         if (trim($search)!=='' ){
             $query = $query->where('reason', 'like', '%' . $search . '%');
@@ -74,6 +77,7 @@ class ReportService{
         if ($targetType!=='ALL'){
             $query = $query->where('target_type', $targetType);
         }
+
         if ($status!=='ALL'){
             $query = $query->where('status', $status);
         }
@@ -113,5 +117,15 @@ class ReportService{
             'success' => true,
             'report' => $query,
         ];
+    }
+    public function adminGetCountByDays(int $days){
+        $count = Report::select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('COUNT(*) as total')
+                )
+                ->where('created_at', '>=', now()->subDays($days))
+                ->groupBy('date')
+                ->get();
+        return $count;
     }
 }

@@ -5,90 +5,97 @@ import {
     CloseIcon,
     PersonIcon,
 } from "../../components/ui";
-import { getAdminUsers, banUser, unbanUser, changeUserRole, getRoles } from "../../services/adminService";
+import { getUsers, updateIsActiveUser, changeUserRole, getRoles } from "../../services/adminService";
 import type { AdminUser, Role } from "../../types/admin";
 import "./AdminTable.css";
-
-const ITEMS_PER_PAGE = 5;
+import { useCurrentUser } from "../../context/currentUserContext";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const AdminUsers: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [roleFilter, setRoleFilter] = useState<string>("ALL");
-    const [statusFilter, setStatusFilter] = useState<string>("ALL");
+    const [roleFilter, setRoleFilter] = useState<string>("");
+    const [statusFilter, setStatusFilter] = useState<string>("");
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const [changingRole, setChangingRole] = useState<{ userId: number; newRole: string } | null>(null);
+    const [changingRole, setChangingRole] = useState<{ userId: number; roleId: number } | null>(null);
 
     useEffect(() => {
-        loadData();
-    }, []);
+        const timer = setTimeout(() => {
+                loadData(currentPage, roleFilter, statusFilter, searchQuery);
+            }, 400);
+        return () => clearTimeout(timer);
+    }, [loading, currentPage, roleFilter, statusFilter, searchQuery]);
 
-    const loadData = async () => {
-        setLoading(true);
+    const loadData = async (
+        page: number,
+        roleFilter: string,
+        statusFilter: string,
+        searchQuery: string,
+        ) => {
         try {
             const [usersData, rolesData] = await Promise.all([
-                getAdminUsers(),
+                getUsers(page, roleFilter, statusFilter, searchQuery),
                 getRoles(),
             ]);
             setUsers(usersData);
             setRoles(rolesData);
         } catch (error) {
             console.error("Error loading users:", error);
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
     };
 
-    const filteredUsers = useMemo(() => {
-        setCurrentPage(1);
-        return users.filter((user) => {
-            const fullName = `${user.first_name || ""} ${user.last_name || ""}`.toLowerCase();
-            const matchesSearch = !searchQuery ||
-                user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                fullName.includes(searchQuery.toLowerCase());
-
-            const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-
-            const matchesStatus = statusFilter === "ALL" ||
-                (statusFilter === "ACTIVE" && user.is_active) ||
-                (statusFilter === "BANNED" && !user.is_active) ||
-                (statusFilter === "VERIFIED" && user.is_verified) ||
-                (statusFilter === "UNVERIFIED" && !user.is_verified);
-
-            return matchesSearch && matchesRole && matchesStatus;
-        });
-    }, [users, searchQuery, roleFilter, statusFilter]);
-
-    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-    const paginatedUsers = filteredUsers.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
-    );
-
     const handleBan = async (id: number) => {
-        await banUser(id);
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: false } : u));
-        if (selectedUser?.id === id) setSelectedUser(prev => prev ? { ...prev, is_active: false } : null);
+        let result = await updateIsActiveUser(id, false );
+        if (result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã khóa tài khoản',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+            setSelectedUser(null);
+            setLoading(true);
+        }
     };
 
     const handleUnban = async (id: number) => {
-        await unbanUser(id);
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: true } : u));
-        if (selectedUser?.id === id) setSelectedUser(prev => prev ? { ...prev, is_active: true } : null);
+        let result = await updateIsActiveUser(id, true);
+        if (result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã mở khóa tài khoản',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+            setSelectedUser(null);
+            setLoading(true);
+        }
     };
 
     const handleRoleChange = async () => {
-        if (!changingRole) return;
-        await changeUserRole(changingRole.userId, changingRole.newRole);
-        setUsers(prev => prev.map(u => u.id === changingRole.userId ? { ...u, role: changingRole.newRole } : u));
-        if (selectedUser?.id === changingRole.userId) {
-            setSelectedUser(prev => prev ? { ...prev, role: changingRole.newRole } : null);
+        let result = await changeUserRole(Number(changingRole.userId), Number( changingRole.roleId));
+        if(result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã thay đổi quyền',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+            setChangingRole(null);
+            setSelectedUser(null);
+            setLoading(true);
         }
-        setChangingRole(null);
     };
 
     const formatDate = (dateStr: string) => {
@@ -107,8 +114,14 @@ const AdminUsers: React.FC = () => {
         }
     };
 
-    const uniqueRoles = [...new Set(users.map(u => u.role))];
-
+    let totalPages;
+    if(!loading){
+        totalPages = users.data.last_page;
+    }
+    let activeCount;
+    if (!loading){
+        activeCount = users.data.data.filter(u=>u.is_active===true).length;
+    }
     return (
         <div>
             {/* Header */}
@@ -130,9 +143,9 @@ const AdminUsers: React.FC = () => {
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
-                        <option value="ALL">Tất cả vai trò</option>
-                        {uniqueRoles.map(role => (
-                            <option key={role} value={role}>{role}</option>
+                        <option value="">Tất cả vai trò</option>
+                        {!loading && roles.data.map(role => (
+                            <option key={role.name} value={role.name}>{role.name}</option>
                         ))}
                     </select>
                     <select
@@ -140,7 +153,7 @@ const AdminUsers: React.FC = () => {
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                     >
-                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="">Tất cả trạng thái</option>
                         <option value="ACTIVE">Đang hoạt động</option>
                         <option value="BANNED">Đã khóa</option>
                         <option value="VERIFIED">Đã xác minh</option>
@@ -174,7 +187,7 @@ const AdminUsers: React.FC = () => {
                                     ))}
                                 </tr>
                             ))
-                        ) : filteredUsers.length === 0 ? (
+                        ) : !users.success ? (
                             <tr>
                                 <td colSpan={9}>
                                     <div className="admin-empty">
@@ -184,7 +197,7 @@ const AdminUsers: React.FC = () => {
                                 </td>
                             </tr>
                         ) : (
-                            paginatedUsers.map((user) => (
+                            users.data.data.map((user) => (
                                 <tr key={user.id} style={{ opacity: !user.is_active ? 0.6 : 1 }}>
                                     <td className="cell-number">#{user.id}</td>
                                     <td>
@@ -206,8 +219,8 @@ const AdminUsers: React.FC = () => {
                                         <div className="cell-content" style={{ maxWidth: 180 }}>{user.email}</div>
                                     </td>
                                     <td>
-                                        <span className={`status-badge ${getRoleBadgeClass(user.role)}`}>
-                                            {user.role}
+                                        <span className={`status-badge ${getRoleBadgeClass(user.role.name)}`}>
+                                            {user.role.name}
                                         </span>
                                     </td>
                                     <td>
@@ -229,31 +242,38 @@ const AdminUsers: React.FC = () => {
                                         {user.last_login ? formatDate(user.last_login) : "—"}
                                     </td>
                                     <td>
-                                        <div className="cell-actions">
-                                            <button
-                                                className="action-btn view"
-                                                title="Xem chi tiết"
-                                                onClick={() => setSelectedUser(user)}
-                                            >
-                                                <EyeIcon size={16} />
-                                            </button>
-                                            {user.is_active ? (
+                                        <div className="cell-actions d-flex flex-row justify-content-center">
+                                            {currentUser.role.permissions.find(p=>p.slug==='user.view') && (
                                                 <button
-                                                    className="action-btn delete"
-                                                    title="Khóa tài khoản"
-                                                    onClick={() => handleBan(user.id)}
+                                                    className="action-btn view"
+                                                    title="Xem chi tiết"
+                                                    onClick={() => setSelectedUser(user)}
                                                 >
-                                                    🔒
+                                                    <EyeIcon size={16} />
                                                 </button>
-                                            ) : (
-                                                <button
-                                                    className="action-btn restore"
-                                                    title="Mở khóa tài khoản"
-                                                    onClick={() => handleUnban(user.id)}
-                                                >
-                                                    🔓
-                                                </button>
-                                            )}
+                                                )
+                                            }
+
+                                            {currentUser.role.permissions.find(p=>p.slug==='user.ban') && (
+                                                user.is_active ? (
+                                                    <button
+                                                        className="action-btn delete"
+                                                        title="Khóa tài khoản"
+                                                        onClick={() => handleBan(user.id)}
+                                                    >
+                                                        🔒
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="action-btn restore"
+                                                        title="Mở khóa tài khoản"
+                                                        onClick={() => handleUnban(user.id)}
+                                                    >
+                                                        🔓
+                                                    </button>
+                                                )
+                                                )
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -261,24 +281,26 @@ const AdminUsers: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                {!loading && filteredUsers.length > 0 && (
+                {!loading && users.success && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
-                            Hiển thị {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)} / {filteredUsers.length} người dùng
+                            Hiển thị {users.data.data.length}–{users.data.total} người dùng
+                            {" · "}{activeCount} đang hoạt động
                         </span>
                         <div className="admin-pagination-controls">
+                        {currentPage>1 &&(
                             <button
+                                onClick={()=>setCurrentPage(currentPage-1)}
                                 className="admin-pagination-btn nav-btn"
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(p => p - 1)}
                             >‹</button>
+                        )}
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
                                 if (totalPages <= 7 || page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
                                     return (
                                         <button
                                             key={page}
+                                            onClick={()=>setCurrentPage(page)}
                                             className={`admin-pagination-btn ${page === currentPage ? "active" : ""}`}
-                                            onClick={() => setCurrentPage(page)}
                                         >{page}</button>
                                     );
                                 }
@@ -286,11 +308,13 @@ const AdminUsers: React.FC = () => {
                                 if (page === totalPages - 1 && currentPage < totalPages - 3) return <span key="e2" className="admin-pagination-ellipsis">…</span>;
                                 return null;
                             })}
-                            <button
-                                className="admin-pagination-btn nav-btn"
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(p => p + 1)}
-                            >›</button>
+                            {currentPage<totalPages &&(
+                                <button
+                                    onClick={()=>setCurrentPage(currentPage+1)}
+                                    className="admin-pagination-btn nav-btn"
+                                >›</button>
+                            )}
+
                         </div>
                     </div>
                 )}
@@ -326,8 +350,8 @@ const AdminUsers: React.FC = () => {
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Vai trò</span>
                                 <span className="admin-detail-value">
-                                    <span className={`status-badge ${getRoleBadgeClass(selectedUser.role)}`}>
-                                        {selectedUser.role}
+                                    <span className={`status-badge ${getRoleBadgeClass(selectedUser.role.name)}`}>
+                                        {selectedUser.role.name}
                                     </span>
                                 </span>
                             </div>
@@ -362,7 +386,8 @@ const AdminUsers: React.FC = () => {
 
                             {/* Actions in modal */}
                             <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                                {selectedUser.is_active ? (
+                            {currentUser.role.permissions.find(p=> p.slug==='user.ban') && (
+                                selectedUser.is_active ? (
                                     <button
                                         style={{
                                             flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
@@ -386,7 +411,10 @@ const AdminUsers: React.FC = () => {
                                     >
                                         🔓 Mở khóa
                                     </button>
-                                )}
+                                )
+                                )
+                            }
+                            {currentUser.role.permissions.find(p=>p.slug==='user.assign_role') && (
                                 <button
                                     style={{
                                         flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
@@ -394,10 +422,12 @@ const AdminUsers: React.FC = () => {
                                         fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
                                         minWidth: 120,
                                     }}
-                                    onClick={() => setChangingRole({ userId: selectedUser.id, newRole: selectedUser.role })}
+                                    onClick={() => setChangingRole({ userId: selectedUser.id, roleId: selectedUser.role.id })}
                                 >
                                     🔄 Đổi vai trò
                                 </button>
+                                )
+                            }
                             </div>
                         </div>
                     </div>
@@ -422,11 +452,11 @@ const AdminUsers: React.FC = () => {
                                 <select
                                     className="admin-filter-select"
                                     style={{ width: "100%" }}
-                                    value={changingRole.newRole}
-                                    onChange={(e) => setChangingRole({ ...changingRole, newRole: e.target.value })}
+                                    value={changingRole.roleId}
+                                    onChange={(e) => setChangingRole({ ...changingRole, roleId: e.target.value })}
                                 >
-                                    {roles.map(role => (
-                                        <option key={role.id} value={role.name}>{role.name} — {role.description}</option>
+                                    {roles.data.map(role => (
+                                        <option key={role.id} value={role.id}>{role.name} — {role.description}</option>
                                     ))}
                                 </select>
                             </div>
@@ -447,7 +477,7 @@ const AdminUsers: React.FC = () => {
                                         background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "white",
                                         fontWeight: 600, fontSize: 13, cursor: "pointer",
                                     }}
-                                    onClick={handleRoleChange}
+                                    onClick={()=> handleRoleChange()}
                                 >
                                     Xác nhận
                                 </button>

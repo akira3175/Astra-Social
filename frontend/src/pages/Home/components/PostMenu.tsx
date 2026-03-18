@@ -5,10 +5,12 @@ interface PostMenuProps {
     isOwner: boolean;
     onEdit?: () => void;
     onDelete?: () => void;
+    onReport?: ()=> void;
 }
 
-const PostMenu: React.FC<PostMenuProps> = ({ isOwner, onEdit, onDelete }) => {
+const PostMenu: React.FC<PostMenuProps> = ({ isOwner, onEdit, onDelete, onReport }) => {
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showReportForm, setShowReportForm] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Close dropdown when clicking outside
@@ -23,7 +25,12 @@ const PostMenu: React.FC<PostMenuProps> = ({ isOwner, onEdit, onDelete }) => {
         }
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [showDropdown]);
-
+    
+    const handleReportClick =(e: React.MouseEvent)=>{
+        e.stopPropagation();
+        setShowDropdown(false);
+        onReport?.();        
+    }
     const handleEditClick = () => {
         setShowDropdown(false);
         onEdit?.();
@@ -52,6 +59,10 @@ const PostMenu: React.FC<PostMenuProps> = ({ isOwner, onEdit, onDelete }) => {
 
             {showDropdown && (
                 <div className="post-menu-dropdown">
+                    <button className="post-menu-item" onClick={(e)=>handleReportClick(e)}>
+                        <span className="post-menu-icon">🏴</span>
+                        <span>Báo cáo bài viết</span>
+                    </button>
                     <button className="post-menu-item" onClick={handleEditClick}>
                         <span className="post-menu-icon">✏️</span>
                         <span>Chỉnh sửa bài viết</span>
