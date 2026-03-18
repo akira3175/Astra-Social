@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { LoginPage, ProtectedRoute, PermissionRoute } from "./pages/Auth";
+import { LoginPage, ProtectedRoute, PermissionRoute, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from "./pages/Auth";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
@@ -21,6 +21,9 @@ const RouteApp=()=>{
           {/* Public routes - không có Navbar */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/posts/:id" element={<PostDetailPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes - có Navbar thông qua BasePage layout */}
           <Route element={<BasePage />}>
