@@ -13,6 +13,15 @@
     transition: all 0.3s ease;
 }
 
+.user-card-friend {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    min-height: 240px;
+    flex: 0 0 calc(25% - 15px);
+    max-width: calc(25% - 15px);
+}
+
 .user-card:hover {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
@@ -26,6 +35,10 @@
 .user-card-avatar {
     position: relative;
     flex-shrink: 0;
+}
+
+.user-card-friend .user-card-avatar {
+    align-self: flex-start;
 }
 
 .user-verified-badge {
@@ -48,6 +61,10 @@
     flex: 1;
     min-width: 0;
     padding: 4px 0;
+}
+
+.user-card-friend .user-card-info {
+    width: 100%;
 }
 
 .user-card-name {
@@ -91,6 +108,16 @@
     flex-shrink: 0;
     margin-top: 8px;
     position: relative;
+}
+
+.user-card-friend .user-card-actions {
+    width: 100%;
+    margin-top: auto;
+    justify-content: space-between;
+}
+
+.user-card-friend .user-card-action.primary {
+    flex: 1;
 }
 
 /* Base Action Button */
@@ -262,5 +289,26 @@
 
     .user-card-action.primary {
         min-width: auto;
+    }
+}
+
+@media (max-width: 1200px) {
+    .user-card-friend {
+        flex-basis: calc(33.333% - 14px);
+        max-width: calc(33.333% - 14px);
+    }
+}
+
+@media (max-width: 900px) {
+    .user-card-friend {
+        flex-basis: calc(50% - 10px);
+        max-width: calc(50% - 10px);
+    }
+}
+
+@media (max-width: 600px) {
+    .user-card-friend {
+        flex-basis: 100%;
+        max-width: 100%;
     }
 }

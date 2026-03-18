@@ -13,25 +13,36 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Lấy role Dev
         $devRole = Role::where('name', 'Dev')->first();
         $userRole = Role::where('name', 'User')->first();
         $adminRole = Role::where('name', 'Admin')->first();
 
-
         if ($devRole) {
-            $result = User::where('email', 'dev@example.com');
-                if(!$result){
-                    User::create([
-                        'username' => 'dev',
-                        'email' => 'dev@example.com',
-                        'password' => 'password', // Sẽ được hash tự động nhờ cast 'hashed'
-                        'role_id' => $devRole->id,
-                        'is_active' => true,
-                        'is_verified' => true,
-                    ]);
-                }
+            User::updateOrCreate(
+                ['email' => 'dev@example.com'],
+                [
+                    'username' => 'dev',
+                    'password' => 'password',
+                    'role_id' => $devRole->id,
+                    'is_active' => true,
+                    'is_verified' => true,
+                ]
+            );
         }
+
+        if ($userRole) {
+            User::updateOrCreate(
+                ['email' => 'user1@example.com'],
+                [
+                    'username' => 'user1',
+                    'password' => 'password',
+                    'role_id' => $userRole->id,
+                    'is_active' => true,
+                    'is_verified' => false,
+                ]
+            );
+        }
+
         if ($adminRole) {
             $result = User::where('email', 'admin@example.com');
                 if(!$result){
