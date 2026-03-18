@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
@@ -17,6 +17,9 @@ interface PostListProps {
     onPostUpdated?: () => void;
     onPostDeleted?: () => void;
     onPostReported?: ()=>void;
+    onLoadMore?: () => void;
+    hasMore?: boolean;
+    isLoadingMore?: boolean;
 }
 
 /**
@@ -78,7 +81,7 @@ const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments
     );
 };
 
-const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted, onPostReported }) => {
+const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted, onPostReported, onLoadMore, hasMore, isLoadingMore }) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -87,6 +90,59 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
     const [editingPostId, setEditingPostId] = useState<number | null>(null);
     const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
     const [reportingPost, setReportingPost] = useState<Post | null>(null);
+
+    // Use refs to avoid stale closures in scroll handler
+    const onLoadMoreRef = useRef(onLoadMore);
+    const hasMoreRef = useRef(hasMore);
+    const isLoadingMoreRef = useRef(isLoadingMore);
+    const listRef = useRef<HTMLDivElement>(null);
+    onLoadMoreRef.current = onLoadMore;
+    hasMoreRef.current = hasMore;
+    isLoadingMoreRef.current = isLoadingMore;
+
+    // Find the nearest scrollable parent and listen for scroll
+    useEffect(() => {
+        // Don't set up scroll listener while loading or if list isn't in DOM
+        if (isLoading || !listRef.current) return;
+
+        // Find scrollable ancestor
+        const findScrollParent = (el: HTMLElement | null): HTMLElement | Window => {
+            while (el) {
+                const style = window.getComputedStyle(el);
+                if (/(auto|scroll)/.test(style.overflow + style.overflowY)) {
+                    return el;
+                }
+                el = el.parentElement;
+            }
+            return window;
+        };
+
+        const scrollContainer = findScrollParent(listRef.current);
+
+        const handleScroll = () => {
+            if (!onLoadMoreRef.current || !hasMoreRef.current || isLoadingMoreRef.current) return;
+
+            let scrollTop: number, scrollHeight: number, clientHeight: number;
+
+            if (scrollContainer instanceof Window) {
+                scrollTop = window.scrollY || document.documentElement.scrollTop;
+                scrollHeight = document.documentElement.scrollHeight;
+                clientHeight = window.innerHeight;
+            } else {
+                scrollTop = scrollContainer.scrollTop;
+                scrollHeight = scrollContainer.scrollHeight;
+                clientHeight = scrollContainer.clientHeight;
+            }
+
+            // Trigger when within 300px of bottom
+            if (scrollTop + clientHeight >= scrollHeight - 300) {
+                onLoadMoreRef.current();
+            }
+        };
+
+        scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+        return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    }, [isLoading]);
     // Get post ID from URL
     const postIdFromUrl = searchParams.get("post");
 
@@ -190,7 +246,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
 
     return (
         <>
-            <div className="post-list">
+            <div ref={listRef} className="post-list">
                 {posts.map((post) => {
                     const isOwner = currentUser?.id?.toString() === post.user_id?.toString();
 
@@ -261,6 +317,14 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                     );
                 })}
             </div>
+
+            {/* Loading more indicator */}
+            {isLoadingMore && (
+                <div className="post-loading-more">
+                    <div className="loading-spinner" />
+                    <span>Đang tải thêm...</span>
+                </div>
+            )}
 
             {selectedPost && (
                 <PostDetailModal

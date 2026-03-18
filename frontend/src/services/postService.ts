@@ -12,6 +12,7 @@ const ENDPOINTS = {
     POSTS: "/posts",
     MY_POSTS: "/posts/me",
     POST_BY_ID: (id: number) => `/posts/${id}`,
+    USER_POSTS: (userId: number | string) => `/users/${userId}/posts`,
 } as const;
 
 // ============ API Functions ============
@@ -37,6 +38,20 @@ export const getPosts = async (
     perPage: number = 10
 ): Promise<PostsResponse> => {
     const response = await api.get<PostsResponse>(ENDPOINTS.POSTS, {
+        params: { page, per_page: perPage },
+    });
+    return response.data;
+};
+
+/**
+ * Get posts by a specific user ID
+ */
+export const getPostsByUserId = async (
+    userId: number | string,
+    page: number = 1,
+    perPage: number = 10
+): Promise<PostsResponse> => {
+    const response = await api.get<PostsResponse>(ENDPOINTS.USER_POSTS(userId), {
         params: { page, per_page: perPage },
     });
     return response.data;
@@ -105,6 +120,7 @@ export default {
     getMyPosts,
     getPosts,
     getPostById,
+    getPostsByUserId,
     createPost,
     updatePost,
     deletePost,
