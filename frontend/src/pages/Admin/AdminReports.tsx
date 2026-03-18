@@ -102,7 +102,8 @@ const AdminReports: React.FC = () => {
 
     const onShowModal = (report)=>{
         setSelectedReport(report);
-        let url = `${window.location.origin}/?post=${report.target_id}`;
+        let url = `${window.location.origin}/posts/${report.target_id}`;
+        console.log(url);
         setUrlPostReported(url);
     }
 
@@ -190,7 +191,7 @@ const AdminReports: React.FC = () => {
                             <th>Lý do</th>
                             <th>Trạng thái</th>
                             <th>Ngày báo cáo</th>
-                            <th>Hành động</th>
+                            <th className='text-center'>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -241,7 +242,8 @@ const AdminReports: React.FC = () => {
                                     </td>
                                     <td className="cell-date">{formatDate(report.created_at)}</td>
                                     <td>
-                                        <div className="cell-actions">
+                                        <div className="cell-actions d-flex flex-row justify-content-center">
+                                        {currentUser.role.permissions.find(p=>p.slug==='report.view') && (
                                             <button
                                                 className="action-btn view"
                                                 title="Xem chi tiết"
@@ -249,6 +251,32 @@ const AdminReports: React.FC = () => {
                                             >
                                                 <EyeIcon size={16} />
                                             </button>
+                                        )}
+                                        {currentUser.role.permissions.find(p=>p.slug==='report.resolve') && (
+                                            <button
+                                                className="action-btn resolve"
+                                                title="Xử lý báo cáo"
+                                                onClick={() => {
+                                                    handleResolve(report.id);
+                                                    setSelectedReport(null);
+                                                }}
+                                            >
+                                                <CheckCircleIcon size={16}/>
+                                            </button>
+                                        )}
+                                        {currentUser.role.permissions.find(p=>p.slug==='report.reject') && (
+                                            <button
+                                                className="action-btn reject"
+                                                title="Từ chối báo cáo"
+                                                onClick={() => {
+                                                    handleReject(report.id);
+                                                    setSelectedReport(null);
+                                                }}
+                                            >
+                                                <CloseIcon size={16}/>
+                                            </button>
+                                        )}
+
                                         </div>
                                     </td>
                                 </tr>
@@ -354,6 +382,7 @@ const AdminReports: React.FC = () => {
                             {/* Action buttons in modal */}
                             {selectedReport.status === "PENDING" && (
                                 <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                                {currentUser.role.permissions.find(p=>p.slug==='report.resolve') && (
                                     <button
                                         style={{
                                             flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
@@ -367,6 +396,8 @@ const AdminReports: React.FC = () => {
                                     >
                                         ✓ Xử lý vi phạm
                                     </button>
+                                )}
+                                {currentUser.role.permissions.find(p=>p.slug==='report.reject') && (
                                     <button
                                         style={{
                                             flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
@@ -380,6 +411,7 @@ const AdminReports: React.FC = () => {
                                     >
                                         ✕ Từ chối báo cáo
                                     </button>
+                                )}
                                 </div>
                             )}
                         </div>

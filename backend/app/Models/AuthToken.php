@@ -44,6 +44,7 @@ class AuthToken extends Model
     const TYPE_REFRESH = 'REFRESH';
     const TYPE_OTP_EMAIL = 'OTP_EMAIL';
     const TYPE_OTP_PASS = 'OTP_PASS';
+    const TYPE_PASSWORD_RESET = 'PASSWORD_RESET';
 
     /**
      * Get the user that owns this token.

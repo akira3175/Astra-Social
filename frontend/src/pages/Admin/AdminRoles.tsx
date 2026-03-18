@@ -10,10 +10,13 @@ import {
     updateRole,
     deleteRole,
 } from "../../services/adminService";
+import { useCurrentUser } from "../../context/currentUserContext";
 import type { Role, Permission } from "../../types/admin";
 import "./AdminRoles.css";
+import Swal from 'sweetalert2';
 
 const AdminRoles: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
     const [loading, setLoading] = useState(true);
@@ -96,15 +99,14 @@ const AdminRoles: React.FC = () => {
             let result;
             if (editingRole) {
                 result = await updateRole(editingRole.id, {
-                    name: formName.trim(),
-                    description: formDesc?.trim() | '',
+                    description: formDesc,
                     permissions: [...formPerms],
                 });
             } 
             else {
                 result = await createRole({
                     name: formName.trim(),
-                    description: formDesc?.trim() | '',
+                    description: formDesc,
                     permissions: [...formPerms],
                 });
             }
@@ -113,6 +115,15 @@ const AdminRoles: React.FC = () => {
                 setTimeout(()=>{
                     setError(null);
                 },3000);
+            }
+            else{
+                Swal.fire({
+                    title: 'Thành công',
+                    text: result.message,
+                    icon: 'success', // warning, error, success, info, question
+                    showConfirmButton: false,
+                    timer: 3000
+                });
             }
 
             await loadData();
@@ -131,6 +142,14 @@ const AdminRoles: React.FC = () => {
             setTimeout(() => setError(null), 3000);
             return;
         }
+        Swal.fire({
+            title: 'Thành công',
+            text: result.message,
+            icon: 'success', // warning, error, success, info, question
+            showConfirmButton: false,
+            timer: 3000
+        });
+
         await loadData();
     };
 
@@ -150,9 +169,11 @@ const AdminRoles: React.FC = () => {
                     <h2>Quản lý phân quyền</h2>
                     <p>Tạo, chỉnh sửa vai trò và gán quyền hạn cho từng vai trò</p>
                 </div>
+                {currentUser.role.permissions.find(p=>p.slug==='role.create') && (
                 <button className="roles-btn-create" onClick={openCreate}>
                     + Tạo vai trò mới
                 </button>
+                )}
             </div>
 
             {/* Roles Grid */}
@@ -167,6 +188,7 @@ const AdminRoles: React.FC = () => {
                                 <p>{role.description}</p>
                             </div>
                             <div className="role-card-actions">
+                            {currentUser.role.permissions.find(p=>p.slug==='role.edit') && (
                                 <button
                                     className="role-action-btn"
                                     title="Chỉnh sửa"
@@ -174,6 +196,8 @@ const AdminRoles: React.FC = () => {
                                 >
                                     ✏️
                                 </button>
+                            )}
+                            {currentUser.role.permissions.find(p=>p.slug==='role.delete') && (
                                 <button
                                     className="role-action-btn delete"
                                     title="Xóa"
@@ -182,6 +206,7 @@ const AdminRoles: React.FC = () => {
                                 >
                                     🗑️
                                 </button>
+                            )}
                             </div>
                         </div>
 
@@ -244,7 +269,7 @@ const AdminRoles: React.FC = () => {
                                     type="text"
                                     className="roles-form-input"
                                     placeholder="Mô tả ngắn gọn về vai trò"
-                                    value={formDesc ??''}
+                                    value={formDesc}
                                     onChange={(e) => setFormDesc(e.target.value)}
                                 />
                             </div>

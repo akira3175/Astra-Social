@@ -22,9 +22,8 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'username' => ['required', 'string', 'min:3', 'max:50', 'unique:users,username', 'regex:/^[a-zA-Z0-9_]+$/'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'email' => ['required', 'email'],
+            'otp' => ['required', 'string', 'size:6'],
         ];
     }
 
@@ -36,17 +35,10 @@ class RegisterRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'username.required' => 'Username is required',
-            'username.min' => 'Username must be at least 3 characters',
-            'username.max' => 'Username must not exceed 50 characters',
-            'username.unique' => 'Username already exists',
-            'username.regex' => 'Username can only contain letters, numbers, and underscores',
             'email.required' => 'Email is required',
             'email.email' => 'Email must be a valid email address',
-            'email.unique' => 'Email already exists',
-            'password.required' => 'Password is required',
-            'password.min' => 'Password must be at least 6 characters',
-            'password.confirmed' => 'Password confirmation does not match',
+            'otp.required' => 'OTP is required',
+            'otp.size' => 'OTP must be 6 digits',
         ];
     }
 }

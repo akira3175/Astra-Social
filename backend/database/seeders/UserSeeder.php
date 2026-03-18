@@ -44,16 +44,17 @@ class UserSeeder extends Seeder
         }
 
         if ($adminRole) {
-            User::updateOrCreate(
-                ['email' => 'admin@example.com'],
-                [
-                    'username' => 'admin',
-                    'password' => 'password',
-                    'role_id' => $adminRole->id,
-                    'is_active' => true,
-                    'is_verified' => true,
-                ]
-            );
+            $result = User::where('email', 'admin@example.com');
+                if(!$result){
+                    User::create([
+                        'username' => 'admin',
+                        'email' => 'admin@example.com',
+                        'password' => 'password', // Sẽ được hash tự động nhờ cast 'hashed'
+                        'role_id' => $adminRole->id,
+                        'is_active' => true,
+                        'is_verified' => true,
+                    ]);
+                }
         }
 
         User::factory()->count(20)->create();

@@ -3,10 +3,11 @@
 .env
 .env.backup
 .env.production
+.env.local
 .phpactor.json
 .phpunit.result.cache
 /.fleet
-/.idea
+/.idea  
 /.nova
 /.phpunit.cache
 /.vscode

@@ -21,13 +21,7 @@ export interface AdminPost {
     comments_count: number;
     created_at: string;
     deleted_at: string | null;
-    user: {
-        id: number;
-        username: string;
-        avatar_url: string | null;
-        first_name: string | null;
-        last_name: string | null;
-    };
+    user: AdminUser ;
     report_count: number;
 }
 
@@ -37,13 +31,7 @@ export interface AdminComment {
     post_id: number;
     parent_id: number | null;
     created_at: string;
-    user: {
-        id: number;
-        username: string;
-        avatar_url: string | null;
-        first_name: string | null;
-        last_name: string | null;
-    };
+    user: AdminUser;
     post_preview: string;
 }
 
@@ -101,6 +89,7 @@ export interface Role {
 
 export interface RolesResponse{
     success: boolean,
+    message: string | null,
     data: Role[],
 }
 export interface ReportsResponse{
@@ -117,5 +106,17 @@ export interface PermissionsResponse{
 export interface UsersResponse{
     success: boolean,
     data: AdminUser[],
+    message: string | null,
+}
+
+export interface PostsResponse{
+    success: boolean,
+    data: AdminPost[],
+    message: string | null,
+}
+
+export interface CommentsResponse{
+    success: boolean,
+    data: AdminComment[],
     message: string | null,
 }
