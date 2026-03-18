@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { UserCard } from "../../components/common";
+import { IoMdArrowRoundBack } from "react-icons/io";
 import type { UserCardData } from "../../components/common/UserCard/UserCard";
 import {
     getFriendSuggestions,
@@ -234,7 +235,7 @@ const FriendsPage: React.FC = () => {
                         <p>Hãy bắt đầu kết bạn với mọi người</p>
                     </div>
                 ) : (
-                    <div className="friends-grid">
+                    <div className="friends-grid friends-grid-friends">
                         {friends.map(friend => (
                             <UserCard
                                 key={friend.friendshipId}
@@ -276,8 +277,19 @@ const FriendsPage: React.FC = () => {
     return (
         <div className="friends-page">
             {/* Header */}
-            <div className="friends-header">
-                <h1 className="friends-title">Bạn bè</h1>
+            <div className="flex justify-between p-4 ">
+                <button
+                    type="button"
+                    className="inline-flex items-center gap-2 border p-2"
+                    onClick={() => navigate("/")}
+                > 
+                <IoMdArrowRoundBack />
+                    <span className="" aria-hidden="true">
+                        Quay lại trang chủ
+                    </span>
+                    
+                </button>
+                <h1 className="friends-title ">Bạn bè</h1>
             </div>
 
             {/* Tabs */}

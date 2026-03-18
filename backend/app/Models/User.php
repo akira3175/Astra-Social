@@ -85,7 +85,15 @@ class User extends Authenticatable
 
         return self::whereIn('id', $friendIds);
     }
+    public function sentFriendRequests()
+    {
+        return $this->hasMany(Friendship::class, 'requester_id');
+    }
 
+    public function receivedFriendRequests()
+    {
+        return $this->hasMany(Friendship::class, 'receiver_id');
+    }
     public function pendingFriendRequestsReceived()
     {
         return $this->hasMany(Friendship::class, 'receiver_id')

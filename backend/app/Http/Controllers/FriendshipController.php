@@ -12,30 +12,25 @@ use Illuminate\Support\Facades\Auth;
 class FriendshipController extends Controller
 {
 
-    public function sendRequest(Request $request, $userId)
+   public function sendRequest(Request $request, $userId)
     {
         $authUser = $request->user();
+        $userId = (int) $userId;
 
-        if ($authUser->id == $userId) {
+        if ($authUser->id === $userId) {
             return response()->json([
-                'message' => 'You cannot send a friend request to yourself.'
+                'message' => 'Bạn không thể gửi lời mời kết bạn cho chính mình.'
             ], 422);
         }
 
         $targetUser = User::find($userId);
+
         if (!$targetUser) {
             return response()->json([
-                'message' => 'User not found.'
+                'message' => 'Người dùng không tồn tại.'
             ], 404);
         }
 
-        if ($authUser->hasBlockedUser($userId) || $authUser->isBlockedBy($userId)) {
-            return response()->json([
-                'message' => 'Cannot send friend request. User is blocked.'
-            ], 403);
-        }
-
-        // Kiểm tra đã có friendship (pending hoặc accepted)
         $existing = Friendship::between($authUser->id, $userId)
             ->whereIn('status', ['pending', 'accepted'])
             ->first();
@@ -43,14 +38,19 @@ class FriendshipController extends Controller
         if ($existing) {
             if ($existing->status === 'accepted') {
                 return response()->json([
-                    'message' => 'You are already friends with this user.'
+                    'message' => 'Hai người đã là bạn bè.'
                 ], 409);
             }
+
             return response()->json([
-                'message' => 'A friend request already exists between you and this user.'
+                'message' => 'Lời mời kết bạn đã tồn tại.'
             ], 409);
         }
-
+          if ($authUser->hasBlockedUser($userId) || $authUser->isBlockedBy($userId)) {
+            return response()->json([
+                'message' => 'Không thể gửi lời mời kết bạn vì có quan hệ chặn.'
+            ], 403);
+        }
         Friendship::create([
             'requester_id' => $authUser->id,
             'receiver_id'  => $userId,
@@ -58,45 +58,24 @@ class FriendshipController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Friend request sent successfully.'
+            'message' => 'Đã gửi lời mời kết bạn.'
         ], 201);
     }
-
-    /**
-     * Chấp nhận lời mời kết bạn.
-     *
-     * Chỉ receiver mới có quyền accept.
-     */
-    public function acceptRequest(Request $request, $userId)
-    {
+    public function acceptRequest(Request $request, $userId){
         $authUser = $request->user();
-
-        $friendship = Friendship::where('requester_id', $userId)
-            ->where('receiver_id', $authUser->id)
-            ->where('status', 'pending')
-            ->first();
-
-        if (!$friendship) {
-            return response()->json([
-                'message' => 'No pending friend request found from this user.'
-            ], 404);
+        $friendship = Friendship::where('requester_id', $userId)->where('receiver_id',$authUser->id)->where('status','pending')->first();
+        if (!$friendship){
+            return response() -> json(['message' => 'Không tìm thấy yêu cầu.'],404);
         }
-
         $friendship->update([
-            'status'      => 'accepted',
-            'accepted_at' => now(),
+            'status' => 'accepted',
+            'accepted_at' => now()
         ]);
-
-        return response()->json([
-            'message' => 'Friend request accepted.'
+        return response() -> json([
+            'message' => 'Lời mời kết bạn đã được chấp nhận.'
         ]);
     }
 
-    /**
-     * Từ chối lời mời kết bạn.
-     *
-     * Chỉ receiver mới có quyền reject. Lời mời bị xóa khỏi hệ thống.
-     */
     public function rejectRequest(Request $request, $userId)
     {
         $authUser = $request->user();
@@ -108,22 +87,17 @@ class FriendshipController extends Controller
 
         if (!$friendship) {
             return response()->json([
-                'message' => 'No pending friend request found from this user.'
+                'message' => 'Không tìm thấy yêu cầu kết bạn nào đang chờ xử lý từ người dùng này.'
             ], 404);
         }
 
         $friendship->delete();
 
         return response()->json([
-            'message' => 'Friend request rejected.'
+            'message' => 'Lời mời kết bạn đã được từ chối.'
         ]);
     }
 
-    /**
-     * Hủy lời mời kết bạn đã gửi.
-     *
-     * Chỉ requester mới có quyền cancel.
-     */
     public function cancelRequest(Request $request, $userId)
     {
         $authUser = $request->user();
@@ -135,14 +109,14 @@ class FriendshipController extends Controller
 
         if (!$friendship) {
             return response()->json([
-                'message' => 'No pending friend request found to cancel.'
+                'message' => 'Không tìm thấy yêu cầu lời mời nào.'
             ], 404);
         }
 
         $friendship->delete();
 
         return response()->json([
-            'message' => 'Friend request cancelled.'
+            'message' => 'Lời mời kết bạn đã được gỡ bỏ.'
         ]);
     }
 
@@ -157,20 +131,18 @@ class FriendshipController extends Controller
     {
         $authUser = $request->user();
 
-        $friendship = Friendship::accepted()
-            ->between($authUser->id, $userId)
-            ->first();
+        $friendship = Friendship::where('requester_id', $userId)->where('receiver_id',$userId)->where('status','pending')->first();
 
         if (!$friendship) {
             return response()->json([
-                'message' => 'You are not friends with this user.'
+                'message' => 'Bạn không phải là bạn bè với người dùng này.'
             ], 404);
         }
 
         $friendship->delete();
 
         return response()->json([
-            'message' => 'Unfriended successfully.'
+            'message' => 'Hủy kết bạn thành công.'
         ]);
     }
 
@@ -183,31 +155,23 @@ class FriendshipController extends Controller
     {
         $authUser = $request->user();
 
-        $friends = $authUser->friends()
-            ->with('profile')
+        $friendIds = Friendship::where('status', 'accepted')
+            ->where(function ($query) use ($authUser) {
+                $query->where('requester_id', $authUser->id)
+                    ->orWhere('receiver_id', $authUser->id);
+            })
             ->get()
-            ->map(function ($friend) {
-                return [
-                    'id'         => $friend->id,
-                    'username'   => $friend->username,
-                    'profile'    => $friend->profile ? [
-                        'first_name' => $friend->profile->first_name,
-                        'last_name'  => $friend->profile->last_name,
-                        'avatar_url' => $friend->profile->avatar_url,
-                        'bio'        => $friend->profile->bio,
-                    ] : null,
-                ];
-            });
+            ->map(function ($friendship) use ($authUser) {
+                if ($friendship->requester_id == $authUser->id) {
+                    return $friendship->receiver_id;
+                }
 
-        // Loại bỏ các user đã bị block
-        $blockedIds = $authUser->blockedUsers()->pluck('blocked_id')->toArray();
-        $friends = $friends->filter(function ($friend) use ($blockedIds) {
-            return !in_array($friend['id'], $blockedIds);
-        })->values();
+                return $friendship->requester_id;
+            });
+        $friends = User::whereIn('id', $friendIds)->get();
 
         return response()->json([
-            'friends' => $friends,
-            'total'   => $friends->count(),
+            'friends' => $friends
         ]);
     }
 
@@ -256,7 +220,7 @@ class FriendshipController extends Controller
         // Không thể block chính mình
         if ($authUser->id == $userId) {
             return response()->json([
-                'message' => 'You cannot block yourself.'
+                'message' => 'Bạn không thể chặn chính mình.'
             ], 422);
         }
 
@@ -264,14 +228,14 @@ class FriendshipController extends Controller
         $targetUser = User::find($userId);
         if (!$targetUser) {
             return response()->json([
-                'message' => 'User not found.'
+                'message' => 'Người dùng không tồn tại.'
             ], 404);
         }
 
         // Kiểm tra đã block chưa
         if ($authUser->hasBlockedUser($userId)) {
             return response()->json([
-                'message' => 'User is already blocked.'
+                'message' => 'Người dùng này đã bị chặn.'
             ], 409);
         }
 
@@ -285,7 +249,7 @@ class FriendshipController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'User blocked successfully.'
+            'message' => 'Đã chặn người dùng thành công.'
         ]);
     }
 
@@ -302,14 +266,14 @@ class FriendshipController extends Controller
 
         if (!$block) {
             return response()->json([
-                'message' => 'This user is not blocked.'
+                'message' => 'Người dùng này chưa bị chặn.'
             ], 404);
         }
 
         $block->delete();
 
         return response()->json([
-            'message' => 'User unblocked successfully.'
+            'message' => 'Đã bỏ chặn người dùng thành công.'
         ]);
     }
 }

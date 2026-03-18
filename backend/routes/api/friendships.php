@@ -3,16 +3,6 @@
 use App\Http\Controllers\FriendshipController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Friendship Routes
-|--------------------------------------------------------------------------
-|
-| Routes used for sending/accepting friend requests, managing
-| friendships, and blocking users. All endpoints are protected
-| by JWT authentication.
-|
-*/
 
 Route::middleware('jwt.auth')->prefix('friendships')->group(function () {
 
