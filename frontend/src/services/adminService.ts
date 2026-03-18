@@ -1,6 +1,5 @@
 import { api } from "../configs/api";
 import type {
-    ReportsResponse,
     AdminPost,
     AdminComment,
     AdminReport,
@@ -8,18 +7,32 @@ import type {
     DashboardStats,
     DailyActivity,
     Permission,
-    PermissionsResponse,
     Role,
+    PostsResponse,
+    CommentResponse,
+    PermissionsResponse,
+    ReportsResponse,
     RolesResponse,
     UsersResponse,
 } from "../types/admin";
 
-const ENDPOINTS = {
+export const ENDPOINTS = {
     REPORTS : "/reports",
+    COUNT_REPORTS_BY_DAYS: (days:number)=> `/count-reports-admin-days/${days}`,
     ROLES : "/roles",
     ROLES_BY_ID: (id:number)=>`/roles/${id}`,
     PERMISSIONS: '/permissions',
     USERS: '/users',
+    USERS_U_ACTIVE: '/users/update-active',
+    USERS_U_ROLE: '/users/update-role',
+    POSTS: '/posts-admin',
+    COUNT_POSTS_BY_DAYS: (days:number) => `/count-posts-admin-days/${days}`,
+    POSTS_BY_ID: (id:number)=> `/posts/${id}`,
+    POSTS_ADMIN_BY_ID: (id:number)=> `/posts-admin/${id}`,
+    POST_RESTORE: (id:number)=> `/post-restore/${id}`,
+    COMMENTS: '/comments',
+    COUNT_COMMENTS_BY_DAYS: (days:number)=> `/count-comments-admin-days/${days}`,
+    COMMENTS_BY_ID: (id:number)=>`/comments/${id}`,
 };
 
 // ============ Mock Data ============
@@ -326,42 +339,104 @@ let mockRoles: Role[] = [
     },
 ];
 
-let nextRoleId = 6;
-
-// ============ Service Functions ============
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// daashboard
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-    await delay(300);
     let reports = await getReports(null,null, "ALL", 'PENDING', '');
-    let users = await getUsers();
+    let users = await getUsers(1, '', '', '');
+    let posts = await getPosts(1, '', '', '');
+    let comments = await getComments(1, '', '');
     return {
-        total_users: users.data.total,
-        total_posts: 8_563,
-        total_comments: 24_891,
-        pending_reports: reports.pagination.total,
-        user_growth: 12.5,
-        post_growth: 8.3,
-        comment_growth: 15.2,
-        report_change: -3.1,
+        reports:reports,
+        posts:posts,
+        comments: comments,
+        users: users,
     };
 };
 
-export const getDailyActivity = async (): Promise<DailyActivity[]> => {
-    await delay(200);
-    return mockDailyActivity;
+export const getDailyActivity = async (days:number): Promise<any> => {
+    let postsCount = await api.get<any>(ENDPOINTS.COUNT_POSTS_BY_DAYS(days));
+    let reportsCount = await api.get<any>(ENDPOINTS.COUNT_REPORTS_BY_DAYS(days));
+    let commentsCount = await api.get<any>(ENDPOINTS.COUNT_COMMENTS_BY_DAYS(days));
+
+    let posts=postsCount.data.data;
+    let comments= commentsCount.data.data;
+    let reports = reportsCount.data.data;
+
+    let result ={};
+    const addData = (type: string, arr: any[])=>{
+        arr.forEach(item => {
+            if(!result[item.date]){
+                result[item.date]={
+                    date: item.date,
+                    posts:0,
+                    comments:0,
+                    reports:0,
+                };
+            }
+            result[item.date][type]=item.total;
+        });
+    };
+    addData('posts', posts);
+    addData('comments', comments);
+    addData('reports', reports);
+
+    let dailyActivity = Object.values(result);
+    return dailyActivity;
 };
 
-export const getAdminPosts = async (): Promise<AdminPost[]> => {
-    await delay(300);
-    return [...mockPosts];
+// post
+
+export const getPosts = async(
+    page:number,
+    privacy: string,
+    status: string,
+    search: string
+    ): Promise<AdminPost[]>=>{
+    let response = await api.get<PostsResponse>(ENDPOINTS.POSTS, {
+        params:{
+            page:page,
+            privacy: privacy,
+            status: status,
+            search: search
+        }
+    });
+    return response.data;
 };
 
-export const getAdminComments = async (): Promise<AdminComment[]> => {
-    await delay(300);
-    return [...mockComments];
+export const deletePost = async (id: number): Promise<AdminPost> => {
+    let response = await api.delete<PostsResponse>(ENDPOINTS.POSTS_ADMIN_BY_ID(id));
+    return response.data;
 };
+
+export const restorePost = async (id: number): Promise<AdminPost> => {
+    let response = await api.patch<PostsResponse>(ENDPOINTS.POST_RESTORE(id));
+    return response.data;
+};
+
+// comment
+
+export const getComments = async (
+    page: number,
+    type: string,
+    search: string
+    ): Promise<AdminComment[]> => {
+    let response = await api.get<CommentResponse>(ENDPOINTS.COMMENTS, {
+        params:{
+            page:page,
+            type:type,
+            search: search
+        }
+    });
+    return response.data;
+};
+
+export const deleteComment = async (id: number): Promise<AdminComment> => {
+    let response = await api.delete<CommentResponse>(ENDPOINTS.COMMENTS_BY_ID(id));
+    return response.data;
+};
+
+// report
 
 export const getReports = async (
     page: number,
@@ -382,24 +457,7 @@ export const getReports = async (
     return response.data;
 };
 
-export const getRecentReports = async (limit: number = 5): Promise<AdminReport[]> => {
-    await delay(200);
-    return mockReports
-        .filter((r) => r.status === "PENDING")
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, limit);
-};
-
-export const getRecentPosts = async (limit: number = 5): Promise<AdminPost[]> => {
-    await delay(200);
-    return mockPosts
-        .filter((p) => !p.deleted_at)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, limit);
-};
-
 export const handleStatus = async (id: number, status: string, userId: number): Promise<AdminReport> => {
-    await delay(300);
     const response = await api.patch<ReportsResponse>(ENDPOINTS.REPORTS,null,{
         params:{
             id:id,
@@ -407,38 +465,10 @@ export const handleStatus = async (id: number, status: string, userId: number): 
             user_id: userId | null
         }
     });
-    console.log(response);
     return response.data;
 };
 
-export const deleteAdminPost = async (id: number): Promise<AdminPost> => {
-    await delay(300);
-    const post = mockPosts.find((p) => p.id === id);
-    if (post) {
-        post.deleted_at = new Date().toISOString();
-    }
-    return post!;
-};
-
-export const restoreAdminPost = async (id: number): Promise<AdminPost> => {
-    await delay(300);
-    const post = mockPosts.find((p) => p.id === id);
-    if (post) {
-        post.deleted_at = null;
-    }
-    return post!;
-};
-
-export const deleteAdminComment = async (id: number): Promise<{ success: boolean }> => {
-    await delay(300);
-    const index = mockComments.findIndex((c) => c.id === id);
-    if (index !== -1) {
-        mockComments.splice(index, 1);
-    }
-    return { success: true };
-};
-
-// Users CRUD 
+// User 
 
 export const getUsers = async (
     page:number,
@@ -461,7 +491,7 @@ export const updateIsActiveUser = async(
     id: number,
     isActive: boolean
     ): Promise<AdminUser[]>=>{
-    let response = await api.patch<UsersResponse>(ENDPOINTS.USERS,{
+    let response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ACTIVE,{
         params:{
             id: id,
             is_active: isActive,
@@ -470,15 +500,17 @@ export const updateIsActiveUser = async(
     return response.data;
 };
 
-export const changeUserRole = async (id: number, role: string): Promise<AdminUser> => {
-    await delay(400);
-    const user = mockAdminUsers.find(u => u.id === id);
-    if (!user) throw new Error("User not found");
-    user.role = role;
-    return { ...user };
+export const changeUserRole = async (id: number, roleId: number): Promise<AdminUser> => {
+    const response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ROLE,{
+        params:{
+            id: id,
+            role_id: roleId,
+        }
+    });
+    return response.data;
 };
 
-// ============ Roles & Permissions CRUD ============
+// role
 
 export const getPermissions = async (): Promise<Permission[]> => {
     const response = await api.get<PermissionsResponse>(ENDPOINTS.PERMISSIONS);
@@ -500,10 +532,9 @@ export const createRole = async (data: { name: string; description: string; perm
     return response.data;
 };
 
-export const updateRole = async (id: number, data: { name?: string; description?: string; permissions?: number[] }): Promise<Role> => {
+export const updateRole = async (id: number, data: { description?: string; permissions?: number[] }): Promise<Role> => {
     const roleEdited: Role = {
         id: id,
-        name: data.name,
         description: data.description,
         permissions: [...data.permissions],
     };
@@ -517,23 +548,21 @@ export const deleteRole = async (id: number): Promise<Role> => {
 };
 
 export default {
+    handleStatus,
+    restorePost,
+    changeUserRole,
     getDashboardStats,
     getDailyActivity,
-    getAdminPosts,
-    getAdminComments,
-    getReports,
-    getRecentReports,
-    getRecentPosts,
-    handleStatus,
-    deleteAdminPost,
-    restoreAdminPost,
-    deleteAdminComment,
-    updateIsActiveUser,
     getUsers,
-    changeUserRole,
+    getPosts,
+    getComments,
+    getReports,
     getPermissions,
     getRoles,
     createRole,
+    updateIsActiveUser,
     updateRole,
     deleteRole,
-};
+    deletePost,
+    ENDPOINTS,
+}

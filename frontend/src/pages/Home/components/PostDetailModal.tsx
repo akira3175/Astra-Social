@@ -188,6 +188,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                 )}
 
                 {/* Right: Content Panel */}
+
                 <div className="pdm-content-panel">
                     {/* Close button on right for posts without images */}
                     {!hasImages && (

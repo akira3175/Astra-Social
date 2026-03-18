@@ -61,9 +61,24 @@ class UserController extends Controller{
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request){
+    public function updateActive(Request $request){
         $params = $request->all();
-        $user = $this->userService->update($params['params']);
+        $user = $this->userService->updateActive($params['params']);
+        if ($user){
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật thành công',
+            ]);                       
+        }
+        return response()->json([
+                'success' => false,
+                'message' => 'Không có người dùng nào',
+        ]);
+    }
+
+    public function updateRole(Request $request){
+        $params = $request->all();
+        $user = $this->userService->updateRole($params['params']);
         if ($user){
             return response()->json([
                 'success' => true,

@@ -81,4 +81,12 @@ class ReportController extends Controller{
     {
         //
     }
+
+    public function adminGetCountByDays(int $days){
+        $result = $this->reportService->adminGetCountByDays($days);
+        return response()->json([
+            'data'=>$result,
+        ]);
+    }
+
 }

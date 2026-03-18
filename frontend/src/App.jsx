@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { LoginPage, ProtectedRoute } from "./pages/Auth";
+import { LoginPage, ProtectedRoute, PermissionRoute, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from "./pages/Auth";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
@@ -7,6 +7,7 @@ import SearchPage from "./pages/Search";
 import FriendsPage from "./pages/Friends";
 import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
+import PostDetailPage from "./pages/Post";
 import { AdminLayout, AdminDashboard, AdminPosts, AdminComments, AdminReports, AdminRoles, AdminUsers } from "./pages/Admin";
 import { CurrentUserProvider, useCurrentUser } from "./context/currentUserContext";
 import "./App.css";
@@ -19,6 +20,10 @@ const RouteApp=()=>{
         <Routes>
           {/* Public routes - không có Navbar */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/posts/:id" element={<PostDetailPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes - có Navbar thông qua BasePage layout */}
           <Route element={<BasePage />}>
@@ -36,13 +41,33 @@ const RouteApp=()=>{
           <Route element={<ProtectedRoute user={context.currentUser}
                                           isLoading={context.isLoading}
           />}>
+
             <Route path="/admin" element={<AdminLayout />}>
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/posts" element={<AdminPosts />} />
-              <Route path="/admin/comments" element={<AdminComments />} />
-              <Route path="/admin/reports" element={<AdminReports />} />
-              <Route path="/admin/roles" element={<AdminRoles />} />
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="dashboard" />}>
+              <Route path="dashboard" element={<AdminDashboard />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="user" />}>
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="posts" />}>
+              <Route path="posts" element={<AdminPosts />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="comments" />}>
+              <Route path="comments" element={<AdminComments />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="reports" />}>
+              <Route path="reports" element={<AdminReports />} />
+            </Route>
+
+            <Route element={<PermissionRoute user={context.currentUser} permission="roles" />}>
+              <Route path="roles" element={<AdminRoles />} />
+            </Route>
+
             </Route>
           </Route>
         </Routes>

@@ -45,18 +45,17 @@ class RoleController extends Controller{
         if(!$validated){
             return response()->json([
                 'success' => false,
-                'errors' => 'Tên role bị trùng. Vui lòng nhập tên khác',
+                'errors' => 'Tên role đã tồn tại. Vui lòng nhập tên khác',
             ]);
-
         }
         $role = Role::create([
-            'name'=>$validated['name'],
+            'name'=>$data['name'],
             'is_default'=>false,
-            'description' => $validated['description'] ?? null,
+            'description' => $data['description'] ?? null,
         ]);
 
         if ($role){
-            foreach ($validated['permissions'] as $permissionId) {
+            foreach ($data['permissions'] as $permissionId) {
                 Role_permissions::create([
                     'role_id' => $role->id,
                     'permission_id' => $permissionId,
@@ -65,6 +64,7 @@ class RoleController extends Controller{
             return response()->json([
                 'success'=>true,
                 'data' => $data,
+                'message'=>"Tạo thành công",
             ]);
         }
         return response()->json([
@@ -94,29 +94,20 @@ class RoleController extends Controller{
      */
     public function update(Request $request, ?string $id=null){
         $data = $request->all();
-        $validated = $this->check($request);
-        if(!$validated){
-            return response()->json([
-                'success' => false,
-                'errors' => 'Tên role bị trùng. Vui lòng nhập tên khác',
-            ]);
-
-        }
         $role = Role::find($data['id']);
         if(!$role){
             return response()->json([
                 'success' => false,
-                'message' => 'Role not found'
+                'message' => 'Không tìm thấy role'
             ]);
         }
         $role->update([
-            'name'=>$validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $data['description'],
         ]);
 
         $ro_per = Role_permissions::where('role_id', $role->id);
         $ro_per->forceDelete();
-        foreach ($validated['permissions'] as $permissionId) {
+        foreach ($data['permissions'] as $permissionId) {
             Role_permissions::create([
                 'role_id'=>$role->id,
                 'permission_id'=>$permissionId,
@@ -124,6 +115,7 @@ class RoleController extends Controller{
         }
         return response()->json([
             'success'=>true,
+            'message'=>"Cập nhật thành công",
             'data' => $data,
         ]);
 
@@ -138,13 +130,13 @@ class RoleController extends Controller{
             ]);            
         }
 
-        $ro_per = Role_permissions::where('role_id', $id)->delete();
+        $ro_per = Role_permissions::where('role_id', $id)->forceDelete();
 
-        $role->delete();
+        $role->forceDelete();
         return response()->json([
             'success' => true,
             'data' => $role,
-            'message' => 'Đã xóa Role thành công',
+            'message' => 'Đã xóa thành công',
         ]);
     }
 
@@ -152,9 +144,6 @@ class RoleController extends Controller{
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:roles,name',
-                'description' => 'nullable|string',
-                'permissions' => 'nullable|array',
-                'permissions.*' => 'integer|exists:permissions,id',
             ]);
         }
         catch (ValidationException $e) {

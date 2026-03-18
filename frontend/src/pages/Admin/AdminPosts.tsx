@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState, useMemo } from "react";
 import {
     SearchIcon,
@@ -7,29 +8,34 @@ import {
     CloseIcon,
     FileTextIcon,
 } from "../../components/ui";
-import { getAdminPosts, deleteAdminPost, restoreAdminPost } from "../../services/adminService";
+import {ENDPOINTS, getPosts, deletePost, restorePost } from "../../services/adminService";
 import type { AdminPost } from "../../types/admin";
 import "./AdminTable.css";
-
-const ITEMS_PER_PAGE = 5;
+import { useCurrentUser } from "../../context/currentUserContext";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const AdminPosts: React.FC = () => {
+    const { currentUser } = useCurrentUser() ?? {};
     const [posts, setPosts] = useState<AdminPost[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [privacyFilter, setPrivacyFilter] = useState<string>("ALL");
-    const [statusFilter, setStatusFilter] = useState<string>("ALL");
+    const [privacyFilter, setPrivacyFilter] = useState<string>("");
+    const [statusFilter, setStatusFilter] = useState<string>("");
     const [selectedPost, setSelectedPost] = useState<AdminPost | null>(null);
+    const [showDetailPost, setShowDetailPost] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
-        loadPosts();
-    }, []);
+        const timer = setTimeout(() => {
+                loadPosts(currentPage, privacyFilter,statusFilter, searchQuery);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [loading, currentPage, privacyFilter, statusFilter, searchQuery]);
 
-    const loadPosts = async () => {
-        setLoading(true);
+    const loadPosts = async (currentPage, privacyFilter, statusFilter, searchQuery) => {
         try {
-            const data = await getAdminPosts();
+            const data = await getPosts(currentPage, privacyFilter,statusFilter, searchQuery);
             setPosts(data);
         } catch (error) {
             console.error("Error loading posts:", error);
@@ -38,41 +44,47 @@ const AdminPosts: React.FC = () => {
         }
     };
 
-    const filteredPosts = useMemo(() => {
-        setCurrentPage(1);
-        return posts.filter((post) => {
-            const matchesSearch = !searchQuery ||
-                post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                post.user.username.toLowerCase().includes(searchQuery.toLowerCase());
-
-            const matchesPrivacy = privacyFilter === "ALL" || post.privacy === privacyFilter;
-
-            const matchesStatus = statusFilter === "ALL" ||
-                (statusFilter === "ACTIVE" && !post.deleted_at) ||
-                (statusFilter === "DELETED" && post.deleted_at);
-
-            return matchesSearch && matchesPrivacy && matchesStatus;
-        });
-    }, [posts, searchQuery, privacyFilter, statusFilter]);
-
-    const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
-    const paginatedPosts = filteredPosts.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
-    );
-
+    let totalPages;
+    if(!loading){
+        totalPages= posts.data.last_page;
+    }
+    const navigate = useNavigate();
     const handleDelete = async (id: number) => {
-        await deleteAdminPost(id);
-        setPosts((prev) => prev.map((p) => p.id === id ? { ...p, deleted_at: new Date().toISOString() } : p));
+        let result = await deletePost(id);
+        if (result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: result.message,
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 3000
+            });
+            setSelectedPost(null);
+            setLoading(true);
+        }
     };
 
+    const handleView= (id:number)=>{
+        navigate(`${ENDPOINTS.POSTS_BY_ID(id)}`);
+    }
+    
     const handleRestore = async (id: number) => {
-        await restoreAdminPost(id);
-        setPosts((prev) => prev.map((p) => p.id === id ? { ...p, deleted_at: null } : p));
+        let result = await restorePost(id);
+        if(result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: result.message,
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 2000
+            });
+            setSelectedPost(null);
+            setLoading(true);
+        }        
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString("vi-VN", {
+        return new Date(dateStr).toLocaleString("vi-VN", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
@@ -80,7 +92,7 @@ const AdminPosts: React.FC = () => {
             minute: "2-digit",
         });
     };
-
+    
     const getPrivacyLabel = (privacy: string) => {
         switch (privacy) {
             case "PUBLIC": return "Công khai";
@@ -101,7 +113,10 @@ const AdminPosts: React.FC = () => {
                             type="text"
                             placeholder="Tìm kiếm bài viết..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
                         />
                     </div>
                 </div>
@@ -109,9 +124,12 @@ const AdminPosts: React.FC = () => {
                     <select
                         className="admin-filter-select"
                         value={privacyFilter}
-                        onChange={(e) => setPrivacyFilter(e.target.value)}
+                        onChange={(e) =>{
+                            setPrivacyFilter(e.target.value);
+                            setCurrentPage(1);
+                        }}
                     >
-                        <option value="ALL">Tất cả quyền riêng tư</option>
+                        <option value="">Tất cả quyền riêng tư</option>
                         <option value="PUBLIC">Công khai</option>
                         <option value="FRIENDS">Bạn bè</option>
                         <option value="ONLY_ME">Riêng tư</option>
@@ -119,9 +137,12 @@ const AdminPosts: React.FC = () => {
                     <select
                         className="admin-filter-select"
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) =>{ 
+                            setStatusFilter(e.target.value);
+                            setCurrentPage(1);
+                        }}
                     >
-                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="">Tất cả trạng thái</option>
                         <option value="ACTIVE">Đang hoạt động</option>
                         <option value="DELETED">Đã xóa</option>
                     </select>
@@ -153,7 +174,7 @@ const AdminPosts: React.FC = () => {
                                     ))}
                                 </tr>
                             ))
-                        ) : filteredPosts.length === 0 ? (
+                        ) : !posts.success ?(
                             <tr>
                                 <td colSpan={9}>
                                     <div className="admin-empty">
@@ -163,7 +184,7 @@ const AdminPosts: React.FC = () => {
                                 </td>
                             </tr>
                         ) : (
-                            paginatedPosts.map((post) => (
+                            posts.data.data.map((post) => (
                                 <tr key={post.id} style={{ opacity: post.deleted_at ? 0.6 : 1 }}>
                                     <td className="cell-number">#{post.id}</td>
                                     <td>
@@ -193,30 +214,36 @@ const AdminPosts: React.FC = () => {
                                         )}
                                     </td>
                                     <td>
-                                        <div className="cell-actions">
-                                            <button
-                                                className="action-btn view"
-                                                title="Xem chi tiết"
-                                                onClick={() => setSelectedPost(post)}
-                                            >
-                                                <EyeIcon size={16} />
-                                            </button>
+                                        <div className="cell-actions d-flex flex-row justify-content-center">
+                                            {currentUser.role.permissions.find(p=>p.slug==='post.view') && (
+                                                <button
+                                                    className="action-btn view"
+                                                    title="Xem chi tiết"
+                                                    onClick={() => setSelectedPost(post)}
+                                                >
+                                                    <EyeIcon size={16} />
+                                                </button>
+                                            )}
                                             {post.deleted_at ? (
-                                                <button
-                                                    className="action-btn restore"
-                                                    title="Khôi phục"
-                                                    onClick={() => handleRestore(post.id)}
-                                                >
-                                                    <RefreshIcon size={16} />
-                                                </button>
+                                                currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                                    <button
+                                                        className="action-btn restore"
+                                                        title="Khôi phục"
+                                                        onClick={() => handleRestore(post.id)}
+                                                    >
+                                                        <RefreshIcon size={16} />
+                                                    </button>
+                                                )
                                             ) : (
-                                                <button
-                                                    className="action-btn delete"
-                                                    title="Xóa bài viết"
-                                                    onClick={() => handleDelete(post.id)}
-                                                >
-                                                    <TrashIcon size={16} />
-                                                </button>
+                                                currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                                    <button
+                                                        className="action-btn delete"
+                                                        title="Xóa bài viết"
+                                                        onClick={() => handleDelete(post.id)}
+                                                    >
+                                                        <TrashIcon size={16} />
+                                                    </button>
+                                                )
                                             )}
                                         </div>
                                     </td>
@@ -225,17 +252,19 @@ const AdminPosts: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                {!loading && filteredPosts.length > 0 && (
+                {!loading && posts.success && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
-                            Hiển thị {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredPosts.length)} / {filteredPosts.length} bài viết
+                            Hiển thị {posts.data.data.length} / {posts.data.total} bài viết
                         </span>
                         <div className="admin-pagination-controls">
-                            <button
-                                className="admin-pagination-btn nav-btn"
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(p => p - 1)}
-                            >‹</button>
+                            {posts.data.prev_page_url && (
+                                <button
+                                    className="admin-pagination-btn nav-btn"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => p - 1)}
+                                >‹</button>
+                            )}
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
                                 if (totalPages <= 7 || page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
                                     return (
@@ -250,11 +279,13 @@ const AdminPosts: React.FC = () => {
                                 if (page === totalPages - 1 && currentPage < totalPages - 3) return <span key="e2" className="admin-pagination-ellipsis">…</span>;
                                 return null;
                             })}
-                            <button
-                                className="admin-pagination-btn nav-btn"
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(p => p + 1)}
-                            >›</button>
+                            {posts.data.next_page_url &&(
+                                <button
+                                    className="admin-pagination-btn nav-btn"
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(p => p + 1)}
+                                >›</button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -301,6 +332,52 @@ const AdminPosts: React.FC = () => {
                                 <span className="admin-detail-value">
                                     {selectedPost.deleted_at ? `Đã xóa (${formatDate(selectedPost.deleted_at)})` : "Đang hoạt động"}
                                 </span>
+                            </div>
+                            {/* Actions in modal */}
+                            <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                                {selectedPost.deleted_at ? (
+                                    currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                        <button
+                                            style={{
+                                                display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
+                                                background: "white", color: "#ef4444",
+                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                                minWidth: 120, alignItems: "center", justifyContent: "center"
+                                            }}
+                                            onClick={() => handleRestore(selectedPost.id)}
+                                        >
+                                            <RefreshIcon size={16} />
+                                            Khôi phục bài viết
+                                        </button>
+                                    )
+                                ) : (
+                                    currentUser.role.permissions.find(p=>p.slug==='post.delete') && (
+                                        <button
+                                            style={{
+                                                display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
+                                                background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
+                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                                minWidth: 120, alignItems: "center", justifyContent: "center"
+                                            }}
+                                            onClick={() => handleDelete(selectedPost.id)}
+                                        >
+                                            <TrashIcon size={16} />
+                                            Xóa bài viết
+                                        </button>
+                                    )
+                                )}
+                                <button
+                                    style={{
+                                        display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
+                                        background: "white", color: "#6366f1",
+                                        fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                        minWidth: 120, alignItems: "center", justifyContent: "center"
+                                    }}
+                                        onClick={() => handleView(selectedPost.id)}
+                                >
+                                    <EyeIcon size={16} />
+                                    Nguồn bài viết
+                                </button>
                             </div>
                         </div>
                     </div>

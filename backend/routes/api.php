@@ -20,3 +20,4 @@ require __DIR__ . '/api/role.php';
 require __DIR__ . '/api/permission.php';
 require __DIR__ . '/api/noti.php';
 require __DIR__ . '/api/user.php';
+require __DIR__ . '/api/comment.php';
