@@ -5,21 +5,21 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use App\Models\MediaAttachment;
 use App\Models\User;
+use App\Models\Post;
+use App\Models\Notification;
+use App\Services\NotificationService;
 use App\Models\Hashtag;
 use App\Models\PostLike;
 use App\Models\CommentLike;
 use App\Models\Comment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Redis;
-use App\Models\Post;
-use App\Models\Notification;
-use App\Services\NotificationService;
 
 class PostService{
     public function __construct(
         private MediaService $mediaService,
+        private NotificationService $notiService,
         private HashtagService $hashtagService
-        private NotificationService $notiService 
     ) {}
 
     /**
@@ -306,6 +306,62 @@ class PostService{
         ];
     }
 
+    public function getAdminPost(array $params){
+        $data = Post::query()
+                    ->with('user')
+                    ->orderBy('created_at', 'desc');
+        if(empty($params['status'])){
+            $data->withTrashed();
+        } 
+        if(strtolower($params['status'])==='deleted'){
+            $data->onlyTrashed();
+        }
+        if(!empty($params['privacy'])){
+            $data->where('privacy', $params['privacy']);
+        }
+        if(!empty($params['search'])){
+            $data->where('content', 'like', '%'.$params['search'].'%');
+        }
+        return $data->paginate(10);
+    }
+
+    public function restorePostById(string $id){
+        $post = Post::withTrashed()->find((int)$id);
+        if($post){
+            $post->restore();
+            return $post;
+        }
+        return false;
+    }
+
+    public function adminDeletePostById(User $auth_user, string $id){
+        $post = Post::find($id);
+        if(empty($post)){
+            return false;
+        }
+        $post->delete();
+        $noti=[
+            'receiver_id'=>$post->user_id,
+            'actor_id'=>$auth_user->id,
+            'entity_type'=> Notification::ENTITY_TYPE_POST,
+            'entity_id'=>$id,
+            'message'=>'Bài viết của bạn đã bị gỡ bỏ',
+        ];
+        $result = $this->notiService->create($noti);
+        return $result;
+    }
+
+    public function adminGetCountByDays(int $days){
+        $count = Post::select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('COUNT(*) as total')
+                )
+                ->where('created_at', '>=', now()->subDays($days))
+                ->groupBy('date')
+                ->get();
+        return $count;
+    }
+    
     public function getPostsByHashtag(string $hashtagName, int $page = 1, int $perPage = 10): array
     {
         $hashtagName = strtolower(trim($hashtagName));
@@ -529,61 +585,5 @@ class PostService{
             'success' => true,
             'data' => $post,
         ];
-    }
-}
-    public function getAdminPost(array $params){
-        $data = Post::query()
-                    ->with('user')
-                    ->orderBy('created_at', 'desc');
-        if(empty($params['status'])){
-            $data->withTrashed();
-        } 
-        if(strtolower($params['status'])==='deleted'){
-            $data->onlyTrashed();
-        }
-        if(!empty($params['privacy'])){
-            $data->where('privacy', $params['privacy']);
-        }
-        if(!empty($params['search'])){
-            $data->where('content', 'like', '%'.$params['search'].'%');
-        }
-        return $data->paginate(10);
-    }
-
-    public function restorePostById(string $id){
-        $post = Post::withTrashed()->find((int)$id);
-        if($post){
-            $post->restore();
-            return $post;
-        }
-        return false;
-    }
-
-    public function adminDeletePostById(User $auth_user, string $id){
-        $post = Post::find($id);
-        if(empty($post)){
-            return false;
-        }
-        $post->delete();
-        $noti=[
-            'receiver_id'=>$post->user_id,
-            'actor_id'=>$auth_user->id,
-            'entity_type'=> Notification::ENTITY_TYPE_POST,
-            'entity_id'=>$id,
-            'message'=>'Bài viết của bạn đã bị gỡ bỏ',
-        ];
-        $result = $this->notiService->create($noti);
-        return $result;
-    }
-
-    public function adminGetCountByDays(int $days){
-        $count = Post::select(
-                    DB::raw('DATE(created_at) as date'),
-                    DB::raw('COUNT(*) as total')
-                )
-                ->where('created_at', '>=', now()->subDays($days))
-                ->groupBy('date')
-                ->get();
-        return $count;
     }
 }

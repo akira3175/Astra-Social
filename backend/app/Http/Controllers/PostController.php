@@ -326,7 +326,7 @@ class PostController extends Controller
             'data' => $result,
         ]);
     }
-}
+
     public function adminIndex(Request $request){
         $params = $request->all();
         $posts = $this->postService->getAdminPost($params);
