@@ -31,9 +31,9 @@ class ReportController extends Controller{
     }
 
     public function handleStatus(Request $request){
-        $id =$request->query('id', null);
-        $status = $request->query('status', null);
-        $userId = $request->query('user_id', null);
+        $id = $request->input('id', null);
+        $status = $request->input('status', null);
+        $userId = $request->input('resolved_by', null);
         $result = $this->reportService->handleStatus($id, $status, $userId);
         return response()->json([
             'success' =>$result['success'],

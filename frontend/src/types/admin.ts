@@ -109,18 +109,46 @@ export interface PermissionsResponse {
     data: Permission[];
 }
 
+export interface PaginatedAdminUsers {
+    current_page: number;
+    data: AdminUser[];
+    first_page_url?: string;
+    from?: number;
+    last_page: number;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    path?: string;
+    per_page: number;
+    prev_page_url?: string | null;
+    to?: number;
+    total: number;
+}
+
 export interface UsersResponse {
     success: boolean;
-    data: AdminUser[];
+    data: PaginatedAdminUsers;
     message: string | null;
-    pagination?: Pagination;
+}
+
+export interface PaginatedAdminPosts {
+    current_page: number;
+    data: AdminPost[];
+    first_page_url?: string;
+    from?: number;
+    last_page: number;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    path?: string;
+    per_page: number;
+    prev_page_url?: string | null;
+    to?: number;
+    total: number;
 }
 
 export interface PostsResponse {
     success: boolean;
-    data: AdminPost[];
+    data: PaginatedAdminPosts;
     message: string | null;
-    pagination?: Pagination;
 }
 
 export interface CommentsResponse {

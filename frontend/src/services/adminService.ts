@@ -46,8 +46,8 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     ]);
 
     return {
-        total_users:     usersRes.pagination?.total    ?? 0,
-        total_posts:     postsRes.pagination?.total    ?? 0,
+        total_users:     usersRes.data?.total    ?? 0,
+        total_posts:     postsRes.data?.total    ?? 0,
         total_comments:  commentsRes.pagination?.total ?? 0,
         pending_reports: reportsRes.pagination?.total  ?? 0,
         user_growth:    0,
@@ -96,13 +96,13 @@ export const getPosts = async (
     return response.data;
 };
 
-export const deletePost = async (id: number): Promise<AdminPost> => {
-    const response = await api.delete<AdminPost>(ENDPOINTS.POSTS_ADMIN_BY_ID(id));
+export const deletePost = async (id: number): Promise<{ success: boolean; message?: string }> => {
+    const response = await api.delete<{ success: boolean; message?: string }>(ENDPOINTS.POSTS_ADMIN_BY_ID(id));
     return response.data;
 };
 
-export const restorePost = async (id: number): Promise<AdminPost> => {
-    const response = await api.patch<AdminPost>(ENDPOINTS.POST_RESTORE(id));
+export const restorePost = async (id: number): Promise<{ success: boolean; data?: AdminPost; message?: string }> => {
+    const response = await api.patch<{ success: boolean; data?: AdminPost; message?: string }>(ENDPOINTS.POST_RESTORE(id));
     return response.data;
 };
 
@@ -178,32 +178,35 @@ export const getUsers = async (
 export const updateIsActiveUser = async (
     id: number,
     isActive: boolean,
-): Promise<AdminUser[]> => {
-    const response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ACTIVE, {
+): Promise<{ success: boolean; message?: string }> => {
+    const response = await api.patch<{ success: boolean; message?: string }>(ENDPOINTS.USERS_U_ACTIVE, {
         id,
         is_active: isActive,
     });
-    return response.data.data;
+    return response.data;
 };
 
-export const changeUserRole = async (id: number, roleId: number): Promise<AdminUser> => {
-    const response = await api.patch<UsersResponse>(ENDPOINTS.USERS_U_ROLE, {
+export const changeUserRole = async (
+    id: number, 
+    roleId: number
+): Promise<{ success: boolean; message?: string }> => {
+    const response = await api.patch<{ success: boolean; message?: string }>(ENDPOINTS.USERS_U_ROLE, {
         id,
         role_id: roleId,
     });
-    return response.data.data[0];
+    return response.data;
 };
 
 // ─── Roles & Permissions ──────────────────────────────────────────────────────
 
-export const getPermissions = async (): Promise<Permission[]> => {
+export const getPermissions = async (): Promise<PermissionsResponse> => {
     const response = await api.get<PermissionsResponse>(ENDPOINTS.PERMISSIONS);
-    return response.data.data;
+    return response.data;
 };
 
-export const getRoles = async (): Promise<Role[]> => {
+export const getRoles = async (): Promise<RolesResponse> => {
     const response = await api.get<RolesResponse>(ENDPOINTS.ROLES);
-    return response.data.data;
+    return response.data;
 };
 
 // API nhận permission ids (number[]), không phải Permission objects

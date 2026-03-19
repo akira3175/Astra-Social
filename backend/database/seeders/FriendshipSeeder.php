@@ -29,7 +29,7 @@ class FriendshipSeeder extends Seeder
             $requesterId = min(4, $friendId);
             $receiverId = max(4, $friendId);
 
-            Friendship::updateOrCreate(
+            \Illuminate\Support\Facades\DB::table('friendships')->updateOrInsert(
                 [
                     'requester_id' => $requesterId,
                     'receiver_id' => $receiverId,
