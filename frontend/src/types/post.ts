@@ -32,6 +32,7 @@ export interface PostAuthor {
  * Post from API response
  */
 export interface Post {
+    is_liked: boolean;
     id: number;
     user_id: number;
     parent_id: number | null;
@@ -50,10 +51,9 @@ export interface Post {
  */
 export interface Pagination {
     current_page: number;
+    last_page: number;
     per_page: number;
     total: number;
-    total_pages: number;
-    has_more: boolean;
 }
 
 /**

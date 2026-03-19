@@ -1,0 +1,138 @@
+.info-page-container {
+    display: block;
+    width: 100%;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+    min-height: calc(100vh - 144px);
+}
+
+.info-content-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    padding: 48px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.info-header {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.info-header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 16px;
+    background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.info-header p {
+    font-size: 16px;
+    color: #64748b;
+    margin: 0;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.info-body {
+    color: #334155;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.info-body h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 36px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.info-body h2::before {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 4px;
+}
+
+.info-body h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 24px 0 12px;
+}
+
+.info-body p {
+    margin-bottom: 16px;
+}
+
+.info-body ul {
+    margin: 0 0 20px;
+    padding-left: 24px;
+}
+
+.info-body li {
+    margin-bottom: 8px;
+}
+
+.info-body strong {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.info-body a {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.info-body a:hover {
+    color: #4f46e5;
+    text-decoration: underline;
+}
+
+.info-footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .info-page-container {
+        margin: 24px auto;
+        padding: 0 16px;
+    }
+
+    .info-content-card {
+        padding: 32px 24px;
+    }
+
+    .info-header h1 {
+        font-size: 28px;
+    }
+
+    .info-body h2 {
+        font-size: 20px;
+    }
+}

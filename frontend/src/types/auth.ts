@@ -35,6 +35,12 @@ export interface ResetPasswordRequest {
     password_confirmation: string;
 }
 
+export interface ChangePasswordRequest {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+}
+
 // ============ Response Types ============
 
 export interface AuthTokenResponse {
@@ -84,6 +90,11 @@ export interface ForgotPasswordResponse {
 }
 
 export interface ResetPasswordResponse {
+    success: boolean;
+    message: string;
+}
+
+export interface ChangePasswordResponse {
     success: boolean;
     message: string;
 }

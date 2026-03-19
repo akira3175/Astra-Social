@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RefreshTokenRequest;
@@ -170,6 +171,33 @@ class AuthController extends Controller
         $result = $this->authService->resetPassword(
             $data['email'],
             $data['token'],
+            $data['password']
+        );
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code'] ?? 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+        ]);
+    }
+
+    /**
+     * Change password for authenticated user.
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $user = $request->user();
+
+        $result = $this->authService->changePassword(
+            $user,
+            $data['current_password'],
             $data['password']
         );
 

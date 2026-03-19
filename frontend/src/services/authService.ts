@@ -12,6 +12,8 @@ import type {
     ForgotPasswordResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
+    ChangePasswordRequest,
+    ChangePasswordResponse,
 } from "../types/auth";
 
 /**
@@ -29,6 +31,7 @@ const ENDPOINTS = {
     LOGOUT: "/auth/logout",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
+    CHANGE_PASSWORD: "/auth/change-password",
 } as const;
 
 // ============ API Functions ============
@@ -165,6 +168,18 @@ export const forgotPassword = async (data: ForgotPasswordRequest): Promise<Forgo
 export const resetPassword = async (data: ResetPasswordRequest): Promise<ResetPasswordResponse> => {
     const response = await apiNoAuth.post<ResetPasswordResponse>(
         ENDPOINTS.RESET_PASSWORD,
+        data
+    );
+
+    return response.data;
+};
+
+/**
+ * Change password for authenticated user
+ */
+export const changePassword = async (data: ChangePasswordRequest): Promise<ChangePasswordResponse> => {
+    const response = await api.post<ChangePasswordResponse>(
+        ENDPOINTS.CHANGE_PASSWORD,
         data
     );
 

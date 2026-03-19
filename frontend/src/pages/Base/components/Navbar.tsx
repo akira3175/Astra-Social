@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
     Box,
     Typography,
     TextField,
-    Button,
     IconButton,
     Avatar,
     Menu,
@@ -43,6 +42,13 @@ const Navbar: React.FC<NavbarProps> = () => {
     const queryParams = new URLSearchParams(location.search);
     const initialQuery = queryParams.get("q") || "";
     const [searchQuery, setSearchQuery] = useState(initialQuery);
+    interface Hashtag {
+        id: number
+        name: string
+        posts_count: number
+    }
+
+    const [suggestions,setSuggestions] = useState<Hashtag[]>([])
 
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     // const [isChatOpen, setIsChatOpen] = useState(false); // Unused in provided code logic except toggle
@@ -64,11 +70,20 @@ const Navbar: React.FC<NavbarProps> = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        if (searchQuery.trim()) {
-            navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-            if (isMobile) {
-                setShowMobileSearch(false);
-            }
+
+        let query = searchQuery.trim();
+
+        if (!query) return;
+
+        // nếu user nhập #laravel
+        if (query.startsWith("#")) {
+            query = query.slice(1);
+        }
+
+        navigate(`/search?q=${encodeURIComponent(query)}`);
+
+        if (isMobile) {
+            setShowMobileSearch(false);
         }
     };
 
@@ -83,6 +98,21 @@ const Navbar: React.FC<NavbarProps> = () => {
     const toggleChat = () => {
         // setIsChatOpen(!isChatOpen);
     };
+
+    useEffect(()=>{
+
+    if(searchQuery.length < 2){
+        setSuggestions([])
+        return
+    }
+
+    fetch(`/api/hashtags/search?q=${searchQuery}`)
+        .then(res=>res.json())
+        .then(data=>{
+            setSuggestions(data.data || [])
+        })
+
+    },[searchQuery])
 
     return (
         <>
@@ -158,6 +188,34 @@ const Navbar: React.FC<NavbarProps> = () => {
                                     backgroundColor: "rgba(0, 0, 0, 0.04)",
                                 }}
                             />
+
+                            {suggestions.length > 0 && (
+
+                            <Box
+                                sx={{
+                                    position: "absolute",
+                                    background: "#fff",
+                                    border: "1px solid #ddd",
+                                    width: "100%",
+                                    marginTop: 1,
+                                    borderRadius: 2,
+                                    zIndex: 2000
+                                    }}
+                                >
+
+                                {suggestions.map(tag => (
+                                <div
+                                    key={tag.id}
+                                    style={{padding:"8px 12px",cursor:"pointer"}}
+                                    onClick={()=>navigate(`/search?q=${encodeURIComponent(tag.name)}`)}
+                                >
+                                    #{tag.name}
+                                </div>
+                                ))}
+
+                            </Box>
+
+                            )}
                         </Box>
                     )}
 

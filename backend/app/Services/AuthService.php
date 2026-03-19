@@ -420,4 +420,31 @@ class AuthService
             'message' => 'Mật khẩu đã được đặt lại thành công.',
         ];
     }
+
+    /**
+     * Change password for authenticated user.
+     *
+     * @return array{success: bool, message: string, code?: int}
+     */
+    public function changePassword(User $user, string $currentPassword, string $newPassword): array
+    {
+        // Verify current password
+        if (!Hash::check($currentPassword, $user->password)) {
+            return [
+                'success' => false,
+                'message' => 'Mật khẩu hiện tại không đúng.',
+                'code' => 400,
+            ];
+        }
+
+        // Update password
+        $user->update([
+            'password' => $newPassword,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Đổi mật khẩu thành công.',
+        ];
+    }
 }
