@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import type { Post } from "../../../types/post";
 import PostDetailModal from "./PostDetailModal";
-import { createReport } from "../../../services/ReportService";
+import { createReport, CreateReportDto } from "../../../services/ReportService";
 import PostMenu from "./PostMenu";
 import { toggleLike, sharePost } from "../../../services/postService";
 import PostReportModal from "./PostReportModal";
 import "./PostList.css";
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
+// import withReactContent from 'sweetalert2-react-content';
 
 interface PostListProps {
     posts: Post[];
@@ -80,7 +80,15 @@ interface LikeState {
     count: number;
 }
 
-const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted, onPostReported, onLoadMore, hasMore, isLoadingMore }) => {
+const PostList: React.FC<PostListProps> = ({
+    posts,
+    isLoading,
+    onPostUpdated,
+    onPostDeleted,
+    onLoadMore,
+    hasMore,
+    isLoadingMore,
+}) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -112,7 +120,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
             return next;
         });
 
-        // FIX 3: tương tự, chỉ khởi tạo commentCounts cho post chưa có
+        // Chỉ khởi tạo commentCounts cho post chưa có
         setCommentCounts((prev) => {
             const next = { ...prev };
             posts.forEach((p) => {
@@ -124,21 +132,19 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         });
     }, [posts]);
 
-    // Use refs to avoid stale closures in scroll handler
     const onLoadMoreRef = useRef(onLoadMore);
     const hasMoreRef = useRef(hasMore);
     const isLoadingMoreRef = useRef(isLoadingMore);
     const listRef = useRef<HTMLDivElement>(null);
+
+    // Sync refs mỗi render
     onLoadMoreRef.current = onLoadMore;
     hasMoreRef.current = hasMore;
     isLoadingMoreRef.current = isLoadingMore;
 
-    // Find the nearest scrollable parent and listen for scroll
     useEffect(() => {
-        // Don't set up scroll listener while loading or if list isn't in DOM
         if (isLoading || !listRef.current) return;
 
-        // Find scrollable ancestor
         const findScrollParent = (el: HTMLElement | null): HTMLElement | Window => {
             while (el) {
                 const style = window.getComputedStyle(el);
@@ -167,7 +173,6 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 clientHeight = scrollContainer.clientHeight;
             }
 
-            // Trigger when within 300px of bottom
             if (scrollTop + clientHeight >= scrollHeight - 300) {
                 onLoadMoreRef.current();
             }
@@ -176,10 +181,9 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
         return () => scrollContainer.removeEventListener('scroll', handleScroll);
     }, [isLoading]);
-    // Get post ID from URL
+
     const postIdFromUrl = searchParams.get("post");
 
-    // Open modal when URL has post parameter
     useEffect(() => {
         if (postIdFromUrl && posts.length > 0) {
             const post = posts.find((p) => p.id.toString() === postIdFromUrl);
@@ -187,14 +191,12 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         }
     }, [postIdFromUrl, posts]);
 
-    // Open modal normally and update URL
     const handlePostClick = (post: Post) => {
         setSelectedPost(post);
         setFocusComment(false);
         setSearchParams({ post: post.id.toString() });
     };
 
-    // Open modal and focus on comment input
     const handleCommentClick = (post: Post, e: React.MouseEvent) => {
         e.stopPropagation();
         setSelectedPost(post);
@@ -202,25 +204,21 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         setSearchParams({ post: post.id.toString() });
     };
 
-    // Close modal and remove URL param
     const handleCloseModal = () => {
         setSelectedPost(null);
         setFocusComment(false);
         setEditingPostId(null);
         setDeletingPostId(null);
-        // Remove post param from URL
         searchParams.delete("post");
         setSearchParams(searchParams);
     };
 
-    // Handle edit click from PostMenu - open modal in edit mode
     const handleEditClick = (post: Post) => {
         setSelectedPost(post);
         setEditingPostId(post.id);
         setSearchParams({ post: post.id.toString() });
     };
 
-    // Handle delete click from PostMenu - open modal with delete confirm
     const handleDeleteClick = (post: Post) => {
         setSelectedPost(post);
         setDeletingPostId(post.id);
@@ -262,33 +260,41 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         }));
     };
 
-    const handleReportClick = (post: Post)=>{
+    const handleReportClick = (post: Post) => {
         setSelectedPost(null);
         setShowReportForm(true);
         setReportingPost(post);
-    }
+    };
 
-    const handleReportSubmit = async(reason: string, detail: string)=>{
-        let newReport = {
-            reporter_id:Number(currentUser.id),
+    const handleReportSubmit = async (reason: string, detail?: string) => {
+        if (!reportingPost || !currentUser) return;
+
+        const newReport: CreateReportDto = {
+            reporter_id: Number(currentUser.id),
             target_author_id: reportingPost.user_id,
             target_type: 'POST',
-            target_preview: detail,
+            target_preview: detail ?? '', 
             target_id: reportingPost.id,
             reason: reason,
+        };
+
+        try {
+            const result = await createReport(newReport);
+            if (result.success) {
+                Swal.fire({
+                    title: 'Thành công',
+                    text: 'Đã báo cáo thành công',
+                    icon: 'success',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                setShowReportForm(false);
+            }
+        } catch (e) {
+            console.error(e);
         }
-        let result = await createReport(newReport);
-        if(result.success){
-            Swal.fire({
-                title: 'Thành công',
-                text: 'Đã báo cáo thành công',
-                icon: 'success', // warning, error, success, info, question
-                showConfirmButton: false,
-                timer: 1500
-            });
-            setShowReportForm(false);
-        }
-    }
+    };
+
     if (isLoading) {
         return (
             <div className="post-loading">
@@ -312,7 +318,8 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
 
     return (
         <>
-            <div ref={listRef} className="post-list">
+            {/* ✅ Thêm ref vào div wrapper */}
+            <div className="post-list" ref={listRef}>
                 {posts.map((post) => {
                     const isOwner = currentUser?.id?.toString() === post.user_id?.toString();
                     const likeState = likeStates[post.id] ?? {
@@ -342,8 +349,6 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                                     <span className="post-username">{getDisplayName(post.user)}</span>
                                     <span className="post-time">{formatRelativeTime(post.created_at)}</span>
                                 </div>
-
-                                {/* Reusable PostMenu component */}
                                 <PostMenu
                                     isOwner={isOwner}
                                     onEdit={() => handleEditClick(post)}
@@ -401,6 +406,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 })}
             </div>
 
+            {/* ✅ Chỉ render PostDetailModal 1 lần duy nhất */}
             <PostDetailModal
                 open={selectedPost !== null}
                 onClose={handleCloseModal}
@@ -412,7 +418,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 startDeleting={deletingPostId === selectedPost?.id}
                 onCommentAdded={handleCommentAdded}
             />
-            {/* Loading more indicator */}
+
             {isLoadingMore && (
                 <div className="post-loading-more">
                     <div className="loading-spinner" />
@@ -420,25 +426,12 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 </div>
             )}
 
-            {selectedPost && (
-                <PostDetailModal
-                    open={selectedPost !== null}
-                    onClose={handleCloseModal}
-                    post={selectedPost}
-                    onPostUpdated={onPostUpdated}
-                    onPostDeleted={onPostDeleted}
-                    focusComment={focusComment}
-                    startEditing={editingPostId === selectedPost?.id}
-                    startDeleting={deletingPostId === selectedPost?.id}
-                />
-            )}
-
-            {showReportForm &&(
+            {showReportForm && reportingPost && (
                 <PostReportModal
-                  open={showReportForm}
-                  postId={reportingPost.id}
-                  onClose={() => setShowReportForm(false)}
-                  onSubmit={async (reason, detail) => handleReportSubmit(reason, detail) }
+                    open={showReportForm}
+                    postId={reportingPost.id}
+                    onClose={() => setShowReportForm(false)}
+                    onSubmit={async (reason, detail) => handleReportSubmit(reason, detail)}
                 />
             )}
         </>

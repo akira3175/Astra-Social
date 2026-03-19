@@ -9,25 +9,24 @@ import {
 import { getReports, handleStatus } from "../../services/adminService";
 import type { AdminReport } from "../../types/admin";
 import "./AdminTable.css";
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
+import Swal from "sweetalert2";
 import { useCurrentUser } from "../../context/currentUserContext";
 
 type TabType = "ALL" | "POST" | "COMMENT";
 
-
 const AdminReports: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
-    const [reports, setReports] = useState<AdminReport[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [activeTab, setActiveTab] = useState<TabType>("ALL");
-    const [statusFilter, setStatusFilter] = useState<string>("ALL");
+    const [reports, setReports]               = useState<AdminReport[]>([]);
+    const [loading, setLoading]               = useState(true);
+    const [searchQuery, setSearchQuery]       = useState("");
+    const [activeTab, setActiveTab]           = useState<TabType>("ALL");
+    const [statusFilter, setStatusFilter]     = useState<string>("ALL");
     const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [itemsPerPage, setItemsPerPage] = useState<number>(10);
-    const [total, setTotal] = useState<number>(10);
-    const [urlPostReported, setUrlPostReported] = useState<string>('');
+    const [currentPage, setCurrentPage]       = useState<number>(1);
+    const [itemsPerPage, setItemsPerPage]     = useState<number>(10);
+    const [total, setTotal]                   = useState<number>(0);
+    const [urlPostReported, setUrlPostReported] = useState<string>("");
+
     const totalPages = Math.ceil(total / itemsPerPage);
 
     useEffect(() => {
@@ -35,17 +34,17 @@ const AdminReports: React.FC = () => {
             loadReports(currentPage, activeTab, statusFilter, searchQuery);
         }, 400);
         return () => clearTimeout(timer);
+    }, [currentPage, activeTab, statusFilter, searchQuery]);
 
-    }, [currentPage, activeTab,  statusFilter, searchQuery]);
-
-    const loadReports = async (page: number,
-        activeTab: string,
-        statusFilter: string,
-        searchQuery: string
-        ) => {
+    const loadReports = async (
+        page: number,
+        tab: string,
+        status: string,
+        search: string,
+    ) => {
         setLoading(true);
         try {
-            const data = await getReports(page,null, activeTab, statusFilter, searchQuery);
+            const data = await getReports(page, null, tab, status, search);
             setItemsPerPage(data.pagination.per_page);
             setTotal(data.pagination.total);
             setReports(data.data);
@@ -58,99 +57,89 @@ const AdminReports: React.FC = () => {
 
     const pendingCount = useMemo(
         () => reports.filter((r) => r.status === "PENDING").length,
-        [reports]
+        [reports],
     );
 
     const handleResolve = async (id: number) => {
         const result = await handleStatus(id, "RESOLVED", Number(currentUser.id));
-        if(result.success){
-            setReports((i)=>i.map((report)=>(
-                report.id===id ? 
-                    {...report, status: "RESOLVED"} :
-                    report
-                ))
+        if (result.success) {
+            setReports((prev) =>
+                prev.map((r) => (r.id === id ? { ...r, status: "RESOLVED" } : r)),
             );
             Swal.fire({
-                title: 'Thành công',
-                text: 'Đã xử lý báo cáo',
-                icon: 'success', // warning, error, success, info, question
+                title: "Thành công",
+                text: "Đã xử lý báo cáo",
+                icon: "success",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
             });
         }
     };
 
     const handleReject = async (id: number) => {
         const result = await handleStatus(id, "REJECTED");
-        if(result.success){
-            setReports((i)=>i.map((report)=>(
-                report.id===id ? 
-                    {...report, status: "REJECTED"} :
-                    report
-                ))
+        if (result.success) {
+            setReports((prev) =>
+                prev.map((r) => (r.id === id ? { ...r, status: "REJECTED" } : r)),
             );
             Swal.fire({
-                title: 'Thành công',
-                text: 'Đã từ chối báo cáo',
-                icon: 'success', // warning, error, success, info, question
+                title: "Thành công",
+                text: "Đã từ chối báo cáo",
+                icon: "success",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
             });
         }
-
     };
 
-    const onShowModal = (report)=>{
+    const onShowModal = (report: AdminReport) => {
         setSelectedReport(report);
-        let url = `${window.location.origin}/posts/${report.target_id}`;
-        console.log(url);
-        setUrlPostReported(url);
-    }
+        setUrlPostReported(`${window.location.origin}/posts/${report.target_id}`);
+    };
 
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString("vi-VN", {
+    const formatDate = (dateStr: string) =>
+        new Date(dateStr).toLocaleDateString("vi-VN", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
         });
-    };
 
     const getStatusLabel = (status: string) => {
         switch (status) {
-            case "PENDING": return "Chờ xử lý";
+            case "PENDING":  return "Chờ xử lý";
             case "RESOLVED": return "Đã xử lý";
             case "REJECTED": return "Đã từ chối";
-            default: return status;
+            default:         return status;
         }
     };
+
+    const getTargetTypeLabel = (type: string) => {
+        switch (type) {
+            case "POST":    return "Bài viết";
+            case "COMMENT": return "Bình luận";
+            case "USER":    return "Người dùng";
+            default:        return type;
+        }
+    };
+
+    const hasPermission = (slug: string) =>
+        currentUser?.role?.permissions?.some((p) => p.slug === slug);
 
     return (
         <div>
             {/* Tabs */}
             <div className="admin-tabs">
-                <button
-                    className={`admin-tab ${activeTab === "ALL" ? "active" : ""}`}
-                    onClick={() => setActiveTab("ALL")}
-                >
-                    Tất cả
-                    {/*<span className="admin-tab-badge">{tabCounts.ALL}</span>*/}
-                </button>
-                <button
-                    className={`admin-tab ${activeTab === "POST" ? "active" : ""}`}
-                    onClick={() => setActiveTab("POST")}
-                >
-                    Bài viết
-                    {/*<span className="admin-tab-badge">{tabCounts.POST}</span>*/}
-                </button>
-                <button
-                    className={`admin-tab ${activeTab === "COMMENT" ? "active" : ""}`}
-                    onClick={() => setActiveTab("COMMENT")}
-                >
-                    Bình luận
-                    {/*<span className="admin-tab-badge">{tabCounts.COMMENT}</span>*/}
-                </button>
+                {(["ALL", "POST", "COMMENT"] as TabType[]).map((tab) => (
+                    <button
+                        key={tab}
+                        className={`admin-tab ${activeTab === tab ? "active" : ""}`}
+                        onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
+                    >
+                        {tab === "ALL" ? "Tất cả" : tab === "POST" ? "Bài viết" : "Bình luận"}
+                    </button>
+                ))}
             </div>
 
             {/* Header */}
@@ -162,7 +151,7 @@ const AdminReports: React.FC = () => {
                             type="text"
                             placeholder="Tìm kiếm báo cáo..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         />
                     </div>
                 </div>
@@ -170,7 +159,7 @@ const AdminReports: React.FC = () => {
                     <select
                         className="admin-filter-select"
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
                     >
                         <option value="ALL">Tất cả trạng thái</option>
                         <option value="PENDING">Chờ xử lý ({pendingCount})</option>
@@ -191,21 +180,23 @@ const AdminReports: React.FC = () => {
                             <th>Lý do</th>
                             <th>Trạng thái</th>
                             <th>Ngày báo cáo</th>
-                            <th className='text-center'>Hành động</th>
+                            <th className="text-center">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <tr key={i}>
-                                    {Array.from({ length: 8 }).map((_, j) => (
-                                        <td key={j}><div className="dashboard-skeleton" style={{ height: 14, width: j === 3 ? 200 : 60 }} /></td>
+                                    {Array.from({ length: 7 }).map((_, j) => (
+                                        <td key={j}>
+                                            <div className="dashboard-skeleton" style={{ height: 14, width: j === 3 ? 200 : 60 }} />
+                                        </td>
                                     ))}
                                 </tr>
                             ))
                         ) : reports.length === 0 ? (
                             <tr>
-                                <td colSpan={8}>
+                                <td colSpan={7}>
                                     <div className="admin-empty">
                                         <div className="admin-empty-icon"><FlagIcon size={40} /></div>
                                         <div className="admin-empty-text">Không tìm thấy báo cáo nào</div>
@@ -226,14 +217,13 @@ const AdminReports: React.FC = () => {
                                     </td>
                                     <td>
                                         <span className={`status-badge ${report.target_type.toLowerCase()}`}>
-                                            {report.target_type === "POST" ? "Bài viết" :
-                                            report.target_type === "COMMENT" ? "Bình luận":
-                                            "Người dùng"
-                                            }
+                                            {getTargetTypeLabel(report.target_type)}
                                         </span>
                                     </td>
                                     <td>
-                                        <div className="cell-content" style={{ maxWidth: 180 }}>{report.reason}</div>
+                                        <div className="cell-content" style={{ maxWidth: 180 }}>
+                                            {report.reason}
+                                        </div>
                                     </td>
                                     <td>
                                         <span className={`status-badge ${report.status.toLowerCase()}`}>
@@ -243,40 +233,39 @@ const AdminReports: React.FC = () => {
                                     <td className="cell-date">{formatDate(report.created_at)}</td>
                                     <td>
                                         <div className="cell-actions d-flex flex-row justify-content-center">
-                                        {currentUser.role.permissions.find(p=>p.slug==='report.view') && (
-                                            <button
-                                                className="action-btn view"
-                                                title="Xem chi tiết"
-                                                onClick={() => onShowModal(report)}
-                                            >
-                                                <EyeIcon size={16} />
-                                            </button>
-                                        )}
-                                        {currentUser.role.permissions.find(p=>p.slug==='report.resolve') && (
-                                            <button
-                                                className="action-btn resolve"
-                                                title="Xử lý báo cáo"
-                                                onClick={() => {
-                                                    handleResolve(report.id);
-                                                    setSelectedReport(null);
-                                                }}
-                                            >
-                                                <CheckCircleIcon size={16}/>
-                                            </button>
-                                        )}
-                                        {currentUser.role.permissions.find(p=>p.slug==='report.reject') && (
-                                            <button
-                                                className="action-btn reject"
-                                                title="Từ chối báo cáo"
-                                                onClick={() => {
-                                                    handleReject(report.id);
-                                                    setSelectedReport(null);
-                                                }}
-                                            >
-                                                <CloseIcon size={16}/>
-                                            </button>
-                                        )}
-
+                                            {hasPermission("report.view") && (
+                                                <button
+                                                    className="action-btn view"
+                                                    title="Xem chi tiết"
+                                                    onClick={() => onShowModal(report)}
+                                                >
+                                                    <EyeIcon size={16} />
+                                                </button>
+                                            )}
+                                            {hasPermission("report.resolve") && (
+                                                <button
+                                                    className="action-btn resolve"
+                                                    title="Xử lý báo cáo"
+                                                    onClick={() => {
+                                                        handleResolve(report.id);
+                                                        setSelectedReport(null);
+                                                    }}
+                                                >
+                                                    <CheckCircleIcon size={16} />
+                                                </button>
+                                            )}
+                                            {hasPermission("report.reject") && (
+                                                <button
+                                                    className="action-btn reject"
+                                                    title="Từ chối báo cáo"
+                                                    onClick={() => {
+                                                        handleReject(report.id);
+                                                        setSelectedReport(null);
+                                                    }}
+                                                >
+                                                    <CloseIcon size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -284,37 +273,46 @@ const AdminReports: React.FC = () => {
                         )}
                     </tbody>
                 </table>
+
                 {!loading && reports.length > 0 && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
-                            Hiển thị {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, reports.length)} báo cáo
+                            Hiển thị {(currentPage - 1) * itemsPerPage + 1}–
+                            {Math.min(currentPage * itemsPerPage, total)} / {total} báo cáo
                             {" · "}{pendingCount} đang chờ xử lý
                         </span>
                         <div className="admin-pagination-controls">
-                        {currentPage>1 &&(
-                            <button
-                                onClick={()=>setCurrentPage(currentPage-1)}
-                                className="admin-pagination-btn nav-btn"
-                            >‹</button>
-                        )}
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                                if (totalPages <= 7 || page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
+                            {currentPage > 1 && (
+                                <button
+                                    className="admin-pagination-btn nav-btn"
+                                    onClick={() => setCurrentPage((p) => p - 1)}
+                                >‹</button>
+                            )}
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                                if (
+                                    totalPages <= 7 ||
+                                    page === 1 ||
+                                    page === totalPages ||
+                                    Math.abs(page - currentPage) <= 1
+                                ) {
                                     return (
                                         <button
                                             key={page}
-                                            onClick={()=>setCurrentPage(page)}
                                             className={`admin-pagination-btn ${page === currentPage ? "active" : ""}`}
+                                            onClick={() => setCurrentPage(page)}
                                         >{page}</button>
                                     );
                                 }
-                                if (page === 2 && currentPage > 4) return <span key="e1" className="admin-pagination-ellipsis">…</span>;
-                                if (page === totalPages - 1 && currentPage < totalPages - 3) return <span key="e2" className="admin-pagination-ellipsis">…</span>;
+                                if (page === 2 && currentPage > 4)
+                                    return <span key="e1" className="admin-pagination-ellipsis">…</span>;
+                                if (page === totalPages - 1 && currentPage < totalPages - 3)
+                                    return <span key="e2" className="admin-pagination-ellipsis">…</span>;
                                 return null;
                             })}
-                            {currentPage<totalPages &&(
+                            {currentPage < totalPages && (
                                 <button
-                                    onClick={()=>setCurrentPage(currentPage+1)}
                                     className="admin-pagination-btn nav-btn"
+                                    onClick={() => setCurrentPage((p) => p + 1)}
                                 >›</button>
                             )}
                         </div>
@@ -324,8 +322,7 @@ const AdminReports: React.FC = () => {
 
             {/* Detail Modal */}
             {selectedReport && (
-                <div className="admin-detail-overlay" onClick={() => setSelectedReport(null)}
-                >
+                <div className="admin-detail-overlay" onClick={() => setSelectedReport(null)}>
                     <div className="admin-detail-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="admin-detail-header">
                             <h3 className="admin-detail-title">Chi tiết báo cáo #{selectedReport.id}</h3>
@@ -341,24 +338,29 @@ const AdminReports: React.FC = () => {
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Loại</span>
                                 <span className="admin-detail-value">
-                                    {selectedReport.target_type === "POST" ? "Bài viết" : "Bình luận"} 
+                                    {getTargetTypeLabel(selectedReport.target_type)}
                                 </span>
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Tác giả</span>
+                                {/* target_author là object — dùng .username */}
                                 <span className="admin-detail-value">@{selectedReport.target_author.username}</span>
                             </div>
                             <div className="admin-detail-row">
-                                <span className="admin-detail-label">Nội dung</span>
-                                <a href={urlPostReported} className="admin-detail-value text-primary">Xem ở đây</a>
-                            </div>                            
+                                <span className="admin-detail-label">Nội dung</span>
+                                <a href={urlPostReported} className="admin-detail-value text-primary">
+                                    Xem ở đây
+                                </a>
+                            </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Lý do</span>
                                 <span className="admin-detail-value">{selectedReport.reason}</span>
                             </div>
                             <div className="admin-detail-row">
-                                <span className="admin-detail-label">Mô tả lý do</span>
-                                <span className="admin-detail-value">{selectedReport.target_preview !== '0' ? selectedReport.target_preview : '' }</span>
+                                <span className="admin-detail-label">Mô tả lý do</span>
+                                <span className="admin-detail-value">
+                                    {selectedReport.target_preview !== "0" ? selectedReport.target_preview : ""}
+                                </span>
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Trạng thái</span>
@@ -379,39 +381,32 @@ const AdminReports: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Action buttons in modal */}
                             {selectedReport.status === "PENDING" && (
                                 <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                                {currentUser.role.permissions.find(p=>p.slug==='report.resolve') && (
-                                    <button
-                                        style={{
-                                            flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
-                                            background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
-                                            fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s"
-                                        }}
-                                        onClick={() => {
-                                            handleResolve(selectedReport.id);
-                                            setSelectedReport(null);
-                                        }}
-                                    >
-                                        ✓ Xử lý vi phạm
-                                    </button>
-                                )}
-                                {currentUser.role.permissions.find(p=>p.slug==='report.reject') && (
-                                    <button
-                                        style={{
-                                            flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
-                                            background: "white", color: "#ef4444",
-                                            fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s"
-                                        }}
-                                        onClick={() => {
-                                            handleReject(selectedReport.id);
-                                            setSelectedReport(null);
-                                        }}
-                                    >
-                                        ✕ Từ chối báo cáo
-                                    </button>
-                                )}
+                                    {hasPermission("report.resolve") && (
+                                        <button
+                                            style={{
+                                                flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
+                                                background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
+                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                            }}
+                                            onClick={() => { handleResolve(selectedReport.id); setSelectedReport(null); }}
+                                        >
+                                            ✓ Xử lý vi phạm
+                                        </button>
+                                    )}
+                                    {hasPermission("report.reject") && (
+                                        <button
+                                            style={{
+                                                flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
+                                                background: "white", color: "#ef4444",
+                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+                                            }}
+                                            onClick={() => { handleReject(selectedReport.id); setSelectedReport(null); }}
+                                        >
+                                            ✕ Từ chối báo cáo
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

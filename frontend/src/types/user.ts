@@ -36,6 +36,7 @@ export interface UserProfileResponse {
  */
 export interface User {
     id: string;
+    role: Role | null;
     email: string;
     username: string;
     firstName?: string;

@@ -14,7 +14,7 @@ return new class extends Migration
         $tables = ['roles', 'permissions', 'role_permissions', 'posts', 'comments', 'reports'];
 
         foreach ($tables as $tableName) {
-            if (! Schema::hasColumn($tableName, 'deleted_at')) {
+            if (!Schema::hasColumn($tableName, 'deleted_at')) {
                 Schema::table($tableName, function (Blueprint $table) {
                     $table->softDeletes();
                 });
