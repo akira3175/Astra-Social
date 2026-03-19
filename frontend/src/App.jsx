@@ -7,6 +7,8 @@ import SearchPage from "./pages/Search";
 import FriendsPage from "./pages/Friends";
 import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
+import SearchPage from "./pages/Search/SearchPage";
+import { CurrentUserProvider } from "./context/currentUserContext";
 import PostDetailPage from "./pages/Post";
 import SettingsPage from "./pages/Settings";
 import { AboutPage, TermsPage, PrivacyPage } from "./pages/Info";
