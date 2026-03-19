@@ -1,3 +1,4 @@
+import { Pagination } from "./post";
 
 export interface AdminUser {
     id: number;
@@ -21,7 +22,7 @@ export interface AdminPost {
     comments_count: number;
     created_at: string;
     deleted_at: string | null;
-    user: AdminUser ;
+    user: AdminUser;
     report_count: number;
 }
 
@@ -45,7 +46,11 @@ export interface AdminReport {
     target_type: 'POST' | 'COMMENT' | 'USER';
     target_id: number;
     target_preview: string;
-    target_author: string;
+    target_author: {
+        id: number;
+        username: string;
+        avatar_url: string | null;
+    };
     reason: string;
     status: 'PENDING' | 'RESOLVED' | 'REJECTED';
     created_at: string;
@@ -57,7 +62,7 @@ export interface DashboardStats {
     total_posts: number;
     total_comments: number;
     pending_reports: number;
-    user_growth: number;    // percentage
+    user_growth: number;
     post_growth: number;
     comment_growth: number;
     report_change: number;
@@ -78,45 +83,49 @@ export interface Permission {
 }
 
 export interface Role {
-    id: number;
-    name: string;
-    description: string;
-    is_default: boolean;
-    user_count: number;
+    id?: number;
+    name?: string;
+    description?: string;
+    is_default?: boolean;
+    user_count?: number;
     permissions: Permission[];
-    created_at: string;
+    created_at?: string;
 }
 
-export interface RolesResponse{
-    success: boolean,
-    message: string | null,
-    data: Role[],
-}
-export interface ReportsResponse{
-    success: boolean,
-    data: Report[],
-    pagination: Pagination,
+export interface RolesResponse {
+    success: boolean;
+    message: string | null;
+    data: Role[];
 }
 
-export interface PermissionsResponse{
-    success: boolean,
-    data: Permission[],
+export interface ReportsResponse {
+    success: boolean;
+    data: AdminReport[];
+    pagination: Pagination;
 }
 
-export interface UsersResponse{
-    success: boolean,
-    data: AdminUser[],
-    message: string | null,
+export interface PermissionsResponse {
+    success: boolean;
+    data: Permission[];
 }
 
-export interface PostsResponse{
-    success: boolean,
-    data: AdminPost[],
-    message: string | null,
+export interface UsersResponse {
+    success: boolean;
+    data: AdminUser[];
+    message: string | null;
+    pagination?: Pagination;
 }
 
-export interface CommentsResponse{
-    success: boolean,
-    data: AdminComment[],
-    message: string | null,
+export interface PostsResponse {
+    success: boolean;
+    data: AdminPost[];
+    message: string | null;
+    pagination?: Pagination;
+}
+
+export interface CommentsResponse {
+    success: boolean;
+    data: AdminComment[];
+    message: string | null;
+    pagination?: Pagination;
 }

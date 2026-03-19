@@ -23,7 +23,7 @@ const SearchPage = () => {
         getHashtagPosts(query, 1, 10)
             .then((res) => {
                 setPosts(res.data ?? []);
-                setLastPage(res.pagination.total_pages);
+                setLastPage(res.pagination.last_page);
             })
             .catch(() => setPosts([]))
             .finally(() => setLoading(false));
@@ -38,7 +38,7 @@ const SearchPage = () => {
         getHashtagPosts(query, nextPage, 10)
             .then((res) => {
                 setPosts((prev) => [...prev, ...(res.data ?? [])]);
-                setLastPage(res.pagination.total_pages);
+                setLastPage(res.pagination.last_page);
                 setPage(nextPage);
             })
             .catch(() => {})
@@ -58,7 +58,7 @@ const SearchPage = () => {
                     getHashtagPosts(query, 1, 10)
                         .then((res) => {
                             setPosts(res.data ?? []);
-                            setLastPage(res.pagination.total_pages);
+                            setLastPage(res.pagination.last_page);
                             setPage(1);
                         })
                         .finally(() => setLoading(false));
