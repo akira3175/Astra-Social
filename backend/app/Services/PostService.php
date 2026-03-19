@@ -5,11 +5,18 @@ namespace App\Services;
 use App\Models\MediaAttachment;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\Hashtag;
+use App\Models\PostLike;
+use App\Models\CommentLike;
+use App\Models\Comment;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Redis;
 
 class PostService
 {
     public function __construct(
-        private MediaService $mediaService
+        private MediaService $mediaService,
+        private HashtagService $hashtagService
     ) {}
 
     /**
@@ -17,19 +24,45 @@ class PostService
      */
     public function getPosts(int $page = 1, int $perPage = 10, ?int $userId = null): array
     {
-        $query = Post::with([
-            'user:id,username',
-            'user.profile:user_id,first_name,last_name,avatar_url',
-            'attachments:id,url,file_type,entity_type,entity_id',
-        ])
-            ->where('privacy', Post::PRIVACY_PUBLIC)
-            ->orderBy('created_at', 'desc');
+        $query = Post::query()
+            ->with([
+                'user:id,username',
+                'user.profile:user_id,first_name,last_name,avatar_url',
+                'attachments:id,url,file_type,entity_type,entity_id',
 
-        if ($userId) {
-            $query->orWhere(function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            });
-        }
+                // latest comments
+                'comments' => function ($q) {
+                    $q->latest()->limit(10);
+                },
+                'comments.user:id,username',
+                'comments.user.profile:user_id,first_name,last_name,avatar_url',
+            ])
+
+            // privacy
+            ->where(function ($q) use ($userId) {
+                $q->where('privacy', Post::PRIVACY_PUBLIC);
+
+                if ($userId) {
+                    $q->orWhere('user_id', $userId);
+                }
+            })
+
+            // counts (REALTIME)
+            ->withCount([
+                'likes',
+                'comments'
+            ])
+
+            // is_liked
+            ->when($userId, function (Builder $q) use ($userId) {
+                $q->withExists([
+                    'likes as is_liked' => function ($sub) use ($userId) {
+                        $sub->where('user_id', $userId);
+                    }
+                ]);
+            })
+
+            ->orderByDesc('created_at');
 
         $posts = $query->paginate($perPage, ['*'], 'page', $page);
 
@@ -47,13 +80,26 @@ class PostService
     /**
      * Get single post by ID.
      */
-    public function getPostById(int $id): array
+    public function getPostById(int $id, ?int $userId = null): array
     {
         $post = Post::with([
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
             'attachments:id,url,file_type,entity_type,entity_id',
-        ])->find($id);
+
+            'comments' => function ($q) {
+                $q->latest()->limit(10);
+            },
+            'comments.user:id,username',
+            'comments.user.profile:user_id,first_name,last_name,avatar_url',
+        ])
+        ->withCount(['likes', 'comments'])
+        ->when($userId, function (Builder $q) use ($userId) {
+            $q->withExists([
+                'likes as is_liked' => fn($sub) => $sub->where('user_id', $userId)
+            ]);
+        })
+        ->find($id);
 
         if (!$post) {
             return [
@@ -97,7 +143,7 @@ class PostService
     /**
      * Get all posts by the currently logged-in user.
      */
-    public function getMyPosts(int $userId, int $page = 1, int $perPage = 999): array
+    public function getMyPosts(int $userId, int $page = 1, int $perPage = 10): array
     {
         $posts = Post::with([
             'user:id,username',
@@ -152,7 +198,15 @@ class PostService
             'privacy' => $data['privacy'] ?? Post::PRIVACY_PUBLIC,
         ]);
 
-        // Upload files if provided
+        if (!empty($data['content'])) {
+            $tags = $this->hashtagService->extract($data['content']);
+            $this->hashtagService->attachToPost($post, $tags);
+
+            foreach ($tags as $tag) {
+                Redis::zincrby('trending:hashtags', 1, $tag);
+            }
+        }
+
         if (!empty($files)) {
             $this->mediaService->uploadForEntity(
                 $files,
@@ -247,6 +301,231 @@ class PostService
         return [
             'success' => true,
             'message' => 'Post deleted successfully',
+        ];
+    }
+
+    public function getPostsByHashtag(string $hashtagName, int $page = 1, int $perPage = 10): array
+    {
+        $hashtagName = strtolower(trim($hashtagName));
+        $hashtagName = ltrim($hashtagName, '#');
+
+        $hashtag = Hashtag::where('name', $hashtagName)->first();
+
+        if (!$hashtag) {
+            return [
+                'success' => false,
+                'message' => 'Hashtag not found',
+            ];
+        }
+
+        $posts = $hashtag->posts()
+            ->whereNull('posts.deleted_at')
+            ->with([
+                'user:id,username',
+                'user.profile:user_id,first_name,last_name,avatar_url',
+                'attachments:id,url,file_type,entity_type,entity_id',
+            ])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'success' => true,
+            'posts' => $posts->items(),
+            'pagination' => [
+                'current_page' => $posts->currentPage(),
+                'last_page' => $posts->lastPage(),
+                'per_page' => $posts->perPage(),
+                'total' => $posts->total(),
+            ],
+        ];
+    }
+
+    public function searchHashtags(?string $keyword): array
+    {
+        if (!$keyword) {
+            return [];
+        }
+
+        $keyword = ltrim(strtolower($keyword), '#');
+
+        return Hashtag::where('name', 'like', $keyword . '%')
+            ->orderByDesc('posts_count')
+            ->limit(10)
+            ->get(['id', 'name', 'posts_count'])
+            ->toArray();
+    }
+
+    public function getTrendingHashtags(): array
+    {
+        return Redis::zrevrange('trending:hashtags', 0, 9, 'WITHSCORES');
+    }
+
+    /**
+     * Toggle like on a post.
+     */
+    public function toggleLike(int $postId, int $userId): array
+    {
+        if (!Post::find($postId)) {
+            return ['success' => false, 'message' => 'Post not found', 'code' => 404];
+        }
+
+        $like = PostLike::where('post_id', $postId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($like) {
+            $like->delete();
+            return ['liked' => false];
+        }
+
+        PostLike::create([
+            'post_id' => $postId,
+            'user_id' => $userId,
+        ]);
+
+        return ['liked' => true];
+    }
+
+    /**
+     * Toggle like on a comment.
+     */
+    public function toggleCommentLike(int $commentId, int $userId): array
+    {
+        if (!Comment::find($commentId)) {
+            return ['success' => false, 'message' => 'Comment not found', 'code' => 404];
+        }
+
+        $like = CommentLike::where('comment_id', $commentId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($like) {
+            $like->delete();
+            return ['liked' => false];
+        }
+
+        CommentLike::create([
+            'comment_id' => $commentId,
+            'user_id' => $userId,
+        ]);
+
+        return ['liked' => true];
+    }
+
+    /**
+     * Create a comment on a post.
+     */
+    public function createComment(int $postId, int $userId, array $data): array
+    {
+        $post = Post::find($postId);
+
+        if (!$post) {
+            return [
+                'success' => false,
+                'message' => 'Post not found',
+                'code' => 404,
+            ];
+        }
+
+        if (!empty($data['parent_id'])) {
+            $parentExists = Comment::where('id', $data['parent_id'])
+                ->where('post_id', $postId)
+                ->exists();
+
+            if (!$parentExists) {
+                return [
+                    'success' => false,
+                    'message' => 'Parent comment not found in this post',
+                    'code' => 404,
+                ];
+            }
+        }
+
+        $comment = Comment::create([
+            'post_id' => $postId,
+            'user_id' => $userId,
+            'parent_id' => $data['parent_id'] ?? null,
+            'content' => $data['content'],
+        ]);
+
+        $comment->load([
+            'user:id,username',
+            'user.profile:user_id,first_name,last_name,avatar_url',
+        ]);
+
+        return [
+            'success' => true,
+            'data' => $comment,
+        ];
+    }
+
+    /**
+     * Get paginated comments for a post (root level only, replies eager loaded).
+     */
+    public function getComments(int $postId, int $page = 1, int $perPage = 10): array
+    {
+        $post = Post::find($postId);
+
+        if (!$post) {
+            return [
+                'success' => false,
+                'message' => 'Post not found',
+                'code' => 404,
+            ];
+        }
+
+        $comments = Comment::with([
+            'user:id,username',
+            'user.profile:user_id,first_name,last_name,avatar_url',
+           'replies' => function ($q) {
+                $q->withCount('likes')->latest();
+            },
+            'replies.user:id,username',
+            'replies.user.profile:user_id,first_name,last_name,avatar_url',
+        ])
+        ->withCount('likes') 
+        ->where('post_id', $postId)
+        ->whereNull('parent_id')
+        ->latest()
+        ->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'success' => true,
+            'comments' => $comments->items(),
+            'pagination' => [
+                'current_page' => $comments->currentPage(),
+                'last_page' => $comments->lastPage(),
+                'per_page' => $comments->perPage(),
+                'total' => $comments->total(),
+            ],
+        ];
+    }
+
+    /**
+     * Share a post by creating a new post with parent_id.
+     */
+    public function sharePost(int $postId, int $userId): array
+    {
+        $original = Post::find($postId);
+
+        if (!$original) {
+            return [
+                'success' => false,
+                'message' => 'Post not found',
+                'code' => 404,
+            ];
+        }
+
+        $post = Post::create([
+            'user_id' => $userId,
+            'parent_id' => $original->id,
+            'content' => null,
+            'privacy' => $original->privacy,
+        ]);
+
+        return [
+            'success' => true,
+            'data' => $post,
         ];
     }
 }

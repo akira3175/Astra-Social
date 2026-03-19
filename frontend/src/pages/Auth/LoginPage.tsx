@@ -15,7 +15,6 @@ import {
     LoginIcon,
     WarningIcon,
 } from "../../components/ui";
-import logo from "../../assets/logo.png";
 import "./LoginPage.css";
 
 export default function LoginPage() {
@@ -56,9 +55,6 @@ export default function LoginPage() {
                     <Typography variant="h1" className="login-branding-title">
                         AstraSocial
                     </Typography>
-                    <Box className="logo-container">
-                        <img src={logo} alt="AstraSocial Logo" />
-                    </Box>
                     <Typography variant="body1" className="login-branding-text">
                         Kết nối với bạn bè và thế giới xung quanh trên AstraSocial.
                     </Typography>

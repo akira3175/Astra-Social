@@ -13,11 +13,21 @@ use Illuminate\Support\Facades\Route;
 Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{id}', [PostController::class, 'show'])->where('id', '[0-9]+');
 Route::get('/users/{userId}/posts', [PostController::class, 'byUser'])->where('userId', '[0-9]+');
+Route::get('/hashtags/search', [PostController::class, 'searchHashtag']);
+Route::get('/hashtags/trending', [PostController::class, 'trendingHashtags']);
+Route::get('/hashtags/{hashtagName}', [PostController::class, 'hashtagPosts'])
+    ->where('hashtagName', '[A-Za-z0-9_]+');
 
-// Protected routes
+// Tất cả routes cần auth đều dùng jwt.auth
 Route::middleware('jwt.auth')->group(function () {
     Route::get('/posts/me', [PostController::class, 'myPosts']);
     Route::post('/posts', [PostController::class, 'store']);
     Route::patch('/posts/{id}', [PostController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->where('id', '[0-9]+');
+
+    Route::post('/posts/{id}/like', [PostController::class, 'like']);
+    Route::post('/posts/{id}/comments', [PostController::class, 'comment']);
+    Route::get('/posts/{id}/comments', [PostController::class, 'getComments']);
+    Route::post('/posts/{id}/share', [PostController::class, 'share']);
+    Route::post('/comments/{id}/like', [PostController::class, 'likeComment']);
 });

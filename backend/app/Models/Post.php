@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Post extends Model
 {
@@ -96,5 +97,34 @@ class Post extends Model
     public function isShare(): bool
     {
         return $this->parent_id !== null;
+    }
+
+    /**
+     * Get the hashtags associated with this post.
+     */
+    public function hashtags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Hashtag::class,
+            'post_hashtags', 
+            'post_id',
+            'hashtag_id'
+        );
+    }
+
+    /**
+    * Get the likes for this post.
+    */
+    public function likes()
+    {
+        return $this->hasMany(PostLike::class);
+    }
+
+    /**
+    * Get the comments for this post.
+    */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 }
