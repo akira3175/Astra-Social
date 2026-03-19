@@ -58,6 +58,7 @@ const ENDPOINTS = {
     POST_COMMENTS: (postId: number) => `/posts/${postId}/comments`,
     POST_SHARE: (postId: number) => `/posts/${postId}/share`,
     COMMENT_LIKE: (commentId: number) => `/comments/${commentId}/like`,
+    USER_POSTS: (userId: number | string) => `/users/${userId}/posts`,
 } as const;
 
 // ============ Post API ============
@@ -83,6 +84,20 @@ export const getPosts = async (
     perPage: number = 10
 ): Promise<PostsResponse> => {
     const response = await api.get<PostsResponse>(ENDPOINTS.POSTS, {
+        params: { page, per_page: perPage },
+    });
+    return response.data;
+};
+
+/**
+ * Get posts by a specific user ID
+ */
+export const getPostsByUserId = async (
+    userId: number | string,
+    page: number = 1,
+    perPage: number = 10
+): Promise<PostsResponse> => {
+    const response = await api.get<PostsResponse>(ENDPOINTS.USER_POSTS(userId), {
         params: { page, per_page: perPage },
     });
     return response.data;
@@ -223,6 +238,7 @@ export default {
     getPosts,
     getPostById,
     getPostsByUser,
+    getPostsByUserId,
     createPost,
     updatePost,
     deletePost,

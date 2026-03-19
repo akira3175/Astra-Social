@@ -9,9 +9,28 @@ export interface LoginRequest {
     password: string;
 }
 
-export interface RegisterRequest {
+export interface SendRegisterOtpRequest {
     username: string;
     email: string;
+    password: string;
+    password_confirmation: string;
+    first_name: string;
+    last_name: string;
+    birth_date: string;
+}
+
+export interface RegisterRequest {
+    email: string;
+    otp: string;
+}
+
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordRequest {
+    email: string;
+    token: string;
     password: string;
     password_confirmation: string;
 }
@@ -29,6 +48,11 @@ export interface LoginResponse {
     success: boolean;
     message: string;
     data: AuthTokenResponse;
+}
+
+export interface SendOtpResponse {
+    success: boolean;
+    message: string;
 }
 
 export interface RegisterResponse {
@@ -52,4 +76,14 @@ export interface RefreshResponse {
         token_type: string;
         expires_in: number;
     };
+}
+
+export interface ForgotPasswordResponse {
+    success: boolean;
+    message: string;
+}
+
+export interface ResetPasswordResponse {
+    success: boolean;
+    message: string;
 }

@@ -4,29 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Role extends Model
 {
-    /**
-     * Indicates if the model should be timestamped.
-     */
-    public $timestamps = false;
+    use SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'description',
+        'is_default',
     ];
 
-    /**
-     * Get the users for this role.
-     */
+    protected $dates=[
+        'created_at',
+        'deleted_at',
+        'updated_at',
+    ];
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+    public function role_permissions(){
+        return $this->hasMany(Role_permissions::class, 'role_id');
     }
 }

@@ -20,9 +20,12 @@ Route::get('/hashtags/{hashtagName}', [PostController::class, 'hashtagPosts'])
 
 // Tất cả routes cần auth đều dùng jwt.auth
 Route::middleware('jwt.auth')->group(function () {
+    Route::get('posts-admin', [PostController::class, 'adminIndex']);
+    Route::get('count-posts-admin-days/{days}', [PostController::class, 'adminGetCountByDays']);
     Route::get('/posts/me', [PostController::class, 'myPosts']);
     Route::post('/posts', [PostController::class, 'store']);
     Route::patch('/posts/{id}', [PostController::class, 'update'])->where('id', '[0-9]+');
+    Route::patch('/post-restore/{id}', [PostController::class, 'restorePostById']);
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->where('id', '[0-9]+');
 
     Route::post('/posts/{id}/like', [PostController::class, 'like']);
@@ -30,4 +33,6 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('/posts/{id}/comments', [PostController::class, 'getComments']);
     Route::post('/posts/{id}/share', [PostController::class, 'share']);
     Route::post('/comments/{id}/like', [PostController::class, 'likeComment']);
+});
+    Route::delete('/posts-admin/{id}', [PostController::class, 'adminDestroy']);
 });

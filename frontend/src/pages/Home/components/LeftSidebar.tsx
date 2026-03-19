@@ -7,6 +7,7 @@ import {
     PersonIcon,
     BookmarkIcon,
     GroupIcon,
+    SearchIcon,
 } from "../../../components/ui";
 import "./LeftSidebar.css";
 import { useCurrentUser } from "../../../context/currentUserContext";
@@ -28,6 +29,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ className }) => {
 
     const mainMenuItems: MenuItem[] = [
         { text: "Trang chủ", icon: <HomeIcon size={22} />, path: "/" },
+        { text: "Tìm kiếm", icon: <SearchIcon size={22} />, path: "/search" },
         { text: "Thông báo", icon: <BookmarkIcon size={22} />, path: "/notifications" },
         { text: "Tin nhắn", icon: <ChatIcon size={22} />, path: "/messages" },
         { text: "Bạn bè", icon: <GroupIcon size={22} />, path: "/friends" },

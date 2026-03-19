@@ -6,6 +6,12 @@ import type {
     RegisterRequest,
     RegisterResponse,
     RefreshResponse,
+    SendRegisterOtpRequest,
+    SendOtpResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
 } from "../types/auth";
 
 /**
@@ -18,8 +24,11 @@ import type {
 const ENDPOINTS = {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
+    SEND_REGISTER_OTP: "/auth/send-register-otp",
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
+    FORGOT_PASSWORD: "/auth/forgot-password",
+    RESET_PASSWORD: "/auth/reset-password",
 } as const;
 
 // ============ API Functions ============
@@ -34,7 +43,6 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
     );
 
     const { data } = response;
-
     if (data.success && data.data) {
         // Save tokens to localStorage
         tokenService.setTokens({
@@ -49,7 +57,19 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
 };
 
 /**
- * Register new user
+ * Send OTP for registration
+ */
+export const sendRegisterOtp = async (userData: SendRegisterOtpRequest): Promise<SendOtpResponse> => {
+    const response = await apiNoAuth.post<SendOtpResponse>(
+        ENDPOINTS.SEND_REGISTER_OTP,
+        userData
+    );
+
+    return response.data;
+};
+
+/**
+ * Register new user with OTP verification
  */
 export const register = async (userData: RegisterRequest): Promise<RegisterResponse> => {
     const response = await apiNoAuth.post<RegisterResponse>(
@@ -125,4 +145,28 @@ export const logout = async (): Promise<void> => {
  */
 export const isAuthenticated = (): boolean => {
     return tokenService.hasTokens();
+};
+
+/**
+ * Send password reset link to email
+ */
+export const forgotPassword = async (data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> => {
+    const response = await apiNoAuth.post<ForgotPasswordResponse>(
+        ENDPOINTS.FORGOT_PASSWORD,
+        data
+    );
+
+    return response.data;
+};
+
+/**
+ * Reset password using token
+ */
+export const resetPassword = async (data: ResetPasswordRequest): Promise<ResetPasswordResponse> => {
+    const response = await apiNoAuth.post<ResetPasswordResponse>(
+        ENDPOINTS.RESET_PASSWORD,
+        data
+    );
+
+    return response.data;
 };

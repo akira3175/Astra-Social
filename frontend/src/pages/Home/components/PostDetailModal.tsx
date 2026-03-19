@@ -87,7 +87,6 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     const [localCommentCount, setLocalCommentCount] = useState(post?.comments_count ?? 0);
 
     const commentInputRef = useRef<HTMLInputElement>(null);
-
     const isOwner = currentUser?.id?.toString() === post?.user_id?.toString();
     const images = post?.attachments?.filter((a) => a.file_type === "IMAGE") ?? [];
     const hasImages = images.length > 0;
@@ -291,6 +290,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                 )}
 
                 {/* Right: Content Panel */}
+
                 <div className="pdm-content-panel">
                     {/* Close button on right for posts without images */}
                     {!hasImages && (
@@ -477,6 +477,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                             )}
                         </div>
                     </div>
+
                 </div>
             </div>
 

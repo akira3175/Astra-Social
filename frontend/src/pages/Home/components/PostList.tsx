@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import type { Post } from "../../../types/post";
 import PostDetailModal from "./PostDetailModal";
+import { createReport } from "../../../services/ReportService";
 import PostMenu from "./PostMenu";
 import { toggleLike, sharePost } from "../../../services/postService";
+import PostReportModal from "./PostReportModal";
 import "./PostList.css";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 interface PostListProps {
     posts: Post[];
     isLoading: boolean;
     onPostUpdated?: () => void;
     onPostDeleted?: () => void;
+    onPostReported?: ()=>void;
+    onLoadMore?: () => void;
+    hasMore?: boolean;
+    isLoadingMore?: boolean;
 }
 
 /**
@@ -72,13 +80,15 @@ interface LikeState {
     count: number;
 }
 
-const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted }) => {
+const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted, onPostReported, onLoadMore, hasMore, isLoadingMore }) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+    const [showReportForm, setShowReportForm] = useState(false);
     const [focusComment, setFocusComment] = useState(false);
     const [editingPostId, setEditingPostId] = useState<number | null>(null);
     const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
+    const [reportingPost, setReportingPost] = useState<Post | null>(null);
 
     // Optimistic like state
     const [likeStates, setLikeStates] = useState<Record<number, LikeState>>({});
@@ -114,6 +124,59 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         });
     }, [posts]);
 
+    // Use refs to avoid stale closures in scroll handler
+    const onLoadMoreRef = useRef(onLoadMore);
+    const hasMoreRef = useRef(hasMore);
+    const isLoadingMoreRef = useRef(isLoadingMore);
+    const listRef = useRef<HTMLDivElement>(null);
+    onLoadMoreRef.current = onLoadMore;
+    hasMoreRef.current = hasMore;
+    isLoadingMoreRef.current = isLoadingMore;
+
+    // Find the nearest scrollable parent and listen for scroll
+    useEffect(() => {
+        // Don't set up scroll listener while loading or if list isn't in DOM
+        if (isLoading || !listRef.current) return;
+
+        // Find scrollable ancestor
+        const findScrollParent = (el: HTMLElement | null): HTMLElement | Window => {
+            while (el) {
+                const style = window.getComputedStyle(el);
+                if (/(auto|scroll)/.test(style.overflow + style.overflowY)) {
+                    return el;
+                }
+                el = el.parentElement;
+            }
+            return window;
+        };
+
+        const scrollContainer = findScrollParent(listRef.current);
+
+        const handleScroll = () => {
+            if (!onLoadMoreRef.current || !hasMoreRef.current || isLoadingMoreRef.current) return;
+
+            let scrollTop: number, scrollHeight: number, clientHeight: number;
+
+            if (scrollContainer instanceof Window) {
+                scrollTop = window.scrollY || document.documentElement.scrollTop;
+                scrollHeight = document.documentElement.scrollHeight;
+                clientHeight = window.innerHeight;
+            } else {
+                scrollTop = scrollContainer.scrollTop;
+                scrollHeight = scrollContainer.scrollHeight;
+                clientHeight = scrollContainer.clientHeight;
+            }
+
+            // Trigger when within 300px of bottom
+            if (scrollTop + clientHeight >= scrollHeight - 300) {
+                onLoadMoreRef.current();
+            }
+        };
+
+        scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+        return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    }, [isLoading]);
+    // Get post ID from URL
     const postIdFromUrl = searchParams.get("post");
 
     // Open modal when URL has post parameter
@@ -199,6 +262,33 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         }));
     };
 
+    const handleReportClick = (post: Post)=>{
+        setSelectedPost(null);
+        setShowReportForm(true);
+        setReportingPost(post);
+    }
+
+    const handleReportSubmit = async(reason: string, detail: string)=>{
+        let newReport = {
+            reporter_id:Number(currentUser.id),
+            target_author_id: reportingPost.user_id,
+            target_type: 'POST',
+            target_preview: detail,
+            target_id: reportingPost.id,
+            reason: reason,
+        }
+        let result = await createReport(newReport);
+        if(result.success){
+            Swal.fire({
+                title: 'Thành công',
+                text: 'Đã báo cáo thành công',
+                icon: 'success', // warning, error, success, info, question
+                showConfirmButton: false,
+                timer: 1500
+            });
+            setShowReportForm(false);
+        }
+    }
     if (isLoading) {
         return (
             <div className="post-loading">
@@ -222,7 +312,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
 
     return (
         <>
-            <div className="post-list">
+            <div ref={listRef} className="post-list">
                 {posts.map((post) => {
                     const isOwner = currentUser?.id?.toString() === post.user_id?.toString();
                     const likeState = likeStates[post.id] ?? {
@@ -258,6 +348,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                                     isOwner={isOwner}
                                     onEdit={() => handleEditClick(post)}
                                     onDelete={() => handleDeleteClick(post)}
+                                    onReport={() => handleReportClick(post)}
                                 />
                             </div>
 
@@ -321,6 +412,35 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 startDeleting={deletingPostId === selectedPost?.id}
                 onCommentAdded={handleCommentAdded}
             />
+            {/* Loading more indicator */}
+            {isLoadingMore && (
+                <div className="post-loading-more">
+                    <div className="loading-spinner" />
+                    <span>Đang tải thêm...</span>
+                </div>
+            )}
+
+            {selectedPost && (
+                <PostDetailModal
+                    open={selectedPost !== null}
+                    onClose={handleCloseModal}
+                    post={selectedPost}
+                    onPostUpdated={onPostUpdated}
+                    onPostDeleted={onPostDeleted}
+                    focusComment={focusComment}
+                    startEditing={editingPostId === selectedPost?.id}
+                    startDeleting={deletingPostId === selectedPost?.id}
+                />
+            )}
+
+            {showReportForm &&(
+                <PostReportModal
+                  open={showReportForm}
+                  postId={reportingPost.id}
+                  onClose={() => setShowReportForm(false)}
+                  onSubmit={async (reason, detail) => handleReportSubmit(reason, detail) }
+                />
+            )}
         </>
     );
 };

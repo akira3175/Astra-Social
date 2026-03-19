@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProfileById, uploadAvatar, uploadCover, updateCoverPosition } from "../../services/profileService";
+import { getPostsByUserId } from "../../services/postService";
 import { useCurrentUser } from "../../context/currentUserContext";
 import type { User } from "../../types/user";
+import type { Post } from "../../types/post";
 import EditProfileModal from "./components/EditProfileModal";
+import PostList from "../Home/components/PostList";
+import CreatePost from "../Home/components/CreatePost";
 import "./ProfilePage.css";
 import "../../components/ui/Button/Button.css";
 import "../../components/ui/Card/Card.css";
@@ -34,6 +38,15 @@ const ProfilePage = () => {
     const [error, setError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+    // Posts state
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [isPostsLoading, setIsPostsLoading] = useState(true);
+    const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
+    const [hasMorePosts, setHasMorePosts] = useState(true);
+    const postsPageRef = useRef(1);
+
+    const POSTS_PER_PAGE = 10;
 
     // Cover reposition state
     const [isRepositioning, setIsRepositioning] = useState(false);
@@ -80,6 +93,55 @@ const ProfilePage = () => {
 
         loadProfile();
     }, [userId]);
+
+    // Fetch posts for this user (page 1 / reset)
+    const fetchUserPosts = useCallback(async () => {
+        if (!userId) return;
+        try {
+            setIsPostsLoading(true);
+            const response = await getPostsByUserId(userId, 1, POSTS_PER_PAGE);
+            if (response.success) {
+                setPosts(response.data);
+                setHasMorePosts(
+                    response.pagination
+                        ? response.pagination.current_page < response.pagination.last_page
+                        : response.data.length >= POSTS_PER_PAGE
+                );
+                postsPageRef.current = 1;
+            }
+        } catch (err) {
+            console.error("Failed to load user posts:", err);
+        } finally {
+            setIsPostsLoading(false);
+        }
+    }, [userId]);
+
+    // Load more posts (next page)
+    const handleLoadMorePosts = useCallback(async () => {
+        if (!userId || isLoadingMorePosts || !hasMorePosts) return;
+        try {
+            setIsLoadingMorePosts(true);
+            const nextPage = postsPageRef.current + 1;
+            const response = await getPostsByUserId(userId, nextPage, POSTS_PER_PAGE);
+            if (response.success) {
+                setPosts(prev => [...prev, ...response.data]);
+                setHasMorePosts(
+                    response.pagination
+                        ? response.pagination.current_page < response.pagination.last_page
+                        : response.data.length >= POSTS_PER_PAGE
+                );
+                postsPageRef.current = nextPage;
+            }
+        } catch (err) {
+            console.error("Failed to load more posts:", err);
+        } finally {
+            setIsLoadingMorePosts(false);
+        }
+    }, [userId, isLoadingMorePosts, hasMorePosts]);
+
+    useEffect(() => {
+        fetchUserPosts();
+    }, [fetchUserPosts]);
 
     // Get display name
     const getDisplayName = () => {
@@ -522,19 +584,18 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="profile-main">
-                    {/* Posts placeholder */}
-                    <div className="card card-elevation-1">
-                        <div className="card-header">
-                            <div className="card-header-content">
-                                <h3 className="card-title">Bài viết</h3>
-                            </div>
-                        </div>
-                        <div className="card-content">
-                            <p style={{ color: "#6b7280", textAlign: "center" }}>
-                                Chưa có bài viết nào
-                            </p>
-                        </div>
-                    </div>
+                    {isOwnProfile && (
+                        <CreatePost onPostCreated={fetchUserPosts} />
+                    )}
+                    <PostList
+                        posts={posts}
+                        isLoading={isPostsLoading}
+                        onPostUpdated={fetchUserPosts}
+                        onPostDeleted={fetchUserPosts}
+                        onLoadMore={handleLoadMorePosts}
+                        hasMore={hasMorePosts}
+                        isLoadingMore={isLoadingMorePosts}
+                    />
                 </div>
             </div>
 

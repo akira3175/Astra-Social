@@ -84,7 +84,6 @@ export const CurrentUserProvider: React.FC<{ children: React.ReactNode }> = ({ c
         window.addEventListener("storage", handleStorageChange);
         return () => window.removeEventListener("storage", handleStorageChange);
     }, [fetchUserProfile, clearUser]);
-
     return (
         <CurrentUserContext.Provider
             value={{
