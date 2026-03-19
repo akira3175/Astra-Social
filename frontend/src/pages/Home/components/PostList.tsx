@@ -6,6 +6,7 @@ import type { Post } from "../../../types/post";
 import PostDetailModal from "./PostDetailModal";
 import { createReport } from "../../../services/ReportService";
 import PostMenu from "./PostMenu";
+import { toggleLike, sharePost } from "../../../services/postService";
 import PostReportModal from "./PostReportModal";
 import "./PostList.css";
 import Swal from 'sweetalert2';
@@ -26,17 +27,10 @@ interface PostListProps {
  * Format relative time
  */
 const formatRelativeTime = (dateString: string): string => {
-    // Server returns local time with "Z" suffix (incorrectly marked as UTC)
-    // Remove "Z" to parse as local time
-    const localDateString = dateString.replace(/Z$/i, '');
+    const localDateString = dateString.replace(/Z$/i, "");
     const date = new Date(localDateString);
-
     if (isNaN(date.getTime())) return dateString;
-
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInSeconds = Math.floor(diffInMs / 1000);
-
+    const diffInSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diffInSeconds < 0) return "Vừa xong";
     if (diffInSeconds < 60) return "Vừa xong";
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} phút`;
@@ -81,6 +75,11 @@ const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments
     );
 };
 
+interface LikeState {
+    liked: boolean;
+    count: number;
+}
+
 const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted, onPostReported, onLoadMore, hasMore, isLoadingMore }) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
@@ -90,6 +89,40 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
     const [editingPostId, setEditingPostId] = useState<number | null>(null);
     const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
     const [reportingPost, setReportingPost] = useState<Post | null>(null);
+
+    // Optimistic like state
+    const [likeStates, setLikeStates] = useState<Record<number, LikeState>>({});
+
+    // Local comment counts để sync sau khi comment trong modal
+    const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
+
+    // Chỉ khởi tạo state cho post chưa có, không ghi đè state hiện tại
+    // — tránh mất optimistic state khi posts prop append thêm (load more / pagination)
+    useEffect(() => {
+        setLikeStates((prev) => {
+            const next = { ...prev };
+            posts.forEach((p) => {
+                if (!(p.id in next)) {
+                    next[p.id] = {
+                        liked: p.is_liked ?? false,
+                        count: p.likes_count ?? 0,
+                    };
+                }
+            });
+            return next;
+        });
+
+        // FIX 3: tương tự, chỉ khởi tạo commentCounts cho post chưa có
+        setCommentCounts((prev) => {
+            const next = { ...prev };
+            posts.forEach((p) => {
+                if (!(p.id in next)) {
+                    next[p.id] = p.comments_count ?? 0;
+                }
+            });
+            return next;
+        });
+    }, [posts]);
 
     // Use refs to avoid stale closures in scroll handler
     const onLoadMoreRef = useRef(onLoadMore);
@@ -149,10 +182,8 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
     // Open modal when URL has post parameter
     useEffect(() => {
         if (postIdFromUrl && posts.length > 0) {
-            const post = posts.find(p => p.id.toString() === postIdFromUrl);
-            if (post) {
-                setSelectedPost(post);
-            }
+            const post = posts.find((p) => p.id.toString() === postIdFromUrl);
+            if (post) setSelectedPost(post);
         }
     }, [postIdFromUrl, posts]);
 
@@ -194,6 +225,41 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         setSelectedPost(post);
         setDeletingPostId(post.id);
         setSearchParams({ post: post.id.toString() });
+    };
+
+    const handleLike = async (postId: number) => {
+        const prev = likeStates[postId];
+        if (!prev) return;
+
+        const next: LikeState = {
+            liked: !prev.liked,
+            count: prev.liked ? prev.count - 1 : prev.count + 1,
+        };
+        setLikeStates((s) => ({ ...s, [postId]: next }));
+
+        try {
+            await toggleLike(postId);
+        } catch (e) {
+            setLikeStates((s) => ({ ...s, [postId]: prev }));
+            console.error(e);
+        }
+    };
+
+    const handleShare = async (postId: number) => {
+        try {
+            await sharePost(postId);
+            onPostUpdated?.();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Callback nhận từ modal khi comment được tạo thành công
+    const handleCommentAdded = (postId: number) => {
+        setCommentCounts((prev) => ({
+            ...prev,
+            [postId]: (prev[postId] ?? 0) + 1,
+        }));
     };
 
     const handleReportClick = (post: Post)=>{
@@ -249,6 +315,11 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
             <div ref={listRef} className="post-list">
                 {posts.map((post) => {
                     const isOwner = currentUser?.id?.toString() === post.user_id?.toString();
+                    const likeState = likeStates[post.id] ?? {
+                        liked: post.is_liked ?? false,
+                        count: post.likes_count ?? 0,
+                    };
+                    const commentsCount = commentCounts[post.id] ?? post.comments_count ?? 0;
 
                     return (
                         <article
@@ -292,14 +363,20 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                             )}
 
                             <div className="post-stats">
-                                <span>{post.likes_count} lượt thích</span>
-                                <span>{post.comments_count} bình luận</span>
+                                <span>{likeState.count} lượt thích</span>
+                                <span>{commentsCount} bình luận</span>
                             </div>
 
                             <div className="post-actions" onClick={(e) => e.stopPropagation()}>
-                                <button className="post-action-btn">
+                                <button
+                                    className={`post-action-btn ${likeState.liked ? "post-action-btn--liked" : ""}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleLike(post.id);
+                                    }}
+                                >
                                     <span>👍</span>
-                                    <span>Thích</span>
+                                    <span>{likeState.liked ? "Đã thích" : "Thích"}</span>
                                 </button>
                                 <button
                                     className="post-action-btn"
@@ -308,7 +385,13 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                                     <span>💬</span>
                                     <span>Bình luận</span>
                                 </button>
-                                <button className="post-action-btn">
+                                <button
+                                    className="post-action-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleShare(post.id);
+                                    }}
+                                >
                                     <span>↗️</span>
                                     <span>Chia sẻ</span>
                                 </button>
@@ -318,6 +401,17 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 })}
             </div>
 
+            <PostDetailModal
+                open={selectedPost !== null}
+                onClose={handleCloseModal}
+                post={selectedPost}
+                onPostUpdated={onPostUpdated}
+                onPostDeleted={onPostDeleted}
+                focusComment={focusComment}
+                startEditing={editingPostId === selectedPost?.id}
+                startDeleting={deletingPostId === selectedPost?.id}
+                onCommentAdded={handleCommentAdded}
+            />
             {/* Loading more indicator */}
             {isLoadingMore && (
                 <div className="post-loading-more">

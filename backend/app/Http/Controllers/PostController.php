@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateCommentRequest;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Services\PostService;
@@ -35,9 +36,11 @@ class PostController extends Controller
     /**
      * Get single post by ID.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $result = $this->postService->getPostById($id);
+        $userId = $request->user()?->id;
+
+        $result = $this->postService->getPostById($id, $userId);
 
         if (!$result['success']) {
             return response()->json([
@@ -76,7 +79,7 @@ class PostController extends Controller
     {
         $user = $request->user();
         $page = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('per_page', 999);
+        $perPage = (int) $request->query('per_page', $page);
 
         $result = $this->postService->getMyPosts($user->id, $page, $perPage);
 
@@ -156,6 +159,174 @@ class PostController extends Controller
         ]);
     }
 
+    /**
+     * Get posts by hashtag.
+     */
+    public function hashtagPosts(string $hashtagName, Request $request): JsonResponse
+    {
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 10);
+
+        $result = $this->postService->getPostsByHashtag($hashtagName, $page, $perPage);
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['posts'],
+            'pagination' => $result['pagination'],
+        ]);
+    }
+
+    /**
+     * Search hashtag (autocomplete).
+     */
+    public function searchHashtag(Request $request): JsonResponse
+    {
+        $keyword = $request->query('q');
+
+        $hashtags = $this->postService->searchHashtags($keyword);
+
+        return response()->json([
+            'success' => true,
+            'data' => $hashtags,
+        ]);
+    }
+
+    /**
+     * Trending hashtags (Redis).
+     */
+    public function trendingHashtags(): JsonResponse
+    {
+        $hashtags = $this->postService->getTrendingHashtags();
+
+        return response()->json([
+            'success' => true,
+            'data' => $hashtags,
+        ]);
+    }
+
+    /**
+     * Toggle like on a post.
+     */
+    public function like(Request $request, int $postId): JsonResponse
+    {
+        $user = $request->user();
+
+        $result = $this->postService->toggleLike($postId, $user->id);
+
+        if (isset($result['success']) && !$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code'] ?? 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * Create a comment on a post.
+     */
+    public function comment(CreateCommentRequest $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+
+        $result = $this->postService->createComment(
+            $id,
+            $user->id,
+            $request->validated()
+        );
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['data'],
+        ], 201);
+    }
+
+    /**
+     * Get comments for a post (paginated).
+     */
+    public function getComments(int $id, Request $request): JsonResponse
+    {
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 10);
+
+        $result = $this->postService->getComments($id, $page, $perPage);
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code'] ?? 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['comments'],
+            'pagination' => $result['pagination'],
+        ]);
+    }
+
+    /**
+     * Share a post (creates a new post with parent_id).
+     */
+    public function share(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+
+        $result = $this->postService->sharePost($id, $user->id);
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code'] ?? 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['data'],
+        ], 201);
+    }
+
+    /**
+     * Toggle like on a comment.
+     */
+    public function likeComment(Request $request, int $commentId): JsonResponse
+    {
+        $user = $request->user();
+
+        $result = $this->postService->toggleCommentLike($commentId, $user->id);
+
+        if (isset($result['success']) && !$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], $result['code'] ?? 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+}
     public function adminIndex(Request $request){
         $params = $request->all();
         $posts = $this->postService->getAdminPost($params);
