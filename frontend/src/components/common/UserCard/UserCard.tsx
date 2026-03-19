@@ -49,7 +49,7 @@ const UserCard: React.FC<UserCardProps> = ({
     isLoading = false,
     showAction = true,
 }) => {
-    const displayName = `${user.lastName} ${user.firstName}`.trim();
+    const displayName = `${user.lastName} ${user.firstName}`.trim() || user.username;
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -234,9 +234,7 @@ const UserCard: React.FC<UserCardProps> = ({
                 {user.bio && (
                     <div className="mb-2 line-clamp-2 text-sm leading-6 text-slate-700">{user.bio}</div>
                 )}
-                {user.mutualFriends && user.mutualFriends > 0 && (
-                    <div className="text-sm font-medium text-indigo-600">{user.mutualFriends} bạn chung</div>
-                )}
+                <div className="text-sm font-medium text-indigo-600">{user.mutualFriends} bạn chung</div>
             </div>
 
             {renderActions()}

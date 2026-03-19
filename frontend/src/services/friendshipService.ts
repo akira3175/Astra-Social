@@ -51,7 +51,7 @@ const mapUser = (
 ): FriendUser => ({
     id: user.id,
     username: user.username,
-    firstName: user.profile?.first_name || user.username,
+    firstName: user.profile?.first_name || "",
     lastName: user.profile?.last_name || "",
     avatarUrl: user.profile?.avatar_url || null,
     bio: user.profile?.bio || null,
@@ -78,7 +78,7 @@ export const getFriendRequests = async (): Promise<FriendRequest[]> => {
         user: {
             id: item.user_id,
             username: item.username,
-            firstName: item.profile?.first_name || item.username,
+            firstName: item.profile?.first_name || "",
             lastName: item.profile?.last_name || "",
             avatarUrl: item.profile?.avatar_url || null,
             bio: item.profile?.bio || null,
