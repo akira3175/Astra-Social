@@ -168,7 +168,23 @@ class FriendshipController extends Controller
 
                 return $friendship->requester_id;
             });
-        $friends = User::whereIn('id', $friendIds)->get();
+        $friends = User::whereIn('id', $friendIds)
+            ->with('profile')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'is_verified' => $user->is_verified,
+                    'profile' => $user->profile ? [
+                        'first_name' => $user->profile->first_name,
+                        'last_name' => $user->profile->last_name,
+                        'avatar_url' => $user->profile->avatar_url,
+                        'bio' => $user->profile->bio,
+                    ] : null,
+                ];
+            })
+            ->values();
 
         return response()->json([
             'friends' => $friends
