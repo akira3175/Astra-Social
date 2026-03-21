@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\Route;
 
 // Protected routes
 	Route::get('/noti/by-isread', [NotiController::class, 'getByIsRead']);
-Route::middleware('jwt.auth')->group(function () {
+	Route::middleware('jwt.auth')->group(function () {
+
+	Route::put('/noti/read-all', [NotiController::class, 'markAllAsRead']);
+    Route::put('/noti/{id}/read', [NotiController::class, 'markAsRead']);
+
 	Route::resource('/noti', NotiController::class);
+	
 });

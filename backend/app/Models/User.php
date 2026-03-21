@@ -137,4 +137,15 @@ class User extends Authenticatable
                         ->where('blocked_id', $this->id)
                         ->exists();
     }
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_members', 'user_id', 'conversation_id')
+                    ->withPivot('role')
+                    ->withTimestamps();
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
 }

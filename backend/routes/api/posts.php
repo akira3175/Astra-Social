@@ -33,6 +33,6 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('/posts/{id}/comments', [PostController::class, 'getComments']);
     Route::post('/posts/{id}/share', [PostController::class, 'share']);
     Route::post('/comments/{id}/like', [PostController::class, 'likeComment']);
-});
-    Route::delete('/posts-admin/{id}', [PostController::class, 'adminDestroy']);
+        Route::delete('/posts-admin/{id}', [PostController::class, 'adminDestroy']);
+
 });
