@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
     SearchIcon,
     CheckCircleIcon,
@@ -13,7 +13,6 @@ import Swal from 'sweetalert2';
 import { useCurrentUser } from "../../context/currentUserContext";
 
 type TabType = "ALL" | "POST" | "COMMENT";
-
 
 const AdminReports: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
