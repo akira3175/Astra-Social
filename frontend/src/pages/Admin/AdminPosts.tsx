@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
     SearchIcon,
     TrashIcon,
@@ -13,7 +13,6 @@ import type { AdminPost } from "../../types/admin";
 import "./AdminTable.css";
 import { useCurrentUser } from "../../context/currentUserContext";
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 
 const AdminPosts: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};

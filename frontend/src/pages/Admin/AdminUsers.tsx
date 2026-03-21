@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
     SearchIcon,
     EyeIcon,
@@ -10,7 +10,6 @@ import type { AdminUser, Role } from "../../types/admin";
 import "./AdminTable.css";
 import { useCurrentUser } from "../../context/currentUserContext";
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 
 const AdminUsers: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
@@ -122,6 +121,7 @@ const AdminUsers: React.FC = () => {
     if (!loading){
         activeCount = users.data.data.filter(u=>u.is_active===true).length;
     }
+    
     return (
         <div>
             {/* Header */}

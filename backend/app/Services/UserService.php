@@ -23,13 +23,13 @@ class UserService{
             $users->where('is_active', true);
         }
         if(strtolower($params['status'])==='banned'){
-            $users->whereNotNull('deleted_at');
+            $users->where('is_active', false);
         }
         if(strtolower($params['status'])==='verified'){
             $users->where('is_verified', true);
         }
         if(strtolower($params['status'])==='unverified'){
-            $users->where('is_active', false);
+            $users->where('is_verified', false);
         }
         return $users->paginate(10);
     }

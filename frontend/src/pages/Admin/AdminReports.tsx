@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
     SearchIcon,
     CheckCircleIcon,
@@ -10,7 +10,6 @@ import { getReports, handleStatus } from "../../services/adminService";
 import type { AdminReport } from "../../types/admin";
 import "./AdminTable.css";
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { useCurrentUser } from "../../context/currentUserContext";
 
 type TabType = "ALL" | "POST" | "COMMENT";
