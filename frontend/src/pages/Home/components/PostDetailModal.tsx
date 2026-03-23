@@ -606,14 +606,16 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
     return (
         <div className={`pdm-comment-item ${depth > 0 ? "pdm-comment-item--reply" : ""}`}>
-            <Avatar
-                src={comment.user.profile?.avatar_url || undefined}
-                alt={comment.user.username}
-                width={depth > 0 ? 28 : 32}
-                height={depth > 0 ? 28 : 32}
-            >
-                {displayName[0]?.toUpperCase() || "U"}
-            </Avatar>
+            <div className="avatar-wrapper">
+                <Avatar
+                    src={comment.user.profile?.avatar_url || undefined}
+                    alt={comment.user.username}
+                    width={depth > 0 ? 28 : 32}
+                    height={depth > 0 ? 28 : 32}
+                >
+                    {displayName[0]?.toUpperCase() || "U"}
+                </Avatar>
+            </div>
 
             <div className="pdm-comment-body">
                 {/* Header: tên + badge tác giả + thời gian */}
@@ -677,7 +679,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 {/* Replies */}
                 {localReplies.length > 0 && (
                     <div className="pdm-replies">
-                        {localReplies.map((reply) => (
+                        {localReplies.map(reply => (
                             <CommentItem
                                 key={reply.id}
                                 comment={reply}

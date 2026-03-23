@@ -17,7 +17,7 @@ class Post extends Model
     /**
      * Indicates if the model should be timestamped.
      */
-    public $timestamps = false;
+    public $timestamps =true;
 
     /**
      * The name of the "created at" column.

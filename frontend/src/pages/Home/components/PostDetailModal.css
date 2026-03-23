@@ -577,80 +577,195 @@
     }
 }
 
-/* Header của mỗi comment: tên + badge + thời gian trên 1 hàng */
+/* Comment Container (bong bóng chính)*/
+.pdm-comment-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 2px 0;
+    position: relative;
+}
+
+.pdm-comment-item--reply {
+    margin-left: 40px;
+}
+
+/* Bong bóng comment */
+.pdm-comment-body {
+    flex: 1;
+    background: #f0f2f5;
+    border-radius: 18px;
+    padding: 8px 12px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08),
+                0 2px 6px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s ease;
+}
+
+.pdm-comment-body:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1), 
+                0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Avatar dính sát bong bóng */
+.pdm-comment-item > .avatar-wrapper {
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.pdm-comment-item--reply > .avatar-wrapper {
+    margin-top: 2px;
+}
+
 .pdm-comment-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
 }
- 
+
 .pdm-comment-author {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
-    color: var(--color-text-primary);
-    line-height: 1.3;
+    color: #050505;
 }
- 
-/* Badge "Tác giả" nhỏ gọn */
+
 .pdm-comment-author-badge {
-    display: inline-flex;
-    align-items: center;
     font-size: 11px;
     font-weight: 500;
     color: #1877f2;
-    background: #e7f0fd;
-    border-radius: 4px;
-    padding: 1px 5px;
-    line-height: 1.4;
-    white-space: nowrap;
+    background: #e7f3ff;
+    border-radius: 10px;
+    padding: 2px 6px;
+    line-height: 1;
 }
- 
-/* Thời gian comment */
+
 .pdm-comment-time {
     font-size: 12px;
-    color: var(--color-text-tertiary);
-    margin-left: auto;   /* đẩy sang phải */
-    white-space: nowrap;
-    flex-shrink: 0;
+    color: #606770;
+    margin-left: auto;
 }
- 
-/* Nội dung comment */
+
+/* Nội dung */
 .pdm-comment-text {
     font-size: 14px;
-    color: var(--color-text-primary);
-    margin: 0 0 4px;
-    line-height: 1.5;
+    line-height: 1.4;
+    color: #050505;
+    margin: 0;
     word-break: break-word;
 }
- 
-/* Actions like / trả lời */
+
+/* Actions */
 .pdm-comment-actions {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 2px;
+    gap: 16px;
+    margin-top: 6px;
 }
- 
+
 .pdm-comment-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
     background: none;
     border: none;
-    cursor: pointer;
-    font-size: 12px;
+    color: #606770;
+    font-size: 12.5px;
     font-weight: 600;
-    color: var(--color-text-secondary);
-    padding: 2px 0;
+    padding: 0;
+    cursor: pointer;
     transition: color 0.15s;
 }
- 
+
 .pdm-comment-action:hover {
-    color: var(--color-text-primary);
+    color: #050505;
+    text-decoration: underline;
 }
- 
+
 .pdm-comment-action--liked {
     color: #1877f2;
+}
+
+/* Reply input */
+.pdm-reply-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.pdm-reply-input input {
+    flex: 1;
+    background: #f0f2f5;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    outline: none;
+}
+
+.pdm-reply-input input:focus {
+    box-shadow: 0 0 0 2px #1877f2;
+}
+
+/*  Input bình luận chính */
+.pdm-comment-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0;
+    background: #fff;
+}
+
+.pdm-comment-input input.pdm-comment-field {
+    flex: 1;
+    background: #f0f2f5;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 14px;
+    outline: none;
+    transition: box-shadow 0.2s;
+}
+
+.pdm-comment-input input.pdm-comment-field:focus {
+    box-shadow: 0 0 0 2px #1877f2;
+}
+
+.pdm-comment-send {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #1877f2;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.pdm-comment-send:hover:not(:disabled) {
+    background: #166fe5;
+}
+
+.pdm-comment-send:disabled {
+    background: #e4e6eb;
+    cursor: not-allowed;
+}
+
+.pdm-replies {
+    margin-top: 4px;
+    padding-left: 12px;
+    position: relative;
+}
+
+.pdm-replies::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: -8px;
+    bottom: 0;
+    width: 2px;
+    background: #d0d4d8;
+    border-radius: 1px;
 }

@@ -20,15 +20,15 @@ class PostController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $page = (int) $request->query('page', 1);
+        $page    = (int) $request->query('page', 1);
         $perPage = (int) $request->query('per_page', 10);
-        $userId = $request->user()?->id;
+        $userId  = $request->user()?->id;
 
         $result = $this->postService->getPosts($page, $perPage, $userId);
 
         return response()->json([
-            'success' => true,
-            'data' => $result['posts'],
+            'success'    => true,
+            'data'       => $result['posts'],
             'pagination' => $result['pagination'],
         ]);
     }
@@ -38,21 +38,13 @@ class PostController extends Controller
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        $userId = $request->user()?->id;
-
-        $result = $this->postService->getPostById($id, $userId);
+        $result = $this->postService->getPostById($id, $request->user()?->id);
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], 404);
+            return response()->json(['success' => false, 'message' => $result['message']], 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result['data'],
-        ]);
+        return response()->json(['success' => true, 'data' => $result['data']]);
     }
 
     /**
@@ -60,14 +52,15 @@ class PostController extends Controller
      */
     public function byUser(int $userId, Request $request): JsonResponse
     {
-        $page = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('per_page', 10);
-
-        $result = $this->postService->getPostsByUserId($userId, $page, $perPage);
+        $result = $this->postService->getPostsByUserId(
+            $userId,
+            (int) $request->query('page', 1),
+            (int) $request->query('per_page', 10)
+        );
 
         return response()->json([
-            'success' => true,
-            'data' => $result['posts'],
+            'success'    => true,
+            'data'       => $result['posts'],
             'pagination' => $result['pagination'],
         ]);
     }
@@ -77,15 +70,15 @@ class PostController extends Controller
      */
     public function myPosts(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $page = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('per_page', $page);
+        $user    = $request->user();
+        $page    = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 10);
 
         $result = $this->postService->getMyPosts($user->id, $page, $perPage);
 
         return response()->json([
-            'success' => true,
-            'data' => $result['posts'],
+            'success'    => true,
+            'data'       => $result['posts'],
             'pagination' => $result['pagination'],
         ]);
     }
@@ -95,46 +88,31 @@ class PostController extends Controller
      */
     public function store(CreatePostRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $data = $request->validated();
-        $files = $request->file('files', []);
-
-        $result = $this->postService->createPost($user, $data, $files);
+        $result = $this->postService->createPost(
+            $request->user(),
+            $request->validated(),
+            $request->file('files', [])
+        );
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code']);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code']);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result['data'],
-        ], 201);
+        return response()->json(['success' => true, 'data' => $result['data']], 201);
     }
 
     /**
-     * Update a post (content and privacy only, files cannot be changed).
+     * Update a post (content and privacy only).
      */
     public function update(UpdatePostRequest $request, int $id): JsonResponse
     {
-        $user = $request->user();
-        $data = $request->validated();
-
-        $result = $this->postService->updatePost($id, $user->id, $data);
+        $result = $this->postService->updatePost($id, $request->user()->id, $request->validated());
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code']);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code']);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result['data'],
-        ]);
+        return response()->json(['success' => true, 'data' => $result['data']]);
     }
 
     /**
@@ -142,21 +120,13 @@ class PostController extends Controller
      */
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $user = $request->user();
-
-        $result = $this->postService->deletePost($id, $user->id);
+        $result = $this->postService->deletePost($id, $request->user()->id);
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code']);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code']);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => $result['message'],
-        ]);
+        return response()->json(['success' => true, 'message' => $result['message']]);
     }
 
     /**
@@ -164,21 +134,19 @@ class PostController extends Controller
      */
     public function hashtagPosts(string $hashtagName, Request $request): JsonResponse
     {
-        $page = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('per_page', 10);
-
-        $result = $this->postService->getPostsByHashtag($hashtagName, $page, $perPage);
+        $result = $this->postService->getPostsByHashtag(
+            $hashtagName,
+            (int) $request->query('page', 1),
+            (int) $request->query('per_page', 10)
+        );
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], 404);
+            return response()->json(['success' => false, 'message' => $result['message']], 404);
         }
 
         return response()->json([
-            'success' => true,
-            'data' => $result['posts'],
+            'success'    => true,
+            'data'       => $result['posts'],
             'pagination' => $result['pagination'],
         ]);
     }
@@ -188,13 +156,9 @@ class PostController extends Controller
      */
     public function searchHashtag(Request $request): JsonResponse
     {
-        $keyword = $request->query('q');
-
-        $hashtags = $this->postService->searchHashtags($keyword);
-
         return response()->json([
             'success' => true,
-            'data' => $hashtags,
+            'data'    => $this->postService->searchHashtags($request->query('q')),
         ]);
     }
 
@@ -203,11 +167,38 @@ class PostController extends Controller
      */
     public function trendingHashtags(): JsonResponse
     {
-        $hashtags = $this->postService->getTrendingHashtags();
-
         return response()->json([
             'success' => true,
-            'data' => $hashtags,
+            'data'    => $this->postService->getTrendingHashtags(),
+        ]);
+    }
+
+    /**
+     * Tìm kiếm tổng hợp: users + posts (content + hashtag).
+     * GET /search?q=keyword&page=1&per_page=10
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $keyword = trim($request->query('q', ''));
+        $page    = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 10);
+
+        if ($keyword === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keyword is required',
+            ], 422);
+        }
+
+        $result = $this->postService->search($keyword, $page, $perPage);
+
+        return response()->json([
+            'success'    => true,
+            'data'       => [
+                'users' => $result['users'],
+                'posts' => $result['posts'],
+            ],
+            'pagination' => $result['pagination'],
         ]);
     }
 
@@ -216,21 +207,13 @@ class PostController extends Controller
      */
     public function like(Request $request, int $postId): JsonResponse
     {
-        $user = $request->user();
-
-        $result = $this->postService->toggleLike($postId, $user->id);
+        $result = $this->postService->toggleLike($postId, $request->user()->id);
 
         if (isset($result['success']) && !$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code'] ?? 404);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code'] ?? 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result,
-        ]);
+        return response()->json(['success' => true, 'data' => $result]);
     }
 
     /**
@@ -238,25 +221,13 @@ class PostController extends Controller
      */
     public function comment(CreateCommentRequest $request, int $id): JsonResponse
     {
-        $user = $request->user();
-
-        $result = $this->postService->createComment(
-            $id,
-            $user->id,
-            $request->validated()
-        );
+        $result = $this->postService->createComment($id, $request->user()->id, $request->validated());
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code']);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code']);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result['data'],
-        ], 201);
+        return response()->json(['success' => true, 'data' => $result['data']], 201);
     }
 
     /**
@@ -264,45 +235,38 @@ class PostController extends Controller
      */
     public function getComments(int $id, Request $request): JsonResponse
     {
-        $page = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('per_page', 10);
-
-        $result = $this->postService->getComments($id, $page, $perPage);
+        $result = $this->postService->getComments(
+            $id,
+            (int) $request->query('page', 1),
+            (int) $request->query('per_page', 10)
+        );
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code'] ?? 404);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code'] ?? 404);
         }
 
         return response()->json([
-            'success' => true,
-            'data' => $result['comments'],
+            'success'    => true,
+            'data'       => $result['comments'],
             'pagination' => $result['pagination'],
         ]);
     }
 
     /**
-     * Share a post (creates a new post with parent_id).
+     * Share a post — tạo post mới embed bài gốc, caption tùy chọn.
+     * POST /posts/{id}/share   body: { caption?: string }
      */
     public function share(Request $request, int $id): JsonResponse
     {
-        $user = $request->user();
+        $caption = $request->input('caption');   // nullable
 
-        $result = $this->postService->sharePost($id, $user->id);
+        $result = $this->postService->sharePost($id, $request->user()->id, $caption);
 
         if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code'] ?? 404);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code'] ?? 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result['data'],
-        ], 201);
+        return response()->json(['success' => true, 'data' => $result['data']], 201);
     }
 
     /**
@@ -310,73 +274,52 @@ class PostController extends Controller
      */
     public function likeComment(Request $request, int $commentId): JsonResponse
     {
-        $user = $request->user();
-
-        $result = $this->postService->toggleCommentLike($commentId, $user->id);
+        $result = $this->postService->toggleCommentLike($commentId, $request->user()->id);
 
         if (isset($result['success']) && !$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], $result['code'] ?? 404);
+            return response()->json(['success' => false, 'message' => $result['message']], $result['code'] ?? 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result,
-        ]);
+        return response()->json(['success' => true, 'data' => $result]);
     }
 
-    public function adminIndex(Request $request){
-        $params = $request->all();
-        $posts = $this->postService->getAdminPost($params);
-        if($posts){
-            return response()->json([
-                'success'=>true,
-                'data'=>$posts,
-            ]);
+    // Admin 
+
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $posts = $this->postService->getAdminPost($request->all());
+
+        if ($posts) {
+            return response()->json(['success' => true, 'data' => $posts]);
         }
-        return response()->json([
-            'success'=>false,
-            'message'=> 'Không có bài viết nào',
-        ]);
 
+        return response()->json(['success' => false, 'message' => 'Không có bài viết nào']);
     }
 
-    public function restorePostById(string $id){
+    public function restorePostById(string $id): JsonResponse
+    {
         $result = $this->postService->restorePostById($id);
-        if ($result){
-            return response()->json([
-                'success'=>true,
-                'data'=>$result,
-                'message'=>'Khôi phục bài viết thành công',
-            ]);
+
+        if ($result) {
+            return response()->json(['success' => true, 'data' => $result, 'message' => 'Khôi phục bài viết thành công']);
         }
-        return response()->json([
-            'success'=>false,
-            'message'=> 'Không có bài viết nào',
-        ]);
+
+        return response()->json(['success' => false, 'message' => 'Không có bài viết nào']);
     }
 
-    public function adminDestroy(Request $request, string $id){
-        $params=$request->all();
-        $post = $this->postService->adminDeletePostById($params['auth_user'], $id);
-        if(!empty($post)){
-            return response()->json([
-                'success'=>true,
-                'message'=>'Xóa bài viêt thành công',
-            ]);
+    public function adminDestroy(Request $request, string $id): JsonResponse
+    {
+        $post = $this->postService->adminDeletePostById($request->all()['auth_user'], $id);
+
+        if ($post) {
+            return response()->json(['success' => true, 'message' => 'Xóa bài viết thành công']);
         }
-        return response()->json([
-            'success'=>false,
-            'message'=>'Xóa bài viết thất bại',
-        ]);
-    }
-    public function adminGetCountByDays(int $days){
-        $result = $this->postService->adminGetCountByDays($days);
-        return response()->json([
-            'data'=>$result,
-        ]);
+
+        return response()->json(['success' => false, 'message' => 'Xóa bài viết thất bại']);
     }
 
+    public function adminGetCountByDays(int $days): JsonResponse
+    {
+        return response()->json(['data' => $this->postService->adminGetCountByDays($days)]);
+    }
 }

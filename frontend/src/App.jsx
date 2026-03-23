@@ -3,12 +3,12 @@ import { LoginPage, ProtectedRoute, PermissionRoute, RegisterPage, ForgotPasswor
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
-import SearchPage from "./pages/Search";
+// import SearchPage from "./pages/Search";
 import FriendsPage from "./pages/Friends";
 import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
 import SearchPage from "./pages/Search/SearchPage";
-import { CurrentUserProvider } from "./context/currentUserContext";
+// import { CurrentUserProvider } from "./context/currentUserContext";
 import PostDetailPage from "./pages/Post";
 import { AdminLayout, AdminDashboard, AdminPosts, AdminComments, AdminReports, AdminRoles, AdminUsers } from "./pages/Admin";
 import { CurrentUserProvider, useCurrentUser } from "./context/currentUserContext";

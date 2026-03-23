@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { UserCard } from "../../components/common";
 import PostList from "../Home/components/PostList";
 import { searchUsers, searchPosts, type MockUser } from "./mockData";
-import type { Post } from "../../types/post";
 import "./SearchPage.css";
 
 type SearchTab = "all" | "users" | "posts";
