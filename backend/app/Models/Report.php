@@ -34,11 +34,11 @@ class Report extends Model{
             'updated_at',
     ];
     public function reporter(){
-        return $this->belongsTo(User::class, 'reporter_id');
+        return $this->belongsTo(User::class, 'reporter_id')->withTrashed();
     }
 
     public function target_author(){
-        return $this->belongsTo(User::class, 'target_author_id');
+        return $this->belongsTo(User::class, 'target_author_id')->withTrashed();
     }
 
 }

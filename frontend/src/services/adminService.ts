@@ -1,7 +1,6 @@
 import { api } from "../configs/api";
 import type {
     AdminPost,
-    AdminComment,
     AdminReport,
     AdminUser,
     DashboardStats,
@@ -46,16 +45,13 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     ]);
 
     return {
-        total_users:     usersRes.data?.total    ?? 0,
-        total_posts:     postsRes.data?.total    ?? 0,
-        total_comments:  commentsRes.pagination?.total ?? 0,
-        pending_reports: reportsRes.pagination?.total  ?? 0,
-        user_growth:    0,
-        post_growth:    0,
-        comment_growth: 0,
-        report_change:  0,
-    };
+        users: usersRes,
+        posts: postsRes,
+        comments: commentsRes,
+        reports: reportsRes,
+    } as unknown as DashboardStats;
 };
+
 
 export const getDailyActivity = async (days: number): Promise<any[]> => {
     const [postsCount, reportsCount, commentsCount] = await Promise.all([
@@ -119,8 +115,8 @@ export const getComments = async (
     return response.data;
 };
 
-export const deleteComment = async (id: number): Promise<AdminComment> => {
-    const response = await api.delete<AdminComment>(ENDPOINTS.COMMENTS_BY_ID(id));
+export const deleteComment = async (id: number): Promise<{ success: boolean; message: string; }> => {
+    const response = await api.delete<{ success: boolean; message: string; }>(ENDPOINTS.COMMENTS_BY_ID(id));
     return response.data;
 };
 

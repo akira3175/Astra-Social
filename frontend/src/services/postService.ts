@@ -90,6 +90,19 @@ export const getPosts = async (
 };
 
 /**
+ * Get ranked News Feed for the authenticated user
+ */
+export const getNewsFeed = async (
+    page: number = 1,
+    perPage: number = 10
+): Promise<PostsResponse> => {
+    const response = await api.get<PostsResponse>('/posts/feed', {
+        params: { page, per_page: perPage },
+    });
+    return response.data;
+};
+
+/**
  * Get posts by a specific user ID
  */
 export const getPostsByUserId = async (
@@ -236,6 +249,7 @@ export const sharePost = async (
 export default {
     getMyPosts,
     getPosts,
+    getNewsFeed,
     getPostById,
     getPostsByUser,
     getPostsByUserId,

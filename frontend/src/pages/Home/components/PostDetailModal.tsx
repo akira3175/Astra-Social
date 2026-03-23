@@ -10,6 +10,7 @@ import {
     createComment,
     toggleCommentLike,
     sharePost,
+    getPostById,
 } from "../../../services/postService";
 import type { Comment } from "../../../services/postService";
 import type { Post } from "../../../types/post";
@@ -65,6 +66,8 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     // Edit state
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState("");
+    const [editPrivacy, setEditPrivacy] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
+    const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -87,6 +90,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     const [localCommentCount, setLocalCommentCount] = useState(post?.comments_count ?? 0);
 
     const commentInputRef = useRef<HTMLInputElement>(null);
+    const privacyDropdownRef = useRef<HTMLDivElement>(null);
     const isOwner = currentUser?.id?.toString() === post?.user_id?.toString();
     const images = post?.attachments?.filter((a) => a.file_type === "IMAGE") ?? [];
     const hasImages = images.length > 0;
@@ -94,13 +98,25 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     // Sync cả likeState lẫn localCommentCount khi post prop thay đổi
     useEffect(() => {
         if (post) {
+            // First set with props data immediately
             setLikeState({
                 liked: post.is_liked ?? false,
                 count: post.likes_count ?? 0,
             });
             setLocalCommentCount(post.comments_count ?? 0);
+
+            // Then fetch latest data from backend to ensure accuracy
+            getPostById(post.id).then((res) => {
+                if (res.data) {
+                    setLikeState({
+                        liked: res.data.is_liked ?? false,
+                        count: res.data.likes_count ?? 0,
+                    });
+                    setLocalCommentCount(res.data.comments_count ?? 0);
+                }
+            }).catch(console.error);
         }
-    }, [post]);
+    }, [post?.id]);
 
     // Fetch comments when modal opens
     const fetchComments = useCallback(
@@ -127,6 +143,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
             if (startEditing && isOwner) {
                 setEditContent(post.content || "");
+                setEditPrivacy(post.privacy || "PUBLIC");
                 setIsEditing(true);
             }
             if (startDeleting && isOwner) {
@@ -137,6 +154,21 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
             }
         }
     }, [open, post, startEditing, startDeleting, focusComment, isOwner]);
+
+    // Handle clicking outside privacy dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (privacyDropdownRef.current && !privacyDropdownRef.current.contains(event.target as Node)) {
+                setShowPrivacyDropdown(false);
+            }
+        };
+        if (showPrivacyDropdown) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showPrivacyDropdown]);
 
     // Reset state when modal closes
     useEffect(() => {
@@ -208,7 +240,10 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
         setIsLoading(true);
         setError(null);
         try {
-            await updatePost(post.id, { content: editContent.trim() || undefined });
+            await updatePost(post.id, { 
+                content: editContent.trim() || undefined,
+                privacy: editPrivacy
+            });
             setIsEditing(false);
             onPostUpdated?.();
         } catch (err: any) {
@@ -320,6 +355,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                                 isOwner={isOwner}
                                 onEdit={() => {
                                     setEditContent(post.content || "");
+                                    setEditPrivacy(post.privacy || "PUBLIC");
                                     setIsEditing(true);
                                     setError(null);
                                 }}
@@ -328,10 +364,54 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         )}
                     </div>
 
-                    {/* Body */}
-                    <div className="pdm-body">
+                    <div className="pdm-scrollable-content">
+                        {/* Body */}
+                        <div className="pdm-body">
                         {isEditing ? (
                             <div className="pdm-edit-form">
+                                <div className="pdm-privacy-dropdown-container" ref={privacyDropdownRef}>
+                                    <button 
+                                        className="pdm-privacy-btn" 
+                                        onClick={() => setShowPrivacyDropdown(!showPrivacyDropdown)}
+                                    >
+                                        {editPrivacy === "PUBLIC" ? "🌎 Công khai" : editPrivacy === "FRIENDS" ? "👥 Bạn bè" : "🔒 Chỉ mình tôi"}
+                                        <span className="pdm-privacy-caret">▼</span>
+                                    </button>
+                                    {showPrivacyDropdown && (
+                                        <div className="pdm-privacy-menu">
+                                            <div 
+                                                className={`pdm-privacy-item ${editPrivacy === "PUBLIC" ? "active" : ""}`} 
+                                                onClick={() => { setEditPrivacy("PUBLIC"); setShowPrivacyDropdown(false); }}
+                                            >
+                                                <span className="icon">🌎</span>
+                                                <div className="text">
+                                                    <strong>Công khai</strong>
+                                                    <span>Mọi người trên hoặc ngoài Astra Social</span>
+                                                </div>
+                                            </div>
+                                            <div 
+                                                className={`pdm-privacy-item ${editPrivacy === "FRIENDS" ? "active" : ""}`} 
+                                                onClick={() => { setEditPrivacy("FRIENDS"); setShowPrivacyDropdown(false); }}
+                                            >
+                                                <span className="icon">👥</span>
+                                                <div className="text">
+                                                    <strong>Bạn bè</strong>
+                                                    <span>Chỉ bạn bè của bạn mới có thể xem</span>
+                                                </div>
+                                            </div>
+                                            <div 
+                                                className={`pdm-privacy-item ${editPrivacy === "ONLY_ME" ? "active" : ""}`} 
+                                                onClick={() => { setEditPrivacy("ONLY_ME"); setShowPrivacyDropdown(false); }}
+                                            >
+                                                <span className="icon">🔒</span>
+                                                <div className="text">
+                                                    <strong>Chỉ mình tôi</strong>
+                                                    <span>Chỉ bạn mới có thể xem bài viết này</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 <textarea
                                     className="pdm-edit-textarea"
                                     value={editContent}
@@ -417,37 +497,6 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         </div>
                     )}
 
-                    {/* Comments Section */}
-                    <div className="pdm-comments-section">
-                        {/* Comment Input */}
-                        <div className="pdm-comment-input">
-                            <Avatar
-                                src={currentUser?.avatar || undefined}
-                                width={32}
-                                height={32}
-                            >
-                                {currentUser?.firstName?.[0] || currentUser?.username?.[0] || "U"}
-                            </Avatar>
-                            <input
-                                ref={commentInputRef}
-                                type="text"
-                                placeholder="Viết bình luận..."
-                                className="pdm-comment-field"
-                                value={commentInput}
-                                onChange={(e) => setCommentInput(e.target.value)}
-                                onKeyDown={handleCommentKeyDown}
-                                disabled={submittingComment}
-                            />
-                            <button
-                                className="pdm-comment-send"
-                                onClick={handleSubmitComment}
-                                disabled={submittingComment || !commentInput.trim()}
-                                aria-label="Gửi"
-                            >
-                                {submittingComment ? "..." : "➤"}
-                            </button>
-                        </div>
-
                         {/* Comment List */}
                         <div className="pdm-comments-list">
                             {commentsLoading && comments.length === 0 ? (
@@ -475,6 +524,37 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                                     )}
                                 </>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Comment Input Fixed */}
+                    <div className="pdm-comment-input-fixed">
+                        <div className="pdm-comment-input">
+                            <Avatar
+                                src={currentUser?.avatar || undefined}
+                                width={32}
+                                height={32}
+                            >
+                                {currentUser?.firstName?.[0] || currentUser?.username?.[0] || "U"}
+                            </Avatar>
+                            <input
+                                ref={commentInputRef}
+                                type="text"
+                                placeholder="Viết bình luận..."
+                                className="pdm-comment-field"
+                                value={commentInput}
+                                onChange={(e) => setCommentInput(e.target.value)}
+                                onKeyDown={handleCommentKeyDown}
+                                disabled={submittingComment}
+                            />
+                            <button
+                                className="pdm-comment-send"
+                                onClick={handleSubmitComment}
+                                disabled={submittingComment || !commentInput.trim()}
+                                aria-label="Gửi"
+                            >
+                                {submittingComment ? "..." : "➤"}
+                            </button>
                         </div>
                     </div>
 
@@ -615,32 +695,36 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 {displayName[0]?.toUpperCase() || "U"}
             </Avatar>
 
-            <div className="pdm-comment-body">
-                {/* Header: tên + badge tác giả + thời gian */}
-                <div className="pdm-comment-header">
-                    <span className="pdm-comment-author">{displayName}</span>
-                    {isAuthor && (
-                        <span className="pdm-comment-author-badge">Tác giả</span>
+            <div className="pdm-comment-content-wrapper">
+                {/* Bubble containing author, text, and floating like badge */}
+                <div className="pdm-comment-bubble">
+                    <div className="pdm-comment-header">
+                        <span className="pdm-comment-author">{displayName}</span>
+                        {isAuthor && <span className="pdm-comment-author-badge">Tác giả</span>}
+                    </div>
+                    <p className="pdm-comment-text">{comment.content}</p>
+                    {likeCount > 0 && (
+                        <div className="pdm-comment-like-count">
+                            <span className="icon">👍</span>
+                            <span>{likeCount}</span>
+                        </div>
                     )}
+                </div>
+
+                {/* Actions below the bubble */}
+                <div className="pdm-comment-actions">
                     <span className="pdm-comment-time">
                         {formatRelativeTime(comment.created_at)}
                     </span>
-                </div>
-
-                {/* Nội dung comment */}
-                <p className="pdm-comment-text">{comment.content}</p>
-
-                {/* Actions: like + trả lời */}
-                <div className="pdm-comment-actions">
                     <button
                         className={`pdm-comment-action ${liked ? "pdm-comment-action--liked" : ""}`}
                         onClick={handleLike}
                     >
-                        {liked ? "👍" : "👍"} {likeCount > 0 && <span>{likeCount}</span>} Thích
+                        Thích
                     </button>
                     {depth === 0 && (
                         <button className="pdm-comment-action" onClick={handleReplyToggle}>
-                            Trả lời
+                            Phản hồi
                         </button>
                     )}
                 </div>

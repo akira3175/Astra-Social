@@ -35,12 +35,14 @@ class HashtagService
                 $hashtag->id
             ]);
 
-            Hashtag::whereIn('id', $ids)->increment('posts_count');
-
             $hashtag->increment('posts_count');
 
             // update redis trending
-            Redis::zincrby('trending:hashtags', 1, $tag);
+            try {
+                Redis::zincrby('trending:hashtags', 1, $tag);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Redis connection failed or class not found when updating trending hashtags: ' . $e->getMessage());
+            }
         }
     }
 }

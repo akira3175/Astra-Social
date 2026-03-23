@@ -42,4 +42,8 @@ return [
         'upload_preset' => env('CLOUDINARY_UPLOAD_PRESET', ''),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY', ''),
+    ],
+
 ];

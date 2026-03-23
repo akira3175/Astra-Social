@@ -34,6 +34,24 @@ class PostController extends Controller
     }
 
     /**
+     * Get ranked News Feed for authenticated user.
+     */
+    public function newsfeed(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 10);
+
+        $result = $this->postService->getNewsFeed($user->id, $page, $perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['posts'],
+            'pagination' => $result['pagination'],
+        ]);
+    }
+
+    /**
      * Get single post by ID.
      */
     public function show(Request $request, int $id): JsonResponse
@@ -62,8 +80,9 @@ class PostController extends Controller
     {
         $page = (int) $request->query('page', 1);
         $perPage = (int) $request->query('per_page', 10);
+        $currentUserId = $request->user()?->id;
 
-        $result = $this->postService->getPostsByUserId($userId, $page, $perPage);
+        $result = $this->postService->getPostsByUserId($userId, $page, $perPage, $currentUserId);
 
         return response()->json([
             'success' => true,
@@ -79,7 +98,7 @@ class PostController extends Controller
     {
         $user = $request->user();
         $page = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('per_page', $page);
+        $perPage = (int) $request->query('per_page', 10);
 
         $result = $this->postService->getMyPosts($user->id, $page, $perPage);
 

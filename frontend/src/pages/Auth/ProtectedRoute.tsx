@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { UserProfileApiResponse } from "../types/user";
+import { User } from "../../types/user";
 
 interface ProtectedRouteProps {
   isLoading: boolean;
@@ -16,11 +16,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, isLoading }) => {
   }
   const allowed = ['admin', 'dev', 'mod'];
   
-  if (allowed.includes(user.role.name.toLowerCase())) {
+  if (user.role?.name && allowed.includes(user.role.name.toLowerCase())) {
     return <Outlet />;
   }
 
-  return <Navigate to="/" replace />;
+  return <Navigate to="/404" replace />;
 };
 
 export default ProtectedRoute;

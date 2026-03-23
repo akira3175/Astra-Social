@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
     SearchIcon,
     TrashIcon,
@@ -8,15 +8,14 @@ import {
     CommentIcon,
 } from "../../components/ui";
 import {ENDPOINTS, getComments, deleteComment } from "../../services/adminService";
-import type { AdminComment } from "../../types/admin";
+import type { AdminComment, CommentsResponse } from "../../types/admin";
 import "./AdminTable.css";
 import Swal from 'sweetalert2';
 import { useCurrentUser } from "../../context/currentUserContext";
-import withReactContent from 'sweetalert2-react-content';
 
 const AdminComments: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
-    const [comments, setComments] = useState<AdminComment[]>([]);
+    const [comments, setComments] = useState<CommentsResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState<string>("");
@@ -44,9 +43,9 @@ const AdminComments: React.FC = () => {
             setLoading(false);
         }
     };
-    let totalPages;
-    if(!loading){
-        totalPages =comments.data.last_page;
+    let totalPages = 1;
+    if(!loading && comments?.success){
+        totalPages = comments.data.last_page;
     }
 
     const navigate = useNavigate();
@@ -134,7 +133,7 @@ const AdminComments: React.FC = () => {
                                     ))}
                                 </tr>
                             ))
-                        ) : !comments.success ? (
+                        ) : !comments?.success ? (
                             <tr>
                                 <td colSpan={7}>
                                     <div className="admin-empty">
@@ -144,7 +143,7 @@ const AdminComments: React.FC = () => {
                                 </td>
                             </tr>
                         ) : (
-                            comments.data.data.map((comment) => (
+                            comments.data.data.map((comment: AdminComment) => (
                                 <tr key={comment.id}>
                                     <td className="cell-number">#{comment.id}</td>
                                     <td>
@@ -168,7 +167,7 @@ const AdminComments: React.FC = () => {
                                     <td className="cell-date">{formatDate(comment.created_at)}</td>
                                     <td>
                                         <div className="cell-actions d-flex flex-row justify-content-center">
-                                        {currentUser.role.permissions.find(p=>p.slug==='comment.view') && (
+                                        {currentUser?.role?.permissions?.find(p=>p.slug==='comment.view') && (
                                             <button
                                                 className="action-btn view"
                                                 title="Xem chi tiết"
@@ -177,7 +176,7 @@ const AdminComments: React.FC = () => {
                                                 <EyeIcon size={16} />
                                             </button>
                                         )}
-                                        {currentUser.role.permissions.find(p=>p.slug==='comment.delete') && (
+                                        {currentUser?.role?.permissions?.find(p=>p.slug==='comment.delete') && (
                                             <button
                                                 className= "action-btn delete"
                                                 title="Xóa bình luận"
@@ -194,7 +193,7 @@ const AdminComments: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                {!loading && comments.success && (
+                {!loading && comments?.success && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
                             Hiển thị {comments.data.data.length} / {comments.data.total} bình luận
@@ -257,7 +256,7 @@ const AdminComments: React.FC = () => {
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Bài viết</span>
-                                <span className="admin-detail-value">#{selectedComment.post_id} — {selectedComment.post.content}</span>
+                                <span className="admin-detail-value">#{selectedComment.post_id} — {selectedComment.post?.content || <i className="text-secondary">(Nội dung trống hoặc bài viết đã xóa)</i>}</span>
                             </div>
                             {selectedComment.parent_id && (
                                 <div className="admin-detail-row">
@@ -270,7 +269,7 @@ const AdminComments: React.FC = () => {
                                 <span className="admin-detail-value">{formatDate(selectedComment.created_at)}</span>
                             </div>
                             <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                            {currentUser.role.permissions.find(p=>p.slug==='comment.delete') && (
+                            {currentUser?.role?.permissions?.find(p=>p.slug==='comment.delete') && (
                                 <button
                                     style={{
                                         display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,

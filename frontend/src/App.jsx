@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { LoginPage, ProtectedRoute, PermissionRoute, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from "./pages/Auth";
+import { LoginPage, ProtectedRoute, PermissionRoute, GuestRoute, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from "./pages/Auth";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
@@ -20,12 +20,16 @@ const RouteApp=()=>{
   return (
       <Router>
         <Routes>
-          {/* Public routes - không có Navbar */}
-          <Route path="/login" element={<LoginPage />} />
+          {/* Guest-only routes: nếu đã đăng nhập → về trang chủ */}
+          <Route element={<GuestRoute user={context?.currentUser} isLoading={context?.isLoading} />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </Route>
+
+          {/* Public routes không cần auth */}
           <Route path="/posts/:id" element={<PostDetailPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes - có Navbar thông qua BasePage layout */}
           <Route element={<BasePage />}>
@@ -39,43 +43,54 @@ const RouteApp=()=>{
             <Route path="/about" element={<AboutPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
-            {/* Thêm route mới ở đây, tự động có Navbar */}
           </Route>
 
           {/* Admin routes - có AdminLayout riêng */}
-
-          <Route element={<ProtectedRoute user={context.currentUser}
-                                          isLoading={context.isLoading}
-          />}>
-
+          <Route element={<ProtectedRoute user={context?.currentUser} isLoading={context?.isLoading} />}>
             <Route path="/admin" element={<AdminLayout />}>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="dashboard" />}>
+                <Route path="dashboard" element={<AdminDashboard />} />
+              </Route>
 
-            <Route element={<PermissionRoute user={context.currentUser} permission="dashboard" />}>
-              <Route path="dashboard" element={<AdminDashboard />} />
-            </Route>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="user" />}>
+                <Route path="users" element={<AdminUsers />} />
+              </Route>
 
-            <Route element={<PermissionRoute user={context.currentUser} permission="user" />}>
-              <Route path="users" element={<AdminUsers />} />
-            </Route>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="post" />}>
+                <Route path="posts" element={<AdminPosts />} />
+              </Route>
 
-            <Route element={<PermissionRoute user={context.currentUser} permission="posts" />}>
-              <Route path="posts" element={<AdminPosts />} />
-            </Route>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="comment" />}>
+                <Route path="comments" element={<AdminComments />} />
+              </Route>
 
-            <Route element={<PermissionRoute user={context.currentUser} permission="comments" />}>
-              <Route path="comments" element={<AdminComments />} />
-            </Route>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="report" />}>
+                <Route path="reports" element={<AdminReports />} />
+              </Route>
 
-            <Route element={<PermissionRoute user={context.currentUser} permission="reports" />}>
-              <Route path="reports" element={<AdminReports />} />
-            </Route>
-
-            <Route element={<PermissionRoute user={context.currentUser} permission="roles" />}>
-              <Route path="roles" element={<AdminRoles />} />
-            </Route>
-
+              <Route element={<PermissionRoute user={context?.currentUser} permission="role" />}>
+                <Route path="roles" element={<AdminRoles />} />
+              </Route>
             </Route>
           </Route>
+
+          {/* 404 - Not Found */}
+          <Route path="/404" element={
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 16 }}>
+              <h1 style={{ fontSize: 72, fontWeight: 700, color: '#6366f1', margin: 0 }}>404</h1>
+              <h2 style={{ fontSize: 24, color: '#475569', margin: 0 }}>Trang không tồn tại</h2>
+              <p style={{ color: '#94a3b8' }}>Trang này không tồn tại.</p>
+              <a href="/" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>← Về trang chủ</a>
+            </div>
+          } />
+          <Route path="*" element={
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 16 }}>
+              <h1 style={{ fontSize: 72, fontWeight: 700, color: '#6366f1', margin: 0 }}>404</h1>
+              <h2 style={{ fontSize: 24, color: '#475569', margin: 0 }}>Trang không tồn tại</h2>
+              <p style={{ color: '#94a3b8' }}>Trang này không tồn tại.</p>
+              <a href="/" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>← Về trang chủ</a>
+            </div>
+          } />
         </Routes>
       </Router>
   );

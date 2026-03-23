@@ -70,7 +70,7 @@ const AdminLayout: React.FC = () => {
 
                 <nav className="admin-nav">
                     {navItems.map((item) => (
-                        currentUser.role.permissions.some(
+                        currentUser?.role?.permissions?.some(
                             p => p.group.toLowerCase() === item.role.toLowerCase()
                         ) &&(
                         <NavLink
@@ -89,10 +89,18 @@ const AdminLayout: React.FC = () => {
                 </nav>
 
                 <div className="admin-sidebar-footer">
-                    <div className="admin-user-avatar">AD</div>
+                    <div className="admin-user-avatar" style={{ padding: currentUser?.avatar ? 0 : undefined, overflow: 'hidden' }}>
+                        {currentUser?.avatar ? (
+                            <img src={currentUser.avatar} alt="avatar" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                        ) : (
+                            currentUser?.firstName?.[0] || currentUser?.username?.[0]?.toUpperCase() || "AD"
+                        )}
+                    </div>
                     <div className="admin-user-info">
-                        <div className="admin-user-name">Admin User</div>
-                        <div className="admin-user-role">Administrator</div>
+                        <div className="admin-user-name">
+                            {currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : currentUser?.username || "Admin User"}
+                        </div>
+                        <div className="admin-user-role">{currentUser?.role?.name || "Administrator"}</div>
                     </div>
                 </div>
             </aside>

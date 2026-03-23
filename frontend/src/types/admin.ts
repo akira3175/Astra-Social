@@ -34,6 +34,7 @@ export interface AdminComment {
     created_at: string;
     user: AdminUser;
     post_preview: string;
+    post?: AdminPost | null;
 }
 
 export interface AdminReport {
@@ -58,14 +59,10 @@ export interface AdminReport {
 }
 
 export interface DashboardStats {
-    total_users: number;
-    total_posts: number;
-    total_comments: number;
-    pending_reports: number;
-    user_growth: number;
-    post_growth: number;
-    comment_growth: number;
-    report_change: number;
+    users: UsersResponse;
+    posts: PostsResponse;
+    comments: CommentsResponse;
+    reports: ReportsResponse;
 }
 
 export interface DailyActivity {
@@ -151,9 +148,23 @@ export interface PostsResponse {
     message: string | null;
 }
 
+export interface PaginatedAdminComments {
+    current_page: number;
+    data: AdminComment[];
+    first_page_url?: string;
+    from?: number;
+    last_page: number;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    path?: string;
+    per_page: number;
+    prev_page_url?: string | null;
+    to?: number;
+    total: number;
+}
+
 export interface CommentsResponse {
     success: boolean;
-    data: AdminComment[];
+    data: PaginatedAdminComments;
     message: string | null;
-    pagination?: Pagination;
 }

@@ -50,4 +50,19 @@ class Comment extends Model
     {
         return $this->hasMany(CommentLike::class);
     }
+
+    protected static function booted()
+    {
+        static::created(function ($comment) {
+            Post::where('id', $comment->post_id)->increment('comments_count');
+        });
+
+        static::deleted(function ($comment) {
+            Post::where('id', $comment->post_id)->decrement('comments_count');
+        });
+
+        static::restored(function ($comment) {
+            Post::where('id', $comment->post_id)->increment('comments_count');
+        });
+    }
 }
