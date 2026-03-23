@@ -47,10 +47,10 @@ class ChatController extends Controller
             $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $senderId,
-                'content' => $request->content,
+                'content' => $request->input('content'),
             ]);
 
-            return response()->json(['message' => 'Đã gửi tin nhắn', 'data' => $message]);
+            return response()->json(['success' => true, 'message' => 'Đã gửi tin nhắn', 'data' => $message]);
         });
     }
 
@@ -90,9 +90,9 @@ class ChatController extends Controller
             Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $creatorId,
-                'content' => "{$creatorName} đã tạo nhóm: " . $request->name,
+                'content' => "{$creatorName} đã tạo nhóm: " . $request->input('name'),
             ]);
-            return response()->json(['message' => 'Tạo nhóm thành công', 'data' => $conversation]);
+            return response()->json(['success' => true, 'message' => 'Tạo nhóm thành công', 'data' => $conversation]);
         });
     }
 
@@ -116,12 +116,12 @@ class ChatController extends Controller
             $message = Message::create([
                 'conversation_id' => $conversationId,
                 'sender_id' => $userId,
-                'content' => $request->content,
+                'content' => $request->input('content'),
             ]);
 
             Conversation::where('id', $conversationId)->update(['last_message_at' => now()]);
 
-            return response()->json(['message' => 'Đã gửi tin nhắn nhóm', 'data' => $message]);
+            return response()->json(['success' => true, 'message' => 'Đã gửi tin nhắn nhóm', 'data' => $message]);
         });
     }
 
@@ -137,15 +137,15 @@ class ChatController extends Controller
         if (!$member) return response()->json(['error' => 'Không có quyền truy cập'], 403);
 
         return DB::transaction(function () use ($conversationId, $userId, $request) {
-            Conversation::where('id', $conversationId)->update(['name' => $request->name, 'last_message_at' => now()]);
+            Conversation::where('id', $conversationId)->update(['name' => $request->input('name'), 'last_message_at' => now()]);
 
             Message::create([
                 'conversation_id' => $conversationId,
                 'sender_id' => $userId,
-                'content' => "[Hệ thống] Đã đổi tên nhóm thành: " . $request->name,
+                'content' => "[Hệ thống] Đã đổi tên nhóm thành: " . $request->input('name'),
             ]);
 
-            return response()->json(['message' => 'Đổi tên thành công']);
+            return response()->json(['success' => true, 'message' => 'Đổi tên thành công']);
         });
     }
 
@@ -188,7 +188,7 @@ class ChatController extends Controller
                 }
             }
 
-            return response()->json(['message' => 'Đã rời nhóm']);
+            return response()->json(['success' => true, 'message' => 'Đã rời nhóm']);
         });
     }
 
@@ -197,7 +197,7 @@ class ChatController extends Controller
     {
         $request->validate(['user_id' => 'required|exists:users,id']);
         $actorId = $request->user()->id;
-        $targetId = $request->user_id;
+        $targetId = $request->input('user_id');
 
         $actor = ConversationMember::where('conversation_id', $conversationId)->where('user_id', $actorId)->first();
         if (!$actor || $actor->role !== 'ADMIN') {
@@ -215,7 +215,7 @@ class ChatController extends Controller
                 'content' => "[Hệ thống] Đã cấp quyền Admin cho một thành viên",
             ]);
 
-            return response()->json(['message' => 'Đã thêm Admin thành công']);
+            return response()->json(['success' => true, 'message' => 'Đã thêm Admin thành công']);
         });
     }
 
@@ -243,7 +243,7 @@ class ChatController extends Controller
                 'content' => "[Hệ thống] Đã xóa một thành viên khỏi nhóm",
             ]);
 
-            return response()->json(['message' => 'Đã xóa thành viên']);
+            return response()->json(['success' => true, 'message' => 'Đã xóa thành viên']);
         });
     }
 //Lấy danh sách hội thoại của người dùng hiện tại

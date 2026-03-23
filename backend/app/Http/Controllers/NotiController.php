@@ -18,13 +18,18 @@ class NotiController extends Controller{
         $limit = $request->input('limit', 10);
 
         $data = Notification::where('receiver_id', (int)$userId)
-                            ->with('actor:id,username,avatar_url') 
+                            ->with('actor.profile') 
                             ->orderBy('created_at', 'desc')
                             ->paginate($limit);
 
         return response()->json([
             'success' => true,
-            'data' => $data,
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total(),
+            ],
         ]);
     }
 
@@ -89,7 +94,7 @@ class NotiController extends Controller{
     {
         //
     }
-public function markAsRead($id) {
+    public function markAsRead($id) {
         $notification = Notification::find($id);
         if (!$notification) {
             return response()->json(['success' => false, 'message' => 'Không tìm thấy thông báo'], 404);
@@ -100,6 +105,22 @@ public function markAsRead($id) {
         return response()->json([
             'success' => true,
             'message' => 'Đã đánh dấu đọc'
+        ]);
+    }
+
+    public function markAllAsRead() {
+        $userId = auth()->id();
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
+        }
+
+        Notification::where('receiver_id', $userId)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã đánh dấu tất cả là đã đọc'
         ]);
     }
 

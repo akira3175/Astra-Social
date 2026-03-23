@@ -28,6 +28,8 @@ class User extends Authenticatable
         'last_login',
     ];
 
+    protected $appends = ['avatar_url', 'firstName', 'lastName', 'avatar'];
+
     protected $hidden = [
         'password',
     ];
@@ -51,6 +53,26 @@ class User extends Authenticatable
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        return $this->profile?->avatar_url;
+    }
+
+    public function getFirstNameAttribute()
+    {
+        return $this->profile?->first_name;
+    }
+
+    public function getLastNameAttribute()
+    {
+        return $this->profile?->last_name;
+    }
+
+    public function getAvatarAttribute()
+    {
+        return $this->profile?->avatar_url;
     }
 
     public function authTokens(): HasMany
