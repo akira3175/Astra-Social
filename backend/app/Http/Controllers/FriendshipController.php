@@ -67,10 +67,12 @@ class FriendshipController extends Controller
         if (!$friendship){
             return response() -> json(['message' => 'Không tìm thấy yêu cầu.'],404);
         }
-        $friendship->update([
-            'status' => 'accepted',
-            'accepted_at' => now()
-        ]);
+        Friendship::where('requester_id', $userId)
+            ->where('receiver_id', $authUser->id)
+            ->update([
+                'status' => 'accepted',
+                'accepted_at' => now()
+            ]);
         return response() -> json([
             'message' => 'Lời mời kết bạn đã được chấp nhận.'
         ]);
@@ -91,7 +93,9 @@ class FriendshipController extends Controller
             ], 404);
         }
 
-        $friendship->delete();
+        Friendship::where('requester_id', $userId)
+            ->where('receiver_id', $authUser->id)
+            ->delete();
 
         return response()->json([
             'message' => 'Lời mời kết bạn đã được từ chối.'
@@ -113,7 +117,9 @@ class FriendshipController extends Controller
             ], 404);
         }
 
-        $friendship->delete();
+        Friendship::where('requester_id', $authUser->id)
+            ->where('receiver_id', $userId)
+            ->delete();
 
         return response()->json([
             'message' => 'Lời mời kết bạn đã được gỡ bỏ.'
@@ -131,7 +137,9 @@ class FriendshipController extends Controller
     {
         $authUser = $request->user();
 
-        $friendship = Friendship::where('requester_id', $userId)->where('receiver_id',$userId)->where('status','pending')->first();
+        $friendship = Friendship::between($authUser->id, $userId)
+            ->where('status', 'accepted')
+            ->first();
 
         if (!$friendship) {
             return response()->json([
@@ -139,11 +147,59 @@ class FriendshipController extends Controller
             ], 404);
         }
 
-        $friendship->delete();
+        Friendship::between($authUser->id, $userId)
+            ->where('status', 'accepted')
+            ->delete();
 
         return response()->json([
             'message' => 'Hủy kết bạn thành công.'
         ]);
+    }
+
+    /**
+     * Trả về trạng thái quan hệ bạn bè giữa auth user và target user.
+     * Possible statuses:
+     *   none              – Chưa có quan hệ
+     *   pending_sent      – Auth user đã gửi lời mời
+     *   pending_received  – Target user đã gửi lời mời cho auth user
+     *   friends           – Đã là bạn bè
+     *   blocked_by_me     – Auth user đã chặn target
+     *   blocked_by_them   – Target đã chặn auth user
+     */
+    public function getStatus(Request $request, $userId)
+    {
+        $authUser = $request->user();
+        $userId   = (int) $userId;
+
+        if ($authUser->id === $userId) {
+            return response()->json(['status' => 'self']);
+        }
+
+        // Block checks first
+        if ($authUser->hasBlockedUser($userId)) {
+            return response()->json(['status' => 'blocked_by_me']);
+        }
+        if ($authUser->isBlockedBy($userId)) {
+            return response()->json(['status' => 'blocked_by_them']);
+        }
+
+        // Check friendship record
+        $friendship = Friendship::between($authUser->id, $userId)->first();
+
+        if (!$friendship) {
+            return response()->json(['status' => 'none']);
+        }
+
+        if ($friendship->status === 'accepted') {
+            return response()->json(['status' => 'friends']);
+        }
+
+        // Pending
+        if ($friendship->requester_id === $authUser->id) {
+            return response()->json(['status' => 'pending_sent']);
+        }
+
+        return response()->json(['status' => 'pending_received']);
     }
 
     /**
@@ -286,7 +342,9 @@ class FriendshipController extends Controller
             ], 404);
         }
 
-        $block->delete();
+        UserBlock::where('blocker_id', $authUser->id)
+            ->where('blocked_id', $userId)
+            ->delete();
 
         return response()->json([
             'message' => 'Đã bỏ chặn người dùng thành công.'

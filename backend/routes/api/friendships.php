@@ -15,6 +15,7 @@ Route::middleware('jwt.auth')->prefix('friendships')->group(function () {
     // ── Friend List & Management ───────────────────────────────
     Route::get('/friends',              [FriendshipController::class, 'listFriends']);
     Route::get('/pending',              [FriendshipController::class, 'pendingRequests']);
+    Route::get('/status/{userId}',      [FriendshipController::class, 'getStatus']);
     Route::delete('/unfriend/{userId}', [FriendshipController::class, 'unfriend']);
 
     // ── Block Management ───────────────────────────────────────

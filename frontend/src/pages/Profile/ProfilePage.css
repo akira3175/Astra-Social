@@ -50,9 +50,10 @@
 .profile-header {
     background: #ffffff;
     border-radius: 16px;
-    overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     margin-bottom: 24px;
+    position: relative;
+    z-index: 10;
 }
 
 /* Cover Image */
@@ -62,6 +63,7 @@
     aspect-ratio: 16 / 5;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     overflow: hidden;
+    border-radius: 16px 16px 0 0;
 }
 
 .profile-cover-img {
@@ -499,3 +501,191 @@
 .profile-about-add-btn:hover {
     background: #e5e7eb;
 }
+
+/* ─── Friend Action Bar ─────────────────────────────────── */
+.profile-friend-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.profile-friend-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.profile-friend-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Add Friend */
+.profile-friend-btn--add {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+}
+.profile-friend-btn--add:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+}
+
+/* Pending sent */
+.profile-friend-btn--pending {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Cancel request */
+.profile-friend-btn--cancel {
+    background: transparent;
+    color: #6b7280;
+    border: 1.5px solid #d1d5db;
+    padding: 8px 16px;
+}
+.profile-friend-btn--cancel:hover:not(:disabled) {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Accept */
+.profile-friend-btn--accept {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+.profile-friend-btn--accept:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+}
+
+/* Decline */
+.profile-friend-btn--decline {
+    background: #fff;
+    color: #ef4444;
+    border: 1.5px solid #fca5a5;
+}
+.profile-friend-btn--decline:hover:not(:disabled) {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+/* Friends (dropdown trigger) */
+.profile-friend-btn--friends {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+.profile-friend-btn--friends:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+}
+
+/* Message */
+.profile-friend-btn--message {
+    background: #fff;
+    color: #4f46e5;
+    border: 1.5px solid #c7d2fe;
+}
+.profile-friend-btn--message:hover {
+    background: #eef2ff;
+    border-color: #4f46e5;
+}
+
+/* Blocked */
+.profile-friend-btn--blocked {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1.5px solid #fdba74;
+}
+.profile-friend-btn--blocked:hover:not(:disabled) {
+    background: #ffedd5;
+}
+
+/* Three-dot button */
+.profile-more-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid #d1d5db;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+.profile-more-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+/* Dropdown wrapper */
+.profile-friend-dropdown {
+    position: relative;
+}
+
+/* Dropdown menu */
+.profile-more-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    padding: 6px;
+    min-width: 190px;
+    z-index: 1000;
+    animation: menuFadeIn 0.15s ease;
+}
+
+.profile-more-menu--right {
+    left: auto;
+    right: 0;
+}
+
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.profile-more-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+    color: #374151;
+}
+.profile-more-menu-item:hover {
+    background: #f3f4f6;
+}
+.profile-more-menu-item--danger {
+    color: #ef4444;
+}
+.profile-more-menu-item--danger:hover {
+    background: #fef2f2;
+}

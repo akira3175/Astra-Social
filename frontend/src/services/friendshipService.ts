@@ -10,6 +10,7 @@ import type {
     Friend,
     BlockedUser,
     FriendUser,
+    FriendshipRelationStatus,
 } from "../types/friendship";
 
 type PendingRequestResponseItem = {
@@ -111,6 +112,22 @@ export const getBlockedUsers = async (): Promise<BlockedUser[]> => {
 };
 
 /**
+ * Get friendship status between auth user and target user.
+ */
+export const getFriendshipStatus = async (userId: number): Promise<FriendshipRelationStatus> => {
+    const response = await api.get<{ status: FriendshipRelationStatus }>(`/friendships/status/${userId}`);
+    return response.data.status;
+};
+
+/**
+ * Cancel a pending friend request that was sent by the auth user.
+ */
+export const cancelFriendRequest = async (userId: number): Promise<{ success: boolean }> => {
+    await api.post(`/friendships/cancel/${userId}`);
+    return { success: true };
+};
+
+/**
  * Send friend request.
  */
 export const sendFriendRequest = async (userId: number): Promise<{ success: boolean }> => {
@@ -175,7 +192,9 @@ export default {
     getFriendRequests,
     getFriends,
     getBlockedUsers,
+    getFriendshipStatus,
     sendFriendRequest,
+    cancelFriendRequest,
     acceptFriendRequest,
     declineFriendRequest,
     removeSuggestion,
