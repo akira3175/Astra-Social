@@ -6,17 +6,28 @@ use Illuminate\Http\Request;
 use App\Models\Conversation;
 use App\Models\ConversationMember;
 use App\Models\Message;
+use App\Services\MediaService;
 use Illuminate\Support\Facades\DB;
 
 class ChatController extends Controller
 {
+    public function __construct(
+        private MediaService $mediaService
+    ) {}
+
     // Gửi tin nhắn
     public function sendPrivateMessage(Request $request)
     {
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'content' => 'required|string',
+            'content' => 'nullable|string',
+            'files' => 'nullable|array',
+            'files.*' => 'file|max:20480', // 20MB max per file
         ]);
+
+        if (empty($request->input('content')) && empty($request->file('files'))) {
+            return response()->json(['error' => 'Tin nhắn không được để trống'], 400);
+        }
 
         $senderId = $request->user()->id;
         $receiverId = $request->receiver_id;
@@ -49,6 +60,19 @@ class ChatController extends Controller
                 'sender_id' => $senderId,
                 'content' => $request->input('content'),
             ]);
+
+            // Handle file attachments
+            if ($request->hasFile('files')) {
+                $this->mediaService->uploadForEntity(
+                    $request->file('files'),
+                    'MESSAGE',
+                    $message->id,
+                    'messages'
+                );
+            }
+
+            // Load attachments to return in response
+            $message->load('attachments');
 
             return response()->json(['success' => true, 'message' => 'Đã gửi tin nhắn', 'data' => $message]);
         });
@@ -99,7 +123,16 @@ class ChatController extends Controller
     //Nhắn tin trong nhóm
     public function sendGroupMessage(Request $request, $conversationId)
     {
-        $request->validate(['content' => 'required|string']);
+        $request->validate([
+            'content' => 'nullable|string',
+            'files' => 'nullable|array',
+            'files.*' => 'file|max:20480',
+        ]);
+
+        if (empty($request->input('content')) && empty($request->file('files'))) {
+            return response()->json(['error' => 'Tin nhắn không được để trống'], 400);
+        }
+
         $userId = $request->user()->id;
 
         //Kiểm tra User có phải là thành viên không
@@ -119,7 +152,20 @@ class ChatController extends Controller
                 'content' => $request->input('content'),
             ]);
 
+            // Handle file attachments
+            if ($request->hasFile('files')) {
+                $this->mediaService->uploadForEntity(
+                    $request->file('files'),
+                    'MESSAGE',
+                    $message->id,
+                    'messages'
+                );
+            }
+
             Conversation::where('id', $conversationId)->update(['last_message_at' => now()]);
+
+            // Load attachments to return in response
+            $message->load('attachments');
 
             return response()->json(['success' => true, 'message' => 'Đã gửi tin nhắn nhóm', 'data' => $message]);
         });
@@ -269,7 +315,7 @@ class ChatController extends Controller
     public function getMessages($conversationId)
     {
         $messages = Message::where('conversation_id', $conversationId)
-            ->with('sender')
+            ->with(['sender', 'attachments'])
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -277,5 +323,48 @@ class ChatController extends Controller
             'success' => true,
             'data' => $messages
         ]);
+    }
+
+    /**
+     * Get (or create) a private conversation with a specific user.
+     * Used for Profile → Message navigation.
+     */
+    public function getOrCreateConversation(Request $request, $userId)
+    {
+        $senderId = $request->user()->id;
+        $receiverId = (int) $userId;
+
+        if ($senderId === $receiverId) {
+            return response()->json(['error' => 'Không thể chat với chính mình'], 422);
+        }
+
+        return DB::transaction(function () use ($senderId, $receiverId) {
+            // Tìm conversation PRIVATE hiện có
+            $conversation = Conversation::where('type', 'PRIVATE')
+                ->whereHas('members', fn($q) => $q->where('user_id', $senderId))
+                ->whereHas('members', fn($q) => $q->where('user_id', $receiverId))
+                ->first();
+
+            // Nếu chưa có thì tạo mới
+            if (!$conversation) {
+                $conversation = Conversation::create([
+                    'type' => 'PRIVATE',
+                    'last_message_at' => now(),
+                ]);
+
+                ConversationMember::insert([
+                    ['conversation_id' => $conversation->id, 'user_id' => $senderId, 'role' => 'MEMBER', 'created_at' => now(), 'updated_at' => now()],
+                    ['conversation_id' => $conversation->id, 'user_id' => $receiverId, 'role' => 'MEMBER', 'created_at' => now(), 'updated_at' => now()],
+                ]);
+            }
+
+            // Eager load members + user info
+            $conversation->load('members.user');
+
+            return response()->json([
+                'success' => true,
+                'data' => $conversation
+            ]);
+        });
     }
 }

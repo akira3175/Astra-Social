@@ -11,11 +11,13 @@ import {
 } from "../../../components/ui";
 import "./LeftSidebar.css";
 import { useCurrentUser } from "../../../context/currentUserContext";
+import { useNotificationPolling } from "../../../hooks/useNotificationPolling";
 
 interface MenuItem {
     text: string;
     icon: React.ReactNode;
     path: string;
+    badge?: number;
 }
 
 interface LeftSidebarProps {
@@ -27,10 +29,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ className }) => {
     const location = useLocation();
     const { currentUser } = useCurrentUser() ?? {};
 
+    // Real-time notification polling
+    const userId = currentUser?.id ? Number(currentUser.id) : null;
+    const { unreadCount } = useNotificationPolling(userId);
+
     const mainMenuItems: MenuItem[] = [
         { text: "Trang chủ", icon: <HomeIcon size={22} />, path: "/" },
         { text: "Tìm kiếm", icon: <SearchIcon size={22} />, path: "/search" },
-        { text: "Thông báo", icon: <BookmarkIcon size={22} />, path: "/notifications" },
+        { text: "Thông báo", icon: <BookmarkIcon size={22} />, path: "/notifications", badge: unreadCount },
         { text: "Tin nhắn", icon: <ChatIcon size={22} />, path: "/messages" },
         { text: "Bạn bè", icon: <GroupIcon size={22} />, path: "/friends" },
         { text: "Hồ sơ", icon: <PersonIcon size={22} />, path: `/profile/${currentUser?.id}` },
@@ -54,7 +60,12 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ className }) => {
                         to={item.path}
                         className={`sidebar-menu-item ${isActive(item.path) ? "active" : ""}`}
                     >
-                        <span className="menu-icon">{item.icon}</span>
+                        <span className="menu-icon">
+                            {item.icon}
+                            {item.badge && item.badge > 0 && (
+                                <span className="menu-badge">{item.badge > 99 ? "99+" : item.badge}</span>
+                            )}
+                        </span>
                         <span>{item.text}</span>
                     </Link>
                 ))}

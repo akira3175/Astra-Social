@@ -217,6 +217,23 @@
     background: rgba(79, 70, 229, 0.04);
 }
 
+.conversation-section-header {
+    padding: 16px 20px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.conversation-item.suggestion .conversation-avatar {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+.conversation-item.suggestion .conversation-name {
+    color: #475569;
+}
+
 /* Avatar */
 .conversation-avatar {
     position: relative;
@@ -569,6 +586,10 @@
     position: relative;
 }
 
+.bubble-content.sent {
+    text-align: right;
+}
+
 .message-bubble.sent .bubble-content {
     background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     color: #fff;
@@ -586,6 +607,11 @@
     color: #94a3b8;
     margin-top: 4px;
     padding: 0 4px;
+    display: block;
+}
+
+.message-time.sent {
+    text-align: right;
 }
 
 /* Message Input */

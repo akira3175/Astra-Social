@@ -1,6 +1,5 @@
 import { api } from "../configs/api";
 import type { 
-    Conversation, 
     ConversationsResponse, 
     MessagesResponse, 
     SendMessageResponse 
@@ -9,6 +8,11 @@ import type {
 const ENDPOINTS = {
     CONVERSATIONS: "/conversations",
     CHAT: "/chat", 
+};
+
+export const getOrCreateConversation = async (userId: number): Promise<{ success: boolean; data: any }> => {
+    const response = await api.get(`${ENDPOINTS.CHAT}/conversation-with/${userId}`);
+    return response.data;
 };
 
 export const getConversations = async (): Promise<ConversationsResponse> => {
@@ -23,8 +27,22 @@ export const getMessages = async (conversationId: number): Promise<MessagesRespo
 
 export const sendGroupMessage = async (
     conversationId: number, 
-    content: string
+    content: string,
+    files?: File[]
 ): Promise<SendMessageResponse> => {
+    if (files && files.length > 0) {
+        const formData = new FormData();
+        if (content) formData.append('content', content);
+        files.forEach(f => formData.append('files[]', f));
+
+        const response = await api.post<SendMessageResponse>(
+            `${ENDPOINTS.CHAT}/group/${conversationId}/send`, 
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        return response.data;
+    }
+
     const response = await api.post<SendMessageResponse>(
         `${ENDPOINTS.CHAT}/group/${conversationId}/send`, 
         { content }
@@ -34,8 +52,23 @@ export const sendGroupMessage = async (
 
 export const sendPrivateMessage = async (
     receiverId: number, 
-    content: string
+    content: string,
+    files?: File[]
 ): Promise<SendMessageResponse> => {
+    if (files && files.length > 0) {
+        const formData = new FormData();
+        formData.append('receiver_id', String(receiverId));
+        if (content) formData.append('content', content);
+        files.forEach(f => formData.append('files[]', f));
+
+        const response = await api.post<SendMessageResponse>(
+            `${ENDPOINTS.CHAT}/private`, 
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        return response.data;
+    }
+
     const response = await api.post<SendMessageResponse>(`${ENDPOINTS.CHAT}/private`, {
         receiver_id: receiverId,
         content: content,

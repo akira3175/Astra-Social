@@ -51,6 +51,15 @@ class Comment extends Model
         return $this->hasMany(CommentLike::class);
     }
 
+    /**
+     * Get the media attachments for this comment.
+     */
+    public function attachments()
+    {
+        return $this->hasMany(MediaAttachment::class, 'entity_id')
+            ->where('entity_type', 'COMMENT');
+    }
+
     protected static function booted()
     {
         static::created(function ($comment) {

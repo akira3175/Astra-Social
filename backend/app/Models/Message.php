@@ -30,5 +30,13 @@ class Message extends Model
     {
         return $this->belongsTo(User::class, 'sender_id');
     }
-    
+
+    /**
+     * Get the media attachments for the message.
+     */
+    public function attachments()
+    {
+        return $this->hasMany(MediaAttachment::class, 'entity_id')
+            ->where('entity_type', 'MESSAGE');
+    }
 }

@@ -49,11 +49,14 @@ const getDisplayName = (user: Post["user"]): string => {
 };
 
 /**
- * Media Grid Component
+ * Media Grid Component — supports IMAGE, VIDEO, FILE
  */
 const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments }) => {
     const images = attachments.filter((a) => a.file_type === "IMAGE");
-    if (images.length === 0) return null;
+    const videos = attachments.filter((a) => a.file_type === "VIDEO");
+    const files  = attachments.filter((a) => a.file_type === "FILE");
+
+    if (images.length === 0 && videos.length === 0 && files.length === 0) return null;
 
     const gridClass =
         images.length === 1 ? "post-media-grid single"
@@ -62,15 +65,59 @@ const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments
                     : "post-media-grid quad";
 
     return (
-        <div className={gridClass}>
-            {images.slice(0, 4).map((img, index) => (
-                <div key={img.id} className="post-media-item">
-                    <img src={img.url} alt={`Media ${index + 1}`} />
-                    {images.length > 4 && index === 3 && (
-                        <div className="post-media-more">+{images.length - 4}</div>
-                    )}
+        <div className="post-media-container">
+            {/* Images */}
+            {images.length > 0 && (
+                <div className={gridClass}>
+                    {images.slice(0, 4).map((img, index) => (
+                        <div key={img.id} className="post-media-item">
+                            <img src={img.url} alt={`Media ${index + 1}`} />
+                            {images.length > 4 && index === 3 && (
+                                <div className="post-media-more">+{images.length - 4}</div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Videos */}
+            {videos.map((vid) => (
+                <div key={vid.id} className="post-video-item" onClick={(e) => e.stopPropagation()}>
+                    <video
+                        src={vid.url}
+                        controls
+                        preload="metadata"
+                        className="post-video-player"
+                    />
                 </div>
             ))}
+
+            {/* Files */}
+            {files.length > 0 && (
+                <div className="post-files-list">
+                    {files.map((file) => {
+                        const fileName = file.url.split('/').pop() || 'Tệp đính kèm';
+                        return (
+                            <a
+                                key={file.id}
+                                href={file.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="post-file-item"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" className="post-file-icon">
+                                    <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+                                </svg>
+                                <span className="post-file-name">{decodeURIComponent(fileName)}</span>
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="post-file-download">
+                                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                                </svg>
+                            </a>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };

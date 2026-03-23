@@ -28,11 +28,13 @@ const ConversationList: React.FC<ConversationListProps> = ({
         }
 
         const otherMember = conversation.members?.find(
-            (m) => String(m.userId) !== String(currentUserId)
+            (m: any) => String(m.userId || m.user_id) !== String(currentUserId)
         );
 
         if (otherMember?.user) {
-        return otherMember.user.username;
+            const { firstName, lastName, username } = otherMember.user;
+            if (firstName || lastName) return `${firstName || ""} ${lastName || ""}`.trim();
+            return username;
         }
     
         return "Người dùng";
@@ -44,8 +46,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
     const getAvatarUrl = (conversation: Conversation): string | undefined => {
         if (conversation.type === "GROUP") return conversation.imageUrl;
-        const otherMember = conversation.members.find(m => m.userId !== currentUserId);
-        return otherMember?.user?.avatar;
+        const otherMember = conversation.members.find((m: any) => String(m.userId || m.user_id) !== String(currentUserId));
+        return (otherMember?.user as any)?.avatar || (otherMember?.user as any)?.avatarUrl;
     };
 
     const formatTime = (dateString: string | undefined): string => {
@@ -90,9 +92,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
         const query = searchQuery.toLowerCase();
         
         return friends.filter(friend => {
+            // Loại bỏ chính mình (nếu có trong list bạn bè)
+            if (String(friend.user.id) === String(currentUserId)) return false;
+
             const hasConversation = conversations.some(conv => 
                 conv.type === "PRIVATE" && 
-                conv.members.some(m => String(m.userId) === String(friend.user.id))
+                conv.members.some((m: any) => String(m.userId || m.user_id) === String(friend.user.id))
             );
             
             if (hasConversation) return false;
@@ -102,7 +107,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             }
             return true; 
         });
-    }, [friends, conversations, searchQuery]);
+    }, [friends, conversations, searchQuery, currentUserId]);
 
     const isEmpty = filteredConversations.length === 0 && filteredFriends.length === 0;
 
@@ -183,39 +188,47 @@ const ConversationList: React.FC<ConversationListProps> = ({
                             );
                         })}
 
-                        {/* 2. HIỂN THỊ BẠN BÈ (CHƯA TỪNG CHAT) */}
-                        {filteredFriends.map((friend) => {
-                            const isSelected = selectedId === `temp_${friend.user.id}`;
-                            const avatarUrl = friend.user.avatarUrl;
-
-                            return (
-                                <div
-                                    key={`friend_${friend.user.id}`}
-                                    className={`conversation-item ${isSelected ? "active" : ""}`}
-                                    onClick={() => onSelect(friend, 'friend')}
-                                >
-                                    <div className="conversation-avatar">
-                                        {avatarUrl ? (
-                                            <img src={avatarUrl} alt="" />
-                                        ) : (
-                                            getFriendName(friend).charAt(0).toUpperCase()
-                                        )}
-                                    </div>
-                                    <div className="conversation-content justify-center">
-                                        <div className="conversation-header">
-                                            <span className="conversation-name font-medium">
-                                                {getFriendName(friend)}
-                                            </span>
-                                        </div>
-                                        <div className="conversation-preview">
-                                            <span className="preview-text text-gray-400 italic">
-                                                Gợi ý kết nối
-                                            </span>
-                                        </div>
-                                    </div>
+                        {/* 2. HIỂN THỊ BẠN BÈ GỢI Ý (CHƯA TỪNG CHAT) */}
+                        {filteredFriends.length > 0 && (
+                            <>
+                                <div className="conversation-section-header">
+                                    <span>BẮT ĐẦU TRÒ CHUYỆN MỚI</span>
                                 </div>
-                            );
-                        })}
+                                
+                                {filteredFriends.map((friend) => {
+                                    const isSelected = selectedId === `temp_${friend.user.id}`;
+                                    const avatarUrl = friend.user.avatarUrl || (friend.user as any).avatar;
+
+                                    return (
+                                        <div
+                                            key={`friend_${friend.user.id}`}
+                                            className={`conversation-item suggestion ${isSelected ? "active" : ""}`}
+                                            onClick={() => onSelect(friend, 'friend')}
+                                        >
+                                            <div className="conversation-avatar">
+                                                {avatarUrl ? (
+                                                    <img src={avatarUrl} alt="" />
+                                                ) : (
+                                                    getFriendName(friend).charAt(0).toUpperCase()
+                                                )}
+                                            </div>
+                                            <div className="conversation-content justify-center">
+                                                <div className="conversation-header">
+                                                    <span className="conversation-name font-medium">
+                                                        {getFriendName(friend)}
+                                                    </span>
+                                                </div>
+                                                <div className="conversation-preview">
+                                                    <span className="preview-text">
+                                                        Bạn bè • Gợi ý nhắn tin
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </>
+                        )}
                     </>
                 )}
             </div>

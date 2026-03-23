@@ -22,6 +22,8 @@ class MediaAttachment extends Model
     protected $fillable = [
         'url',
         'file_type',
+        'original_name',
+        'file_size',
         'entity_type',
         'entity_id',
         'created_at',

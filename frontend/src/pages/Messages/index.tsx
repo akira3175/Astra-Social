@@ -1,15 +1,19 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { usePolling } from "../../hooks/usePolling";
+import { useSearchParams } from "react-router-dom";
 import ConversationList from "./components/ConversationList";
 import ChatArea from "./components/ChatArea";
 import * as chatService from "../../services/chatService";
 import friendshipService from "../../services/friendshipService";
+import { useCurrentUser } from "../../context/currentUserContext";
 import type { Conversation, Message } from "../../types/chat"; 
 import type { Friend } from "../../types/friendship";
 import "./MessagesPage.css";
 
 const MessagesPage: React.FC = () => {
     const isMobile = useMediaQuery("(max-width: 900px)");
+    const [searchParams, setSearchParams] = useSearchParams();
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -29,14 +33,8 @@ const MessagesPage: React.FC = () => {
     const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
     const [selectedNewMemberIds, setSelectedNewMemberIds] = useState<number[]>([]);
 
-    const getStoredUserId = () => {
-        const stored = localStorage.getItem('user');
-        if (!stored) return 0;
-        try {
-            return Number(JSON.parse(stored).id);
-        } catch { return 0; }
-    };
-    const currentUserId = getStoredUserId();
+    const currentUserContext = useCurrentUser();
+    const currentUserId = Number(currentUserContext?.currentUser?.id || 0);
 
     const fetchData = useCallback(async () => {
         try {
@@ -50,6 +48,85 @@ const MessagesPage: React.FC = () => {
     }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    // ─── Smart Polling for real-time updates ─────────────────
+    const selectedConvRef = useRef(selectedConversation);
+    const messagesRef = useRef(messages);
+    selectedConvRef.current = selectedConversation;
+    messagesRef.current = messages;
+
+    // Poll for new messages in selected conversation
+    const pollMessages = useCallback(async (): Promise<boolean> => {
+        const conv = selectedConvRef.current;
+        if (!conv || !conv.id) return false;
+
+        try {
+            const res = await chatService.getMessages(conv.id);
+            const newMsgs = res.data || [];
+            const currentMsgs = messagesRef.current;
+
+            if (newMsgs.length > currentMsgs.length) {
+                setMessages(newMsgs);
+                return true; // New data found → poll faster
+            }
+        } catch { /* silent */ }
+        return false;
+    }, []);
+
+    // Poll for conversation list updates (new conversations, last message preview)
+    const pollConversations = useCallback(async (): Promise<boolean> => {
+        try {
+            const res = await chatService.getConversations();
+            if (res.success) {
+                const oldLen = conversations.length;
+                setConversations(res.data);
+                return res.data.length !== oldLen;
+            }
+        } catch { /* silent */ }
+        return false;
+    }, [conversations.length]);
+
+    // Combined polling callback
+    const pollAll = useCallback(async (): Promise<boolean> => {
+        const [hasNewMsgs, hasNewConvs] = await Promise.all([
+            pollMessages(),
+            pollConversations(),
+        ]);
+        return hasNewMsgs || hasNewConvs;
+    }, [pollMessages, pollConversations]);
+
+    usePolling(pollAll, 3000, 8000);
+
+    // Auto-open conversation when userId param is present (from Profile → Message)
+    useEffect(() => {
+        const targetUserId = searchParams.get('userId');
+        if (!targetUserId || !conversations.length) return;
+
+        const openConversation = async () => {
+            try {
+                const res = await chatService.getOrCreateConversation(Number(targetUserId));
+                if (res.success && res.data) {
+                    // Find in conversations list or use the returned one
+                    const existing = conversations.find(c => c.id === res.data.id);
+                    const conv = existing || res.data;
+                    setSelectedConversation(conv);
+                    if (conv.id) {
+                        const msgRes = await chatService.getMessages(conv.id);
+                        setMessages(msgRes.data || []);
+                    }
+                    if (!existing) {
+                        fetchData(); // Refresh list to include the new conversation
+                    }
+                }
+            } catch (e) {
+                console.error("Lỗi mở hội thoại:", e);
+            }
+            // Clear the param to prevent re-triggering
+            setSearchParams({}, { replace: true });
+        };
+
+        openConversation();
+    }, [searchParams, conversations.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSelect = useCallback(async (item: any, type: 'chat' | 'friend') => {
         if (type === 'friend') {
@@ -82,11 +159,12 @@ const MessagesPage: React.FC = () => {
         }
     }, [conversations, currentUserId]);
 
-    const handleSend = useCallback(async (content: string) => {
-        if (!selectedConversation || !content.trim()) return;
+    const handleSend = useCallback(async (content: string, files?: File[]) => {
+        if (!selectedConversation || (!content.trim() && (!files || files.length === 0))) return;
 
+        const tempId = Date.now();
         const tempMsg: Message = { 
-            id: Date.now(), 
+            id: tempId, 
             conversation_id: selectedConversation.id,
             sender_id: currentUserId, 
             content, 
@@ -95,14 +173,24 @@ const MessagesPage: React.FC = () => {
         setMessages(prev => [...prev, tempMsg]);
 
         try {
+            let res;
             if (selectedConversation.id === 0) {
                 const other = selectedConversation.members?.find(m => m.user_id !== currentUserId);
-                const res = await chatService.sendPrivateMessage(Number(other?.user_id), content);
+                res = await chatService.sendPrivateMessage(Number(other?.user_id), content, files);
                 if (res.success) fetchData();
             } else {
-                await chatService.sendGroupMessage(selectedConversation.id, content);
+                res = await chatService.sendGroupMessage(selectedConversation.id, content, files);
             }
-        } catch (e) { alert("Lỗi gửi tin!"); }
+
+            if (res?.success && res.data) {
+                // Replace temp message with real message (which includes attachments)
+                setMessages(prev => prev.map(msg => msg.id === tempId ? res.data : msg));
+            }
+        } catch (e) { 
+            // Remove temp msg on failure
+            setMessages(prev => prev.filter(msg => msg.id !== tempId));
+            alert("Lỗi gửi tin: Có thể file tải lên quá lớn."); 
+        }
     }, [selectedConversation, currentUserId, fetchData]);
 
     const handleCreateGroup = async () => {
@@ -169,11 +257,11 @@ const MessagesPage: React.FC = () => {
             {(!isMobile || !selectedConversation) && (
                 <div className="messages-sidebar">
                     <ConversationList
-                        conversations={conversations}
+                        conversations={conversations as any}
                         friends={friends}
-                        selectedId={selectedConversation?.id || null}
+                        selectedId={selectedConversation?.id as any || null}
                         onSelect={handleSelect}
-                        currentUserId={currentUserId}
+                        currentUserId={String(currentUserId)}
                         onCreateNewGroup={() => setIsCreateModalOpen(true)}
                     />
                 </div>
@@ -183,8 +271,8 @@ const MessagesPage: React.FC = () => {
                 <div className="messages-content">
                     {selectedConversation ? (
                         <ChatArea
-                            conversation={selectedConversation}
-                            messages={messages}
+                            conversation={selectedConversation as any}
+                            messages={messages as any}
                             currentUserId={String(currentUserId)}
                             onSendMessage={handleSend}
                             onRenameGroup={() => {
@@ -194,7 +282,6 @@ const MessagesPage: React.FC = () => {
                             onLeaveGroup={() => setIsLeaveModalOpen(true)}
                             onAddMember={() => setIsAddMemberModalOpen(true)}
                             onTransferAdmin={() => setIsTransferAdminModalOpen(true)}
-                            onRemoveMember={(uid: any) => handleGroupAction('REMOVE_MEMBER', uid)}
                             onBack={() => setSelectedConversation(null)}
                             isMobile={isMobile}
                         />
@@ -228,7 +315,7 @@ const MessagesPage: React.FC = () => {
                                                         const id = Number(f.user.id);
                                                         setSelectedFriendIds(prev => isSelected ? prev.filter(i => i !== id) : [...prev, id]);
                                                     }}>
-                                                    <img src={f.user.avatar_url || "/default-avatar.png"} alt="" />
+                                                    <img src={(f.user as any).avatarUrl || (f.user as any).avatar_url || "/default-avatar.png"} alt="" />
                                                     <span>{f.user.username}</span>
                                                     {isSelected && <span className="check-mark">✓</span>}
                                                 </div>
@@ -269,7 +356,7 @@ const MessagesPage: React.FC = () => {
                                                         const id = Number(f.user.id);
                                                         setSelectedNewMemberIds(prev => isSelected ? prev.filter(i => i !== id) : [...prev, id]);
                                                     }}>
-                                                    <img src={f.user.avatar_url || "/default-avatar.png"} alt="" />
+                                                    <img src={(f.user as any).avatarUrl || (f.user as any).avatar_url || "/default-avatar.png"} alt="" />
                                                     <span>{f.user.username}</span>
                                                     {isSelected && <span className="check-mark">✓</span>}
                                                 </div>
@@ -315,7 +402,7 @@ const MessagesPage: React.FC = () => {
                         <div className="modal-body friend-selector-list">
                             {selectedConversation?.members?.filter(m => Number(m.user_id) !== currentUserId).map(m => (
                                 <div key={m.user_id} className="dropdown-item cursor-pointer" onClick={() => handleGroupAction('ADD_ADMIN', m.user_id)}>
-                                    <img src={m.user?.avatar_url || "/default-avatar.png"} alt="" />
+                                    <img src={(m.user as any)?.avatar_url || (m.user as any)?.avatarUrl || "/default-avatar.png"} alt="" />
                                     <span>{m.user?.username}</span>
                                 </div>
                             ))}

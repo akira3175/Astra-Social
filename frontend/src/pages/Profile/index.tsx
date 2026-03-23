@@ -178,7 +178,7 @@ const ProfilePage = () => {
     };
 
     const handleMessage = () => {
-        navigate(`/messages`);
+        navigate(`/messages?userId=${userId}`);
     };
 
     // Fetch posts for this user (page 1 / reset)
