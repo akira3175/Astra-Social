@@ -251,19 +251,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         <div className="chat-dropdown-menu">
                             {isGroup ? (
                                 <>
-                                    {isAdmin && onAddMember && (
+                                    { onAddMember && (
                                         <button className="dropdown-item" onClick={() => { onAddMember(); setShowMenu(false); }}>
                                             <PersonAddIcon size={18} />
                                             <span>Thêm thành viên</span>
                                         </button>
                                     )}
-                                    {isAdmin && onRenameGroup && (
+                                    { onRenameGroup && (
                                         <button className="dropdown-item" onClick={() => { onRenameGroup(); setShowMenu(false); }}>
                                             <EditIcon size={18} />
                                             <span>Đổi tên nhóm</span>
                                         </button>
                                     )}
-                                    {isAdmin && onTransferAdmin && (
+                                    { onTransferAdmin && (
                                         <button className="dropdown-item" onClick={() => { onTransferAdmin(); setShowMenu(false); }}>
                                             <CrownIcon size={18} />
                                             <span>Chuyển nhóm trưởng</span>

@@ -21,21 +21,28 @@ const NotificationsPage: React.FC = () => {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const fetchNotifications = useCallback(async (pageNum: number, reset: boolean = false) => {
+        if (!currentUser?.id) return;
+        
         try {
             if (reset) {
                 setIsLoading(true);
             } else {
                 setIsLoadingMore(true);
             }
+
             const response = await getNotifications(Number(currentUser.id), pageNum, 10);
-            console.log(Number(currentUser.id));
+            
             if (response.success) {
+                const newData = Array.isArray(response.data) ? response.data : (response.data as any).data;
+                
                 setNotifications((prev) =>
-                    reset ? response.data : [...prev, ...response.data]
+                    reset ? newData : [...prev, ...newData]
                 );
-                setHasMore(
-                    response.meta ? pageNum < response.meta.lastPage : response.data.length === 10
-                );
+                if (response.meta) {
+                    setHasMore(pageNum < response.meta.lastPage);
+                } else {
+                    setHasMore(newData.length === 10);
+                }
             }
         } catch (error) {
             console.error("Error fetching notifications:", error);
@@ -43,19 +50,24 @@ const NotificationsPage: React.FC = () => {
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, []);
+    }, [currentUser?.id]);
 
     useEffect(() => {
-        fetchNotifications(1, true);
-    }, [fetchNotifications]);
+        if (currentUser?.id) {
+            fetchNotifications(1, true);
+            setPage(1);
+        }
+    }, [fetchNotifications, currentUser?.id]);
 
     const handleNotificationClick = async (notification: Notification) => {
         if (!notification.isRead) {
             try {
-                await markAsRead(notification.id);
-                setNotifications((prev) =>
-                    prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
-                );
+                const res = await markAsRead(notification.id);
+                if (res.success) {
+                    setNotifications((prev) =>
+                        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
+                    );
+                }
             } catch (error) {
                 console.error("Error marking notification as read:", error);
             }
@@ -63,9 +75,12 @@ const NotificationsPage: React.FC = () => {
     };
 
     const handleMarkAllAsRead = async () => {
+        if (!currentUser?.id) return;
         try {
-            await markAllAsRead();
-            setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+            const res = await markAllAsRead(Number(currentUser.id));
+            if (res.success) {
+                setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+            }
         } catch (error) {
             console.error("Error marking all notifications as read:", error);
         }
@@ -77,6 +92,7 @@ const NotificationsPage: React.FC = () => {
         fetchNotifications(nextPage, false);
     };
 
+    // Filter dữ liệu cho các Tab
     const filteredNotifications =
         activeTab === "unread"
             ? notifications.filter((n) => !n.isRead)
@@ -142,7 +158,7 @@ const NotificationsPage: React.FC = () => {
                                 <NotificationItem
                                     key={notification.id}
                                     notification={notification}
-                                    onClick={handleNotificationClick}
+                                    onClick={() => handleNotificationClick(notification)}
                                 />
                             ))}
                         </ul>

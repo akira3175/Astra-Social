@@ -1,17 +1,20 @@
 import React, { useState, useMemo } from "react";
 import { SearchIcon, PlusIcon } from "../../../components/ui";
 import type { Conversation } from "../../../types/message";
+import type { Friend } from "../../../types/friendship";
 
 interface ConversationListProps {
     conversations: Conversation[];
+    friends: Friend[]; // Mảng bạn bè
     selectedId: string | null;
-    onSelect: (conversation: Conversation) => void;
+    onSelect: (item: any, type: 'chat' | 'friend') => void;
     currentUserId: string;
     onCreateNewGroup?: () => void;
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({
     conversations,
+    friends,
     selectedId,
     onSelect,
     currentUserId,
@@ -19,73 +22,89 @@ const ConversationList: React.FC<ConversationListProps> = ({
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Get display name for conversation
     const getDisplayName = (conversation: Conversation): string => {
         if (conversation.type === "GROUP" && conversation.name) {
             return conversation.name;
         }
-        // For private chat, show the other person's name
-        const otherMember = conversation.members.find(m => m.userId !== currentUserId);
+
+        const otherMember = conversation.members?.find(
+            (m) => String(m.userId) !== String(currentUserId)
+        );
+
         if (otherMember?.user) {
-            const { firstName, lastName, username } = otherMember.user;
-            if (firstName || lastName) {
-                return `${firstName || ""} ${lastName || ""}`.trim();
-            }
-            return username;
+        return otherMember.user.username;
         }
-        return "Unknown";
+    
+        return "Người dùng";
     };
 
-    // Get avatar initial
     const getAvatarInitial = (conversation: Conversation): string => {
-        const name = getDisplayName(conversation);
-        return name.charAt(0).toUpperCase();
+        return getDisplayName(conversation).charAt(0).toUpperCase();
     };
 
-    // Get avatar URL
     const getAvatarUrl = (conversation: Conversation): string | undefined => {
-        if (conversation.type === "GROUP") {
-            return conversation.imageUrl;
-        }
+        if (conversation.type === "GROUP") return conversation.imageUrl;
         const otherMember = conversation.members.find(m => m.userId !== currentUserId);
         return otherMember?.user?.avatar;
     };
 
-    // Format time
     const formatTime = (dateString: string | undefined): string => {
         if (!dateString) return "";
         const date = new Date(dateString);
         const now = new Date();
         const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) {
-            return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-        } else if (diffDays === 1) {
-            return "Hôm qua";
-        } else if (diffDays < 7) {
+        if (diffDays === 0) return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+        if (diffDays === 1) return "Hôm qua";
+        if (diffDays < 7) {
             const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
             return days[date.getDay()];
         }
         return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
     };
 
-    // Get preview text
     const getPreviewText = (conversation: Conversation): string => {
         if (!conversation.lastMessage) return "Chưa có tin nhắn";
-        const isMine = conversation.lastMessage.senderId === currentUserId;
+        const isMine = String(conversation.lastMessage.senderId) === String(currentUserId);
         const prefix = isMine ? "Bạn: " : "";
+        
+        if (!conversation.lastMessage.content && conversation.lastMessage.attachments?.length) {
+             return prefix + "Đã gửi một tệp đính kèm";
+        }
         return prefix + (conversation.lastMessage.content || "");
     };
 
-    // Filter conversations by search
+    const getFriendName = (friend: Friend): string => {
+        const { firstName, lastName, username } = friend.user;
+        if (firstName || lastName) return `${firstName || ""} ${lastName || ""}`.trim();
+        return username;
+    };
+
     const filteredConversations = useMemo(() => {
         if (!searchQuery.trim()) return conversations;
         const query = searchQuery.toLowerCase();
-        return conversations.filter(conv => {
-            const name = getDisplayName(conv).toLowerCase();
-            return name.includes(query);
-        });
+        return conversations.filter(conv => getDisplayName(conv).toLowerCase().includes(query));
     }, [conversations, searchQuery, currentUserId]);
+
+    const filteredFriends = useMemo(() => {
+        const query = searchQuery.toLowerCase();
+        
+        return friends.filter(friend => {
+            const hasConversation = conversations.some(conv => 
+                conv.type === "PRIVATE" && 
+                conv.members.some(m => String(m.userId) === String(friend.user.id))
+            );
+            
+            if (hasConversation) return false;
+
+            if (searchQuery.trim()) {
+                return getFriendName(friend).toLowerCase().includes(query);
+            }
+            return true; 
+        });
+    }, [friends, conversations, searchQuery]);
+
+    const isEmpty = filteredConversations.length === 0 && filteredFriends.length === 0;
 
     return (
         <div className="conversation-list">
@@ -108,7 +127,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     </span>
                     <input
                         type="text"
-                        placeholder="Tìm kiếm cuộc trò chuyện..."
+                        placeholder="Tìm kiếm..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -116,52 +135,88 @@ const ConversationList: React.FC<ConversationListProps> = ({
             </div>
 
             <div className="conversation-items">
-                {filteredConversations.length === 0 ? (
+                {isEmpty ? (
                     <div className="empty-conversations">
-                        <p>Không tìm thấy cuộc trò chuyện</p>
+                        <p>Không tìm thấy kết quả</p>
                     </div>
                 ) : (
-                    filteredConversations.map((conversation) => {
-                        const isSelected = selectedId === conversation.id;
-                        const hasUnread = (conversation.unreadCount || 0) > 0;
-                        const avatarUrl = getAvatarUrl(conversation);
+                    <>
+                        {filteredConversations.map((conversation) => {
+                            const isSelected = selectedId === conversation.id;
+                            const hasUnread = (conversation.unreadCount || 0) > 0;
+                            const avatarUrl = getAvatarUrl(conversation);
 
-                        return (
-                            <div
-                                key={conversation.id}
-                                className={`conversation-item ${isSelected ? "active" : ""} ${hasUnread ? "unread" : ""}`}
-                                onClick={() => onSelect(conversation)}
-                            >
-                                <div className={`conversation-avatar ${conversation.type === "GROUP" ? "group-avatar" : ""}`}>
-                                    {avatarUrl ? (
-                                        <img src={avatarUrl} alt="" />
-                                    ) : (
-                                        getAvatarInitial(conversation)
-                                    )}
-                                </div>
-                                <div className="conversation-content">
-                                    <div className="conversation-header">
-                                        <span className="conversation-name">
-                                            {getDisplayName(conversation)}
-                                        </span>
-                                        <span className="conversation-time">
-                                            {formatTime(conversation.lastMessageAt)}
-                                        </span>
-                                    </div>
-                                    <div className="conversation-preview">
-                                        <span className="preview-text">
-                                            {getPreviewText(conversation)}
-                                        </span>
-                                        {hasUnread && (
-                                            <span className="unread-badge">
-                                                {conversation.unreadCount}
-                                            </span>
+                            return (
+                                <div
+                                    key={`conv_${conversation.id}`}
+                                    className={`conversation-item ${isSelected ? "active" : ""} ${hasUnread ? "unread" : ""}`}
+                                    onClick={() => onSelect(conversation, 'chat')}
+                                >
+                                    <div className={`conversation-avatar ${conversation.type === "GROUP" ? "group-avatar" : ""}`}>
+                                        {avatarUrl ? (
+                                            <img src={avatarUrl} alt="" />
+                                        ) : (
+                                            getAvatarInitial(conversation)
                                         )}
                                     </div>
+                                    <div className="conversation-content">
+                                        <div className="conversation-header">
+                                            <span className="conversation-name">
+                                                {getDisplayName(conversation)}
+                                            </span>
+                                            <span className="conversation-time">
+                                                {formatTime(conversation.lastMessageAt)}
+                                            </span>
+                                        </div>
+                                        <div className="conversation-preview">
+                                            <span className="preview-text">
+                                                {getPreviewText(conversation)}
+                                            </span>
+                                            {hasUnread && (
+                                                <span className="unread-badge">
+                                                    {conversation.unreadCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })
+                            );
+                        })}
+
+                        {/* 2. HIỂN THỊ BẠN BÈ (CHƯA TỪNG CHAT) */}
+                        {filteredFriends.map((friend) => {
+                            const isSelected = selectedId === `temp_${friend.user.id}`;
+                            const avatarUrl = friend.user.avatarUrl;
+
+                            return (
+                                <div
+                                    key={`friend_${friend.user.id}`}
+                                    className={`conversation-item ${isSelected ? "active" : ""}`}
+                                    onClick={() => onSelect(friend, 'friend')}
+                                >
+                                    <div className="conversation-avatar">
+                                        {avatarUrl ? (
+                                            <img src={avatarUrl} alt="" />
+                                        ) : (
+                                            getFriendName(friend).charAt(0).toUpperCase()
+                                        )}
+                                    </div>
+                                    <div className="conversation-content justify-center">
+                                        <div className="conversation-header">
+                                            <span className="conversation-name font-medium">
+                                                {getFriendName(friend)}
+                                            </span>
+                                        </div>
+                                        <div className="conversation-preview">
+                                            <span className="preview-text text-gray-400 italic">
+                                                Gợi ý kết nối
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </>
                 )}
             </div>
         </div>

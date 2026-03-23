@@ -22,3 +22,4 @@ require __DIR__ . '/api/noti.php';
 require __DIR__ . '/api/user.php';
 require __DIR__ . '/api/comment.php';
 require __DIR__ . '/api/ai.php';
+require __DIR__ . '/api/chat.php';
