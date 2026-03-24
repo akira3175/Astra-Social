@@ -322,4 +322,12 @@ class PostController extends Controller
     {
         return response()->json(['data' => $this->postService->adminGetCountByDays($days)]);
     }
+
+    public function trendingHashtagsUI(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data'    => $this->postService->getTrendingHashtagsForUI(),
+        ]);
+    }
 }

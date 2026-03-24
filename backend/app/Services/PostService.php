@@ -627,4 +627,35 @@ class PostService{
 
         return ['success' => true, 'data' => $shared];
     }
+
+    /**
+     * Lấy Trending Hashtags (từ Redis) - top 10 trong 24h qua, trả về format chuẩn cho UI (id, name, posts_count, is_trending)
+     */
+    public function getTrendingHashtagsForUI(): array
+    {
+        $data = Redis::zrevrange('trending:hashtags', 0, 9, 'WITHSCORES');
+
+        $result = [];
+        for ($i = 0; $i < count($data); $i += 2) {
+            $name = $data[$i];
+            $score = (int)$data[$i + 1];
+
+            $result[] = [
+                'id'          => 0, // không cần id thật
+                'name'        => $name,
+                'posts_count' => $score,   // score hiện tại là số lần xuất hiện gần đây
+                'is_trending' => true
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Reset trending mỗi 24h 
+     */
+    public function resetTrendingDaily()
+    {
+        Redis::del('trending:hashtags');
+    }
 }

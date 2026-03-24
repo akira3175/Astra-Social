@@ -37,5 +37,5 @@ Route::middleware('jwt.auth')->group(function () {
     Route::post('/comments/{id}/like', [PostController::class, 'likeComment']);
     Route::delete('/posts-admin/{id}', [PostController::class, 'adminDestroy']);
     Route::post('/posts/{id}/share', [PostController::class, 'share']);
-
+    Route::get('/hashtags/trending-ui', [PostController::class, 'trendingHashtagsUI']);
 });

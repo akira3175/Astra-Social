@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
     Box,
@@ -49,6 +49,11 @@ const Navbar: React.FC<NavbarProps> = () => {
     }
 
     const [suggestions,setSuggestions] = useState<Hashtag[]>([])
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [trending, setTrending] = useState<Hashtag[]>([]);
+    const [isLoadingTrending, setIsLoadingTrending] = useState(false);
+
+    const searchRef = useRef<HTMLDivElement>(null);
 
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     // const [isChatOpen, setIsChatOpen] = useState(false); // Unused in provided code logic except toggle
@@ -99,20 +104,55 @@ const Navbar: React.FC<NavbarProps> = () => {
         // setIsChatOpen(!isChatOpen);
     };
 
-    useEffect(()=>{
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (searchQuery.length < 2) {
+                setSuggestions([]);
+                return;
+            }
 
-    if(searchQuery.length < 2){
-        setSuggestions([])
-        return
-    }
+            fetch(`/api/hashtags/search?q=${searchQuery}`)
+                .then(res => res.json())
+                .then(data => setSuggestions(data.data || []));
+        }, 300);
 
-    fetch(`/api/hashtags/search?q=${searchQuery}`)
-        .then(res=>res.json())
-        .then(data=>{
-            setSuggestions(data.data || [])
-        })
+        return () => clearTimeout(timeout);
+    }, [searchQuery]);
 
-    },[searchQuery])
+    const fetchTrending = async () => {
+        if (trending.length > 0) return;
+
+        setIsLoadingTrending(true);
+        try {
+            const res = await fetch('/api/hashtags/trending-ui');
+            const json = await res.json();
+            setTrending(json.data || []);
+        } catch (e) {
+            console.error(e);
+        }
+        setIsLoadingTrending(false);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleFocus = () => {
+        setShowDropdown(true);
+        fetchTrending();
+    };
+
+    const displayItems =
+    searchQuery.length >= 2 && suggestions.length > 0
+        ? suggestions
+        : trending;
 
     return (
         <>
@@ -174,11 +214,13 @@ const Navbar: React.FC<NavbarProps> = () => {
 
                     {/* Search bar - Desktop */}
                     {!isMobile && (
+                        <div ref={searchRef} style={{ position: "relative", flexGrow: 1, maxWidth: "500px" }}>
                         <Box component="form" onSubmit={handleSearch} sx={{ flexGrow: 1, maxWidth: "500px" }}>
                             <TextField
                                 placeholder="Tìm kiếm..."
                                 size="small"
                                 fullWidth
+                                onFocus={handleFocus}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 startAdornment={<SearchIcon />}
@@ -189,8 +231,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                                 }}
                             />
 
-                            {suggestions.length > 0 && (
-
+                            {showDropdown && (
                             <Box
                                 sx={{
                                     position: "absolute",
@@ -199,24 +240,37 @@ const Navbar: React.FC<NavbarProps> = () => {
                                     width: "100%",
                                     marginTop: 1,
                                     borderRadius: 2,
-                                    zIndex: 2000
-                                    }}
-                                >
+                                    zIndex: 2000,
+                                    maxHeight: 300,
+                                    overflowY: "auto"
+                                }}
+                            >
+                                {isLoadingTrending && displayItems.length === 0 && (
+                                    <div style={{ padding: "8px 12px" }}>Loading...</div>
+                                )}
 
-                                {suggestions.map(tag => (
-                                <div
-                                    key={tag.id}
-                                    style={{padding:"8px 12px",cursor:"pointer"}}
-                                    onClick={()=>navigate(`/search?q=${encodeURIComponent(tag.name)}`)}
-                                >
-                                    #{tag.name}
-                                </div>
+                                {displayItems.map(tag => (
+                                    <div
+                                        key={tag.id}
+                                        style={{ padding: "8px 12px", cursor: "pointer" }}
+                                        onClick={() => {
+                                            navigate(`/search?q=${encodeURIComponent(tag.name)}`);
+                                            setShowDropdown(false);
+                                        }}
+                                    >
+                                        #{tag.name}
+                                    </div>
                                 ))}
 
+                                {!isLoadingTrending && displayItems.length === 0 && (
+                                    <div style={{ padding: "8px 12px", color: "#888" }}>
+                                        Không có kết quả
+                                    </div>
+                                )}
                             </Box>
-
-                            )}
+                        )}
                         </Box>
+                        </div>
                     )}
 
                     {/* User menu */}
