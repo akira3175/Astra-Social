@@ -275,16 +275,16 @@ const FriendsPage: React.FC = () => {
     };
 
     return (
-        <div className="friends-page">
+        <div className="friends-page ">
             {/* Header */}
-            <div className="flex justify-between p-4 ">
+            <div className="friends-header flex justify-between">
                 <button
                     type="button"
-                    className="inline-flex items-center gap-2 border p-2"
+                    className="friends-back-button"
                     onClick={() => navigate("/")}
-                > 
-                <IoMdArrowRoundBack />
-                    <span className="" aria-hidden="true">
+                >
+                    <IoMdArrowRoundBack className="friends-back-icon" />
+                    <span aria-hidden="true">
                         Quay lại trang chủ
                     </span>
                     
@@ -293,7 +293,7 @@ const FriendsPage: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="friends-tabs">
+            <div className="friends-tabs ">
                 <button
                     className={`friends-tab ${activeTab === "suggestions" ? "active" : ""}`}
                     onClick={() => handleTabChange("suggestions")}

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Avatar } from "../../ui";
+import "./UserCard.css";
 
 export interface UserCardData {
     id: number;
@@ -26,7 +27,7 @@ export interface UserCardProps {
 }
 
 const baseActionClass =
-    "inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+    "user-card-button inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
 const spinnerClass =
     "h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white";
@@ -118,16 +119,16 @@ const UserCard: React.FC<UserCardProps> = ({
         switch (variant) {
             case "suggestion":
                 return (
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="flex flex-col">
                         <button
-                            className={`${baseActionClass} min-w-[100px] bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
+                            className={`${baseActionClass} user-card-button--primary min-w-[100px] bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
                             onClick={handlePrimaryClick}
                             disabled={isLoading}
                         >
                             {isLoading ? <span className={spinnerClass} /> : "Kết bạn"}
                         </button>
                         <button
-                            className={`${baseActionClass} bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
+                            className={`${baseActionClass} user-card-button--secondary bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
                             onClick={handleSecondaryClick}
                             disabled={isLoading}
                         >
@@ -140,14 +141,14 @@ const UserCard: React.FC<UserCardProps> = ({
                 return (
                     <div className="mt-2 flex items-center gap-2">
                         <button
-                            className={`${baseActionClass} min-w-[100px] bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
+                            className={`${baseActionClass} user-card-button--primary min-w-[100px] bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
                             onClick={handlePrimaryClick}
                             disabled={isLoading}
                         >
                             {isLoading ? <span className={spinnerClass} /> : "Chấp nhận"}
                         </button>
                         <button
-                            className={`${baseActionClass} bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
+                            className={`${baseActionClass} user-card-button--secondary bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
                             onClick={handleSecondaryClick}
                             disabled={isLoading}
                         >
@@ -160,13 +161,13 @@ const UserCard: React.FC<UserCardProps> = ({
                 return (
                     <div className="mt-auto flex w-full items-center justify-between gap-2" ref={dropdownRef}>
                         <button
-                            className={`${baseActionClass} flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
+                            className={`${baseActionClass} user-card-button--primary flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
                             onClick={handlePrimaryClick}
                         >
                             Nhắn tin
                         </button>
                         <button
-                            className={`${baseActionClass} px-3 text-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
+                            className={`${baseActionClass} user-card-button--icon px-3 text-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
                             onClick={handleDropdownToggle}
                         >
                             ⋮
@@ -194,7 +195,7 @@ const UserCard: React.FC<UserCardProps> = ({
                 return (
                     <div className="mt-2 flex items-center gap-2">
                         <button
-                            className={`${baseActionClass} bg-red-50 text-red-500 hover:bg-red-500 hover:text-white`}
+                            className={`${baseActionClass} user-card-button--danger bg-red-50 text-red-500 hover:bg-red-500 hover:text-white`}
                             onClick={handlePrimaryClick}
                             disabled={isLoading}
                         >
@@ -206,7 +207,7 @@ const UserCard: React.FC<UserCardProps> = ({
             default:
                 return (
                     <button
-                        className={`${baseActionClass} mt-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white`}
+                        className={`${baseActionClass} user-card-button--default mt-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white`}
                         onClick={handlePrimaryClick}
                     >
                         Kết bạn
@@ -230,10 +231,6 @@ const UserCard: React.FC<UserCardProps> = ({
 
             <div className={variant === "friend" ? "w-full min-w-0" : "min-w-0 flex-1 pt-1"}>
                 <div className="mb-1 truncate text-base font-semibold text-slate-800">{displayName}</div>
-                <div className="mb-2 text-sm text-slate-500">@{user.username}</div>
-                {user.bio && (
-                    <div className="mb-2 line-clamp-2 text-sm leading-6 text-slate-700">{user.bio}</div>
-                )}
                 <div className="text-sm font-medium text-indigo-600">{user.mutualFriends} bạn chung</div>
             </div>
 

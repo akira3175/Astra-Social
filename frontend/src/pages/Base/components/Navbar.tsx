@@ -35,7 +35,7 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = () => {
     const isMobile = useMediaQuery("(max-width: 900px)"); // Equivalent to theme.breakpoints.down("md")
-    const { currentUser } = useCurrentUser() ?? {};
+    const { currentUser, clearUser } = useCurrentUser() ?? {};
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
@@ -64,8 +64,12 @@ const Navbar: React.FC<NavbarProps> = () => {
         setAnchorEl(null);
     };
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        handleClose();
+        setMobileMenuOpen(false);
+        await logout();
+        clearUser?.();
+        navigate("/login", { replace: true });
     };
 
     const handleSearch = (e: React.FormEvent) => {
@@ -168,6 +172,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                             textAlign: "left",
                             cursor: "pointer",
                         }}
+                        className="p-4"
                     >
                         AstraSocial
                     </Typography>
@@ -359,7 +364,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                     </ListItem>
                     <ListItem
                         component={Link}
-                        to={currentUser ? `/profile/${currentUser.email}` : "/profile"}
+                        to={currentUser ? `/profile/${currentUser.id}` : "/profile"}
                         onClick={() => setMobileMenuOpen(false)}
                     >
                         <ListItemIcon>

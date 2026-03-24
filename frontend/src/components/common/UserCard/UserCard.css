@@ -1,5 +1,24 @@
 /* User Card Component Styles */
 
+.user-card-button {
+    border-radius: 16px !important;
+    overflow: hidden;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.user-card-button--icon {
+    min-width: 48px;
+    border-radius: 14px !important;
+}
+
+.user-card-button--primary,
+.user-card-button--secondary,
+.user-card-button--danger,
+.user-card-button--default {
+    border-radius: 16px !important;
+}
+
 .user-card {
     display: flex;
     align-items: flex-start;

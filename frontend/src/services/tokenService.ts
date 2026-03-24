@@ -5,6 +5,11 @@
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
+const AUTH_STATE_EVENT = "auth-state-changed";
+
+const emitAuthStateChange = (): void => {
+    window.dispatchEvent(new Event(AUTH_STATE_EVENT));
+};
 
 export interface TokenData {
     accessToken: string;
@@ -34,6 +39,7 @@ export const tokenService = {
     setTokens(data: TokenData): void {
         localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
         localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+        emitAuthStateChange();
     },
 
     /**
@@ -41,6 +47,7 @@ export const tokenService = {
      */
     setAccessToken(token: string): void {
         localStorage.setItem(ACCESS_TOKEN_KEY, token);
+        emitAuthStateChange();
     },
 
     /**
@@ -49,6 +56,7 @@ export const tokenService = {
     clear(): void {
         localStorage.removeItem(ACCESS_TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
+        emitAuthStateChange();
     },
 
     /**
@@ -58,3 +66,5 @@ export const tokenService = {
         return !!this.getAccessToken() && !!this.getRefreshToken();
     },
 };
+
+export { AUTH_STATE_EVENT };

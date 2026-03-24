@@ -12,16 +12,18 @@ export enum NotificationType {
 export enum EntityType {
     POST = "POST",
     COMMENT = "COMMENT",
+    FRIEND = "FRIEND",
     USER = "USER",
+    SYSTEM = "SYSTEM",
 }
 
 export interface Notification {
-    id: string;
+    id: string | number;
     type: NotificationType;
-    actorId: string;
-    receiverId: string;
+    actorId: string | number;
+    receiverId: string | number;
     entityType: EntityType;
-    entityId: string;
+    entityId: string | number;
     message: string;
     isRead: boolean;
     createdAt: string;

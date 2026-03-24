@@ -8,44 +8,28 @@ import {
     getNotifications,
     markAsRead,
     markAllAsRead,
-    getUnreadCount,
 } from "../../services/notificationService";
 import type { Notification } from "../../types/notification";
 import { useCurrentUser } from "../../context/currentUserContext";
+import { useNotificationPolling } from "../../hooks/useNotificationPolling";
 import "./NotificationDropdown.css";
 
 const NotificationDropdown: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Fetch unread count on mount
-    useEffect(() => {
-        if (!currentUser) return;
-
-        const fetchUnreadCount = async () => {
-            try {
-                const response = await getUnreadCount(Number(currentUser.id), false);
-                if (response.success) {
-                    setUnreadCount(response.count ?? 0);
-                }
-            } catch (error) {
-                console.error("Error fetching unread count:", error);
-            }
-        };
-        fetchUnreadCount();
-    }, [currentUser]);
+    const userId = currentUser?.id ? Number(currentUser.id) : null;
+    const { unreadCount, refresh } = useNotificationPolling(userId);
 
     // Fetch notifications when dropdown opens
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && userId) {
             const fetchNotifications = async () => {
                 setIsLoading(true);
                 try {
-                    const response = await getNotifications(Number(currentUser?.id), 1, 10);
+                    const response = await getNotifications(userId, 1, 10);
                     if (response.success) {
                         setNotifications(response.data);
                     }
@@ -57,7 +41,7 @@ const NotificationDropdown: React.FC = () => {
             };
             fetchNotifications();
         }
-    }, [isOpen]);
+    }, [isOpen, userId]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -86,7 +70,7 @@ const NotificationDropdown: React.FC = () => {
                 setNotifications((prev) =>
                     prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
                 );
-                setUnreadCount((prev) => Math.max(0, prev - 1));
+                refresh();
             } catch (error) {
                 console.error("Error marking notification as read:", error);
             }
@@ -99,7 +83,7 @@ const NotificationDropdown: React.FC = () => {
         try {
             await markAllAsRead(Number(currentUser.id));
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-            setUnreadCount(0);
+            refresh();
         } catch (error) {
             console.error("Error marking all notifications as read:", error);
         }

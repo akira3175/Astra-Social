@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Friendship;
+use App\Models\Notification;
 use App\Models\UserBlock;
 use Illuminate\Support\Facades\Auth;
 
@@ -57,6 +58,15 @@ class FriendshipController extends Controller
             'status'       => 'pending',
         ]);
 
+        Notification::create([
+            'receiver_id' => $userId,
+            'actor_id' => $authUser->id,
+            'entity_type' => Notification::ENTITY_TYPE_FRIEND,
+            'entity_id' => $authUser->id,
+            'message' => "{$authUser->username} đã gửi cho bạn lời mời kết bạn.",
+            'is_read' => false,
+        ]);
+
         return response()->json([
             'message' => 'Đã gửi lời mời kết bạn.'
         ], 201);
@@ -73,6 +83,15 @@ class FriendshipController extends Controller
                 'status' => 'accepted',
                 'accepted_at' => now()
             ]);
+
+        Notification::create([
+            'receiver_id' => (int) $userId,
+            'actor_id' => $authUser->id,
+            'entity_type' => Notification::ENTITY_TYPE_FRIEND,
+            'entity_id' => $authUser->id,
+            'message' => "{$authUser->username} đã chấp nhận lời mời kết bạn của bạn.",
+            'is_read' => false,
+        ]);
         return response() -> json([
             'message' => 'Lời mời kết bạn đã được chấp nhận.'
         ]);

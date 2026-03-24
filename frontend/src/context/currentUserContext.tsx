@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { tokenService } from "../services/tokenService";
+import { AUTH_STATE_EVENT, tokenService } from "../services/tokenService";
 import { getMyProfile, transformUserProfile } from "../services/userService";
 import type { User } from "../types/user";
 
@@ -72,7 +72,7 @@ export const CurrentUserProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Listen for storage changes (e.g., login/logout in another tab)
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === "access_token") {
+            if (e.key === "access_token" || e.key === "refresh_token") {
                 if (e.newValue) {
                     fetchUserProfile();
                 } else {
@@ -81,8 +81,22 @@ export const CurrentUserProvider: React.FC<{ children: React.ReactNode }> = ({ c
             }
         };
 
+        const handleAuthStateChange = () => {
+            if (tokenService.hasTokens()) {
+                fetchUserProfile();
+                return;
+            }
+
+            clearUser();
+        };
+
         window.addEventListener("storage", handleStorageChange);
-        return () => window.removeEventListener("storage", handleStorageChange);
+        window.addEventListener(AUTH_STATE_EVENT, handleAuthStateChange);
+
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+            window.removeEventListener(AUTH_STATE_EVENT, handleAuthStateChange);
+        };
     }, [fetchUserProfile, clearUser]);
     return (
         <CurrentUserContext.Provider

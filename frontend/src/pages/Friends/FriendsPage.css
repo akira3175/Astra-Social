@@ -1,9 +1,10 @@
 /* Friends Page Styles */
 
 .friends-page {
-    max-width: 900px;
+    width: min(100%, 1120px);
     margin: 0 auto;
-    padding: 24px 16px;
+    padding: 24px 16px 96px;
+    box-sizing: border-box;
 }
 
 /* Header */
@@ -111,18 +112,20 @@
 /* Content */
 .friends-content {
     min-height: 400px;
+    width: 100%;
 }
 
 /* Grid Layout */
 .friends-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: stretch;
 }
 
 .friends-grid-friends {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
 }
 
@@ -184,7 +187,7 @@
 /* Responsive */
 @media (max-width: 768px) {
     .friends-page {
-        padding: 16px 12px;
+        padding: 16px 12px 88px;
     }
 
     .friends-header {
@@ -216,6 +219,7 @@
 
     .friends-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 }
 
