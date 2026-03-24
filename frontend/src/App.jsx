@@ -145,23 +145,23 @@ const RouteApp = () => {
                 <Route path="dashboard" element={<AdminDashboard />} />
               </Route>
 
-              <Route element={<PermissionRoute user={context?.currentUser} permission="users" />}>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="user" />}>
                 <Route path="users" element={<AdminUsers />} />
               </Route>
 
-              <Route element={<PermissionRoute user={context?.currentUser} permission="posts" />}>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="post" />}>
                 <Route path="posts" element={<AdminPosts />} />
               </Route>
 
-              <Route element={<PermissionRoute user={context?.currentUser} permission="comments" />}>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="comment" />}>
                 <Route path="comments" element={<AdminComments />} />
               </Route>
 
-              <Route element={<PermissionRoute user={context?.currentUser} permission="reports" />}>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="report" />}>
                 <Route path="reports" element={<AdminReports />} />
               </Route>
 
-              <Route element={<PermissionRoute user={context?.currentUser} permission="roles" />}>
+              <Route element={<PermissionRoute user={context?.currentUser} permission="role" />}>
                 <Route path="roles" element={<AdminRoles />} />
               </Route>
             </Route>

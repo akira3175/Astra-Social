@@ -39,7 +39,9 @@ const NotificationsPage: React.FC = () => {
                     reset ? newData : [...prev, ...newData]
                 );
                 if (response.meta) {
-                    setHasMore(pageNum < response.meta.lastPage);
+                    // Backend trả về snake_case: last_page
+                    const lastPage = (response.meta as any).last_page ?? response.meta.lastPage;
+                    setHasMore(pageNum < lastPage);
                 } else {
                     setHasMore(newData.length === 10);
                 }
@@ -86,10 +88,21 @@ const NotificationsPage: React.FC = () => {
         }
     };
 
-    const handleLoadMore = () => {
+    const handleLoadMore = useCallback(() => {
+        if (!hasMore || isLoadingMore) return;
         const nextPage = page + 1;
         setPage(nextPage);
         fetchNotifications(nextPage, false);
+    }, [page, fetchNotifications, hasMore, isLoadingMore]);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const target = e.currentTarget;
+        // Bắt sự kiện cuộn khi gần chạm đáy (cách 50px)
+        if (target.scrollHeight - target.scrollTop - target.clientHeight < 50) {
+            if (hasMore && !isLoadingMore) {
+                handleLoadMore();
+            }
+        }
     };
 
     // Filter dữ liệu cho các Tab
@@ -131,7 +144,7 @@ const NotificationsPage: React.FC = () => {
                 </button>
             </div>
 
-            <div className="notifications-content">
+            <div className="notifications-content" onScroll={handleScroll}>
                 {isLoading ? (
                     <div className="notifications-loading">
                         <div className="notifications-loading-spinner" />
@@ -164,13 +177,12 @@ const NotificationsPage: React.FC = () => {
                         </ul>
                         {hasMore && activeTab === "all" && (
                             <div className="notifications-load-more">
-                                <button
-                                    className="notifications-load-more-btn"
-                                    onClick={handleLoadMore}
-                                    disabled={isLoadingMore}
-                                >
-                                    {isLoadingMore ? "Đang tải..." : "Xem thêm"}
-                                </button>
+                                {isLoadingMore && (
+                                    <>
+                                        <div className="notifications-loading-spinner" style={{ width: 24, height: 24 }} />
+                                        <span style={{ marginLeft: 8, color: '#64748b' }}>Đang tải thêm...</span>
+                                    </>
+                                )}
                             </div>
                         )}
                     </>

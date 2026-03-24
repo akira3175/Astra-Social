@@ -1,30 +1,25 @@
 import { api } from "../configs/api";
 import type {
-    Notification,
     NotificationsResponse,
     UnreadCountResponse,
-    NotificationType,
-    EntityType,
 } from "../types/notification";
 
 const ENDPOINTS = {
     NOTI : "/noti",
 };
 
-// Flag để sử dụng mock data
-const USE_MOCK = true;
-
 export const getNotifications = async (
     user_id: number,
+    page: number = 1,
     limit: number = 10
-): Promise<Notification> => {
-    const response = await api.get<NotificationsResponse>(ENDPOINTS.NOTI,{
-        params:{
+): Promise<NotificationsResponse> => {
+    const response = await api.get<NotificationsResponse>(ENDPOINTS.NOTI, {
+        params: {
             user_id: user_id,
+            page: page,
             limit: limit,
         }
     });
-    console.log(response.data);
     return response.data;
 };
 

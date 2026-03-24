@@ -7,6 +7,7 @@ import ChatArea from "./components/ChatArea";
 import * as chatService from "../../services/chatService";
 import friendshipService from "../../services/friendshipService";
 import { useCurrentUser } from "../../context/currentUserContext";
+import { SearchIcon, PlusIcon, PersonAddIcon, EditIcon, CrownIcon } from "../../components/ui";
 import type { Conversation, Message } from "../../types/chat"; 
 import type { Friend } from "../../types/friendship";
 import "./MessagesPage.css";
@@ -24,6 +25,7 @@ const MessagesPage: React.FC = () => {
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
     const [isTransferAdminModalOpen, setIsTransferAdminModalOpen] = useState(false);
     const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+    const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
     const [isFriendDropdownOpen, setIsFriendDropdownOpen] = useState(false);
     const [isAddMemberDropdownOpen, setIsAddMemberDropdownOpen] = useState(false);
@@ -32,6 +34,8 @@ const MessagesPage: React.FC = () => {
     const [tempGroupName, setTempGroupName] = useState("");
     const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
     const [selectedNewMemberIds, setSelectedNewMemberIds] = useState<number[]>([]);
+    const [createSearchQuery, setCreateSearchQuery] = useState("");
+    const [addMemberSearchQuery, setAddMemberSearchQuery] = useState("");
 
     const currentUserContext = useCurrentUser();
     const currentUserId = Number(currentUserContext?.currentUser?.id || 0);
@@ -194,7 +198,8 @@ const MessagesPage: React.FC = () => {
     }, [selectedConversation, currentUserId, fetchData]);
 
     const handleCreateGroup = async () => {
-        if (!newGroupName.trim() || selectedFriendIds.length === 0) return;
+        if (!newGroupName.trim() || selectedFriendIds.length === 0 || isCreatingGroup) return;
+        setIsCreatingGroup(true);
         try {
             const res = await chatService.createGroup(newGroupName, selectedFriendIds);
             if (res.success) {
@@ -205,6 +210,9 @@ const MessagesPage: React.FC = () => {
                 fetchData();
             }
         } catch (e) { alert("Lỗi tạo nhóm!"); }
+        finally {
+            setIsCreatingGroup(false);
+        }
     };
 
     const handleGroupAction = async (actionType: string, payload?: any) => {
@@ -291,138 +299,287 @@ const MessagesPage: React.FC = () => {
                 </div>
             )}
 
-            {isCreateModalOpen && (
-                <div className="modal-overlay">
+            {/* ═══ CREATE GROUP MODAL ═══ */}
+            {isCreateModalOpen && (() => {
+                const getAvatarSrc = (user: any) => (user as any).avatar_url || (user as any).avatarUrl || "/default-avatar.png";
+                const getDisplayName = (user: any) => `${user.lastName || ""} ${user.firstName || ""}`.trim() || user.username;
+                const filteredFriends = friends.filter(f => {
+                    const name = getDisplayName(f.user);
+                    return name.toLowerCase().includes(createSearchQuery.toLowerCase());
+                });
+                return (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsCreateModalOpen(false); }}>
                     <div className="modal-box">
                         <div className="modal-header">
-                            <h3>Tạo nhóm mới</h3>
-                            <button className="close-btn" onClick={() => setIsCreateModalOpen(false)}>×</button>
+                            <div className="modal-header-title">
+                                <div className="modal-header-icon">
+                                    <PlusIcon size={20} />
+                                </div>
+                                <div>
+                                    <h3>Tạo nhóm mới</h3>
+                                    <span className="modal-header-subtitle">Thêm bạn bè vào nhóm chat</span>
+                                </div>
+                            </div>
+                            <button className="close-btn" onClick={() => setIsCreateModalOpen(false)}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
                         </div>
                         <div className="modal-body">
-                            <input className="group-name-input" placeholder="Tên nhóm..." value={newGroupName} onChange={e => setNewGroupName(e.target.value)} />
-                            <div className="custom-dropdown-container">
-                                <div className="dropdown-trigger" onClick={() => setIsFriendDropdownOpen(!isFriendDropdownOpen)}>
-                                    {selectedFriendIds.length > 0 ? `Đã chọn ${selectedFriendIds.length} bạn bè` : "Chọn thành viên..."}
-                                    <span className={`arrow ${isFriendDropdownOpen ? 'up' : 'down'}`}>▼</span>
+                            <div className="input-with-icon">
+                                <span className="input-icon">👥</span>
+                                <input className="group-name-input" placeholder="Nhập tên nhóm..." value={newGroupName} onChange={e => setNewGroupName(e.target.value)} />
+                            </div>
+
+                            {selectedFriendIds.length > 0 && (
+                                <div className="selected-members-chips">
+                                    {selectedFriendIds.map(id => {
+                                        const friend = friends.find(f => Number(f.user.id) === id);
+                                        if (!friend) return null;
+                                        const name = getDisplayName(friend.user);
+                                        return (
+                                            <div key={id} className="member-chip">
+                                                <img className="member-chip-avatar" src={getAvatarSrc(friend.user)}
+                                                    onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=c7d2fe&color=4338ca&size=48'; }} alt="" />
+                                                <span>{name}</span>
+                                                <button className="member-chip-remove" onClick={() => setSelectedFriendIds(prev => prev.filter(i => i !== id))}>×</button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                {isFriendDropdownOpen && (
-                                    <div className="dropdown-content">
-                                        {friends.map(f => {
-                                            const isSelected = selectedFriendIds.includes(Number(f.user.id));
-                                            return (
-                                                <div key={f.user.id} className={`dropdown-item ${isSelected ? 'selected' : ''}`}
-                                                    onClick={() => {
-                                                        const id = Number(f.user.id);
-                                                        setSelectedFriendIds(prev => isSelected ? prev.filter(i => i !== id) : [...prev, id]);
-                                                    }}>
-                                                    <img src={(f.user as any).avatarUrl || (f.user as any).avatar_url || "/default-avatar.png"} alt="" />
-                                                    <span>{f.user.username}</span>
+                            )}
+
+                            <div className="member-selection-section">
+                                <span className="member-section-label">Chọn thành viên</span>
+                                <div className="friend-search-wrapper">
+                                    <span className="search-icon"><SearchIcon size={16} /></span>
+                                    <input className="friend-search-input" placeholder="Tìm bạn bè..." value={createSearchQuery} onChange={e => setCreateSearchQuery(e.target.value)} />
+                                </div>
+                                <div className="friend-list-container">
+                                    {filteredFriends.length === 0 ? (
+                                        <div className="friend-list-empty">Không tìm thấy bạn bè</div>
+                                    ) : filteredFriends.map(f => {
+                                        const isSelected = selectedFriendIds.includes(Number(f.user.id));
+                                        const name = getDisplayName(f.user);
+                                        return (
+                                            <div key={f.user.id} className={`fb-style-friend-item ${isSelected ? 'selected' : ''}`}
+                                                onClick={() => {
+                                                    const id = Number(f.user.id);
+                                                    setSelectedFriendIds(prev => isSelected ? prev.filter(i => i !== id) : [...prev, id]);
+                                                }}>
+                                                <div className="friend-info">
+                                                    <img className="friend-avatar-modal" src={getAvatarSrc(f.user)}
+                                                        onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=c7d2fe&color=4338ca&size=80'; }} alt="" />
+                                                    <span>{name}</span>
+                                                </div>
+                                                <div className={`checkbox-circle ${isSelected ? 'checked' : ''}`}>
                                                     {isSelected && <span className="check-mark">✓</span>}
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                         <div className="modal-footer">
                             <button className="btn-cancel" onClick={() => setIsCreateModalOpen(false)}>Hủy</button>
-                            <button className="btn-confirm" onClick={handleCreateGroup} disabled={!newGroupName.trim() || selectedFriendIds.length === 0}>Xác nhận</button>
+                            <button className="btn-confirm" onClick={handleCreateGroup} disabled={!newGroupName.trim() || selectedFriendIds.length === 0 || isCreatingGroup}>
+                                {isCreatingGroup ? "Đang tạo..." : "Tạo nhóm"}
+                            </button>
                         </div>
                     </div>
                 </div>
-            )}
+                );
+            })()}
 
-            {isAddMemberModalOpen && (
-                <div className="modal-overlay">
+            {/* ═══ ADD MEMBER MODAL ═══ */}
+            {isAddMemberModalOpen && (() => {
+                const getAvatarSrc = (user: any) => (user as any).avatar_url || (user as any).avatarUrl || "/default-avatar.png";
+                const getDisplayName = (user: any) => `${user.lastName || ""} ${user.firstName || ""}`.trim() || user.username;
+                const availableFriends = friends.filter(f => !selectedConversation?.members?.some(m => Number(m.user_id) === Number(f.user.id)));
+                const filteredFriends = availableFriends.filter(f => {
+                    const name = getDisplayName(f.user);
+                    return name.toLowerCase().includes(addMemberSearchQuery.toLowerCase());
+                });
+                return (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsAddMemberModalOpen(false); }}>
                     <div className="modal-box">
                         <div className="modal-header">
-                            <h3>Thêm vào nhóm</h3>
-                            <button className="close-btn" onClick={() => setIsAddMemberModalOpen(false)}>×</button>
+                            <div className="modal-header-title">
+                                <div className="modal-header-icon">
+                                    <PersonAddIcon size={20} />
+                                </div>
+                                <div>
+                                    <h3>Thêm thành viên</h3>
+                                    <span className="modal-header-subtitle">Mời bạn bè vào nhóm</span>
+                                </div>
+                            </div>
+                            <button className="close-btn" onClick={() => setIsAddMemberModalOpen(false)}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
                         </div>
                         <div className="modal-body">
-                            <div className="custom-dropdown-container">
-                                <div className="dropdown-trigger" onClick={() => setIsAddMemberDropdownOpen(!isAddMemberDropdownOpen)}>
-                                    {selectedNewMemberIds.length > 0 ? `Đã chọn ${selectedNewMemberIds.length} người` : "Chọn bạn bè..."}
-                                    <span className={`arrow ${isAddMemberDropdownOpen ? 'up' : 'down'}`}>▼</span>
+                            {selectedNewMemberIds.length > 0 && (
+                                <div className="selected-members-chips">
+                                    {selectedNewMemberIds.map(id => {
+                                        const friend = friends.find(f => Number(f.user.id) === id);
+                                        if (!friend) return null;
+                                        const name = getDisplayName(friend.user);
+                                        return (
+                                            <div key={id} className="member-chip">
+                                                <img className="member-chip-avatar" src={getAvatarSrc(friend.user)}
+                                                    onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=c7d2fe&color=4338ca&size=48'; }} alt="" />
+                                                <span>{name}</span>
+                                                <button className="member-chip-remove" onClick={() => setSelectedNewMemberIds(prev => prev.filter(i => i !== id))}>×</button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                {isAddMemberDropdownOpen && (
-                                    <div className="dropdown-content">
-                                        {friends.filter(f => !selectedConversation?.members?.some(m => Number(m.user_id) === Number(f.user.id))).map(f => {
-                                            const isSelected = selectedNewMemberIds.includes(Number(f.user.id));
-                                            return (
-                                                <div key={f.user.id} className={`dropdown-item ${isSelected ? 'selected' : ''}`}
-                                                    onClick={() => {
-                                                        const id = Number(f.user.id);
-                                                        setSelectedNewMemberIds(prev => isSelected ? prev.filter(i => i !== id) : [...prev, id]);
-                                                    }}>
-                                                    <img src={(f.user as any).avatarUrl || (f.user as any).avatar_url || "/default-avatar.png"} alt="" />
-                                                    <span>{f.user.username}</span>
+                            )}
+
+                            <div className="member-selection-section">
+                                <span className="member-section-label">Bạn bè có thể thêm</span>
+                                <div className="friend-search-wrapper">
+                                    <span className="search-icon"><SearchIcon size={16} /></span>
+                                    <input className="friend-search-input" placeholder="Tìm bạn bè..." value={addMemberSearchQuery} onChange={e => setAddMemberSearchQuery(e.target.value)} />
+                                </div>
+                                <div className="friend-list-container">
+                                    {filteredFriends.length === 0 ? (
+                                        <div className="friend-list-empty">Không có bạn bè nào để thêm</div>
+                                    ) : filteredFriends.map(f => {
+                                        const isSelected = selectedNewMemberIds.includes(Number(f.user.id));
+                                        const name = getDisplayName(f.user);
+                                        return (
+                                            <div key={f.user.id} className={`fb-style-friend-item ${isSelected ? 'selected' : ''}`}
+                                                onClick={() => {
+                                                    const id = Number(f.user.id);
+                                                    setSelectedNewMemberIds(prev => isSelected ? prev.filter(i => i !== id) : [...prev, id]);
+                                                }}>
+                                                <div className="friend-info">
+                                                    <img className="friend-avatar-modal" src={getAvatarSrc(f.user)}
+                                                        onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=c7d2fe&color=4338ca&size=80'; }} alt="" />
+                                                    <span>{name}</span>
+                                                </div>
+                                                <div className={`checkbox-circle ${isSelected ? 'checked' : ''}`}>
                                                     {isSelected && <span className="check-mark">✓</span>}
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                         <div className="modal-footer">
                             <button className="btn-cancel" onClick={() => setIsAddMemberModalOpen(false)}>Hủy</button>
-                            <button className="btn-confirm" onClick={handleAddMembers} disabled={selectedNewMemberIds.length === 0}>Thêm</button>
+                            <button className="btn-confirm" onClick={handleAddMembers} disabled={selectedNewMemberIds.length === 0}>Thêm thành viên</button>
                         </div>
                     </div>
                 </div>
-            )}
+                );
+            })()}
 
+            {/* ═══ RENAME GROUP MODAL ═══ */}
             {isRenameModalOpen && (
-                <div className="modal-overlay">
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsRenameModalOpen(false); }}>
                     <div className="modal-box">
                         <div className="modal-header">
-                            <h3>Đổi tên nhóm</h3>
-                            <button className="close-btn" onClick={() => setIsRenameModalOpen(false)}>×</button>
+                            <div className="modal-header-title">
+                                <div className="modal-header-icon">
+                                    <EditIcon size={20} />
+                                </div>
+                                <div>
+                                    <h3>Đổi tên nhóm</h3>
+                                    <span className="modal-header-subtitle">Cập nhật tên hiển thị của nhóm</span>
+                                </div>
+                            </div>
+                            <button className="close-btn" onClick={() => setIsRenameModalOpen(false)}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
                         </div>
                         <div className="modal-body">
-                            <input className="group-name-input" value={tempGroupName} onChange={e => setTempGroupName(e.target.value)} placeholder="Nhập tên mới..." />
+                            <div className="input-with-icon">
+                                <span className="input-icon">✏️</span>
+                                <input className="group-name-input" value={tempGroupName} onChange={e => setTempGroupName(e.target.value)} placeholder="Nhập tên mới..." />
+                            </div>
                         </div>
                         <div className="modal-footer">
                             <button className="btn-cancel" onClick={() => setIsRenameModalOpen(false)}>Hủy</button>
-                            <button className="btn-confirm" onClick={() => handleGroupAction('RENAME')}>Lưu</button>
+                            <button className="btn-confirm" onClick={() => handleGroupAction('RENAME')} disabled={!tempGroupName.trim()}>Lưu thay đổi</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {isTransferAdminModalOpen && (
-                <div className="modal-overlay">
+            {/* ═══ TRANSFER ADMIN MODAL ═══ */}
+            {isTransferAdminModalOpen && (() => {
+                const getAvatarSrc = (user: any) => (user as any)?.avatar_url || (user as any)?.avatarUrl || "/default-avatar.png";
+                const getDisplayName = (user: any) => `${user?.lastName || ""} ${user?.firstName || ""}`.trim() || user?.username || "Người dùng";
+                return (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsTransferAdminModalOpen(false); }}>
                     <div className="modal-box">
                         <div className="modal-header">
-                            <h3>Chỉ định Admin</h3>
-                            <button className="close-btn" onClick={() => setIsTransferAdminModalOpen(false)}>×</button>
-                        </div>
-                        <div className="modal-body friend-selector-list">
-                            {selectedConversation?.members?.filter(m => Number(m.user_id) !== currentUserId).map(m => (
-                                <div key={m.user_id} className="dropdown-item cursor-pointer" onClick={() => handleGroupAction('ADD_ADMIN', m.user_id)}>
-                                    <img src={(m.user as any)?.avatar_url || (m.user as any)?.avatarUrl || "/default-avatar.png"} alt="" />
-                                    <span>{m.user?.username}</span>
+                            <div className="modal-header-title">
+                                <div className="modal-header-icon" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.12) 100%)', color: '#d97706' }}>
+                                    <CrownIcon size={20} />
                                 </div>
-                            ))}
+                                <div>
+                                    <h3>Chuyển nhóm trưởng</h3>
+                                    <span className="modal-header-subtitle">Chọn thành viên để chuyển quyền Admin</span>
+                                </div>
+                            </div>
+                            <button className="close-btn" onClick={() => setIsTransferAdminModalOpen(false)}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="friend-list-container">
+                                {selectedConversation?.members?.filter(m => Number(m.user_id) !== currentUserId).map(m => {
+                                    const name = getDisplayName(m.user);
+                                    return (
+                                        <div key={m.user_id} className="fb-style-friend-item" style={{ cursor: 'pointer' }}
+                                            onClick={() => handleGroupAction('ADD_ADMIN', m.user_id)}>
+                                            <div className="friend-info">
+                                                <img className="friend-avatar-modal" src={getAvatarSrc(m.user)}
+                                                    onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=fef3c7&color=d97706&size=80'; }} alt="" />
+                                                <span>{name}</span>
+                                            </div>
+                                            <div style={{ color: '#d97706', fontSize: '0.8rem', fontWeight: 500 }}>Chọn →</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
-            )}
+                );
+            })()}
 
+            {/* ═══ LEAVE GROUP MODAL ═══ */}
             {isLeaveModalOpen && (
-                <div className="modal-overlay">
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsLeaveModalOpen(false); }}>
                     <div className="modal-box">
                         <div className="modal-header">
-                            <h3>Rời khỏi nhóm</h3>
-                            <button className="close-btn" onClick={() => setIsLeaveModalOpen(false)}>×</button>
+                            <div className="modal-header-title">
+                                <div className="modal-header-icon" style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)', color: '#ef4444' }}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                        <polyline points="16 17 21 12 16 7"></polyline>
+                                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                                    </svg>
+                                </div>
+                                <h3>Rời khỏi nhóm</h3>
+                            </div>
+                            <button className="close-btn" onClick={() => setIsLeaveModalOpen(false)}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
                         </div>
-                        <div className="modal-body text-center">
-                            <p>Bạn có chắc muốn rời nhóm <strong>{selectedConversation?.name}</strong>?</p>
+                        <div className="modal-body">
+                            <div className="leave-confirm-content">
+                                <span className="leave-confirm-icon">⚠️</span>
+                                <p>Bạn có chắc muốn rời nhóm <strong>{selectedConversation?.name}</strong>?<br/>Bạn sẽ không thể xem tin nhắn nhóm nữa.</p>
+                            </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setIsLeaveModalOpen(false)}>Hủy</button>
+                            <button className="btn-cancel" onClick={() => setIsLeaveModalOpen(false)}>Ở lại</button>
                             <button className="btn-confirm danger" onClick={() => handleGroupAction('LEAVE')}>Rời nhóm</button>
                         </div>
                     </div>

@@ -14,8 +14,12 @@ class NotiController extends Controller{
      * Display a listing of the resource.
      */
     public function index(Request $request) {
-        $userId = auth()->id() ?? $request->input('user_id');
+        $userId = $request->user()?->id ?? $request->input('user_id');
         $limit = $request->input('limit', 10);
+
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
+        }
 
         $data = Notification::where('receiver_id', (int)$userId)
                             ->with('actor.profile') 
@@ -34,8 +38,12 @@ class NotiController extends Controller{
     }
 
     public function getByIsRead(Request $request) {
-        $userId = auth()->id() ?? $request->input('user_id');
+        $userId = $request->user()?->id ?? $request->input('user_id');
         $isRead = $request->input('is_read', false);
+
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
+        }
 
         $count = Notification::where([
             'receiver_id' => (int)$userId,
@@ -45,6 +53,7 @@ class NotiController extends Controller{
         return response()->json([
             'success' => true,
             'data' => $count,
+            'count' => $count, // Added count directly for frontend mapping compatibility
         ]);
     }
     /**
@@ -108,13 +117,13 @@ class NotiController extends Controller{
         ]);
     }
 
-    public function markAllAsRead() {
-        $userId = auth()->id();
+    public function markAllAsRead(Request $request) {
+        $userId = $request->user()?->id ?? $request->input('user_id');
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
         }
 
-        Notification::where('receiver_id', $userId)
+        Notification::where('receiver_id', (int)$userId)
             ->where('is_read', false)
             ->update(['is_read' => true]);
 

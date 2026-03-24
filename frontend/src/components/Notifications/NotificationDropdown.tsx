@@ -30,7 +30,7 @@ const NotificationDropdown: React.FC = () => {
             try {
                 const response = await getUnreadCount(Number(currentUser.id), false);
                 if (response.success) {
-                    setUnreadCount(response.data);
+                    setUnreadCount(response.count ?? 0);
                 }
             } catch (error) {
                 console.error("Error fetching unread count:", error);
@@ -45,7 +45,7 @@ const NotificationDropdown: React.FC = () => {
             const fetchNotifications = async () => {
                 setIsLoading(true);
                 try {
-                    const response = await getNotifications(1, 10);
+                    const response = await getNotifications(Number(currentUser?.id), 1, 10);
                     if (response.success) {
                         setNotifications(response.data);
                     }
@@ -95,8 +95,9 @@ const NotificationDropdown: React.FC = () => {
     };
 
     const handleMarkAllAsRead = async () => {
+        if (!currentUser?.id) return;
         try {
-            await markAllAsRead();
+            await markAllAsRead(Number(currentUser.id));
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
             setUnreadCount(0);
         } catch (error) {

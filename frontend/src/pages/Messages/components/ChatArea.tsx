@@ -135,6 +135,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     // Check if current conversation is a group
     const isGroup = conversation.type === 'GROUP';
+    const isAdmin = isGroup && conversation.members.some((m: any) => 
+        Number(m.userId || m.user_id) === Number(currentUserId) && m.role === 'ADMIN'
+    );
 
     // Auto-resize textarea
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -261,25 +264,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 <>
                                     { onAddMember && (
                                         <button className="dropdown-item" onClick={() => { onAddMember(); setShowMenu(false); }}>
-                                            <PersonAddIcon size={18} />
+                                            <PersonAddIcon size={20} />
                                             <span>Thêm thành viên</span>
                                         </button>
                                     )}
                                     { onRenameGroup && (
                                         <button className="dropdown-item" onClick={() => { onRenameGroup(); setShowMenu(false); }}>
-                                            <EditIcon size={18} />
+                                            <EditIcon size={20} />
                                             <span>Đổi tên nhóm</span>
                                         </button>
                                     )}
-                                    { onTransferAdmin && (
+                                    {onTransferAdmin && isAdmin && (
                                         <button className="dropdown-item" onClick={() => { onTransferAdmin(); setShowMenu(false); }}>
-                                            <CrownIcon size={18} />
+                                            <CrownIcon size={20} />
                                             <span>Chuyển nhóm trưởng</span>
                                         </button>
                                     )}
-                                    {onLeaveGroup && (
+                                    {onLeaveGroup && !isAdmin && (
                                         <button className="dropdown-item danger" onClick={() => { onLeaveGroup(); setShowMenu(false); }}>
-                                            <ExitIcon size={18} />
+                                            <ExitIcon size={20} />
+                                            <span>Rời nhóm</span>
+                                        </button>
+                                    )}
+                                    {onLeaveGroup && isAdmin && (
+                                        <button className="dropdown-item danger" onClick={() => { alert("Bạn là nhóm trưởng, vui lòng chuyển quyền trước khi rời nhóm."); setShowMenu(false); }}>
+                                            <ExitIcon size={20} />
                                             <span>Rời nhóm</span>
                                         </button>
                                     )}
@@ -288,13 +297,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 <>
                                     {onCreateGroup && (
                                         <button className="dropdown-item" onClick={() => { onCreateGroup(); setShowMenu(false); }}>
-                                            <PlusIcon size={18} />
+                                            <PlusIcon size={20} />
                                             <span>Tạo nhóm chat</span>
                                         </button>
                                     )}
                                     {onBlockUser && (
                                         <button className="dropdown-item danger" onClick={() => { onBlockUser(); setShowMenu(false); }}>
-                                            <BlockIcon size={18} />
+                                            <BlockIcon size={20} />
                                             <span>Chặn người dùng</span>
                                         </button>
                                     )}
