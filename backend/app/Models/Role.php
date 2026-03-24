@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Role extends Model
 {
     use SoftDeletes;
+    public $timestamps = true;
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'name',
@@ -16,11 +18,13 @@ class Role extends Model
         'is_default',
     ];
 
-    protected $dates=[
-        'created_at',
-        'deleted_at',
-        'updated_at',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     public function users(): HasMany
     {

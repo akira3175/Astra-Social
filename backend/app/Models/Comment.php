@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Comment extends Model
 {
     use SoftDeletes, HasFactory;
+    public $timestamps = true;
+    const UPDATED_AT = null;
 
     protected $table = 'comments';
 
@@ -20,11 +22,13 @@ class Comment extends Model
         'content',
     ];
 
-    protected $dates = [
-        'deleted_at',
-        'created_at',
-        'updated_at',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     public function user()
     {

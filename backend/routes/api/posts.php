@@ -17,6 +17,8 @@ Route::get('/hashtags/search', [PostController::class, 'searchHashtag']);
 Route::get('/hashtags/trending', [PostController::class, 'trendingHashtags']);
 Route::get('/hashtags/{hashtagName}', [PostController::class, 'hashtagPosts'])
     ->where('hashtagName', '[A-Za-z0-9_]+');
+Route::get('/search', [PostController::class, 'search']);
+
 
 // Tất cả routes cần auth đều dùng jwt.auth
 Route::middleware('jwt.auth')->group(function () {
@@ -35,5 +37,6 @@ Route::middleware('jwt.auth')->group(function () {
     Route::post('/posts/{id}/share', [PostController::class, 'share']);
     Route::post('/comments/{id}/like', [PostController::class, 'likeComment']);
     Route::delete('/posts-admin/{id}', [PostController::class, 'adminDestroy']);
+    Route::post('/posts/{id}/share', [PostController::class, 'share']);
 
 });

@@ -35,7 +35,12 @@ class PostService
                 'user.profile:user_id,first_name,last_name,avatar_url',
                 'attachments:id,url,file_type,entity_type,entity_id',
 
-                // latest comments
+                // Eager load bài gốc khi share
+                'parent',
+                'parent.user:id,username',
+                'parent.user.profile:user_id,first_name,last_name,avatar_url',
+                'parent.attachments:id,url,file_type,entity_type,entity_id',
+
                 'comments' => function ($q) {
                     $q->latest()->limit(10);
                 },
@@ -51,8 +56,7 @@ class PostService
                     $q->orWhere('user_id', $userId);
                 }
             })
-
-            // is_liked
+            ->withCount(['likes', 'comments'])
             ->when($userId, function (Builder $q) use ($userId) {
                 $q->withExists([
                     'likes as is_liked' => function ($sub) use ($userId) {
@@ -69,9 +73,9 @@ class PostService
             'posts' => $posts->items(),
             'pagination' => [
                 'current_page' => $posts->currentPage(),
-                'last_page' => $posts->lastPage(),
-                'per_page' => $posts->perPage(),
-                'total' => $posts->total(),
+                'last_page'    => $posts->lastPage(),
+                'per_page'     => $posts->perPage(),
+                'total'        => $posts->total(),
             ],
         ];
     }
@@ -184,7 +188,10 @@ class PostService
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
             'attachments:id,url,file_type,entity_type,entity_id',
-
+            'parent',
+            'parent.user:id,username',
+            'parent.user.profile:user_id,first_name,last_name,avatar_url',
+            'parent.attachments:id,url,file_type,entity_type,entity_id',
             'comments' => function ($q) {
                 $q->latest()->limit(10);
             },
@@ -199,16 +206,10 @@ class PostService
             ->find($id);
 
         if (!$post) {
-            return [
-                'success' => false,
-                'message' => 'Post not found',
-            ];
+            return ['success' => false, 'message' => 'Post not found'];
         }
 
-        return [
-            'success' => true,
-            'data' => $post,
-        ];
+        return ['success' => true, 'data' => $post];
     }
 
     /**
@@ -220,6 +221,9 @@ class PostService
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
             'attachments:id,url,file_type,entity_type,entity_id',
+            'parent',
+            'parent.user:id,username',
+            'parent.attachments:id,url,file_type,entity_type,entity_id',
         ])
             ->when($currentUserId, function (Builder $q) use ($currentUserId) {
                 $q->withExists([
@@ -237,9 +241,9 @@ class PostService
             'posts' => $posts->items(),
             'pagination' => [
                 'current_page' => $posts->currentPage(),
-                'last_page' => $posts->lastPage(),
-                'per_page' => $posts->perPage(),
-                'total' => $posts->total(),
+                'last_page'    => $posts->lastPage(),
+                'per_page'     => $posts->perPage(),
+                'total'        => $posts->total(),
             ],
         ];
     }
@@ -253,6 +257,9 @@ class PostService
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
             'attachments:id,url,file_type,entity_type,entity_id',
+            'parent',
+            'parent.user:id,username',
+            'parent.attachments:id,url,file_type,entity_type,entity_id',
         ])
             ->withExists([
                 'likes as is_liked' => function ($sub) use ($userId) {
@@ -267,9 +274,9 @@ class PostService
             'posts' => $posts->items(),
             'pagination' => [
                 'current_page' => $posts->currentPage(),
-                'last_page' => $posts->lastPage(),
-                'per_page' => $posts->perPage(),
-                'total' => $posts->total(),
+                'last_page'    => $posts->lastPage(),
+                'per_page'     => $posts->perPage(),
+                'total'        => $posts->total(),
             ],
         ];
     }
@@ -296,7 +303,7 @@ class PostService
             return [
                 'success' => false,
                 'message' => 'Maximum 4 files allowed per post',
-                'code' => 422,
+                'code' => 422
             ];
         }
 
@@ -335,6 +342,8 @@ class PostService
             'attachments:id,url,file_type,entity_type,entity_id',
             'parent',
             'parent.user:id,username',
+            'parent.user.profile:user_id,first_name,last_name,avatar_url',
+            'parent.attachments:id,url,file_type,entity_type,entity_id',
         ]);
 
         return [
@@ -351,24 +360,14 @@ class PostService
         $post = Post::find($postId);
 
         if (!$post) {
-            return [
-                'success' => false,
-                'message' => 'Post not found',
-                'code' => 404,
-            ];
+            return ['success' => false, 'message' => 'Post not found', 'code' => 404];
         }
 
         if ($post->user_id !== $userId) {
-            return [
-                'success' => false,
-                'message' => 'You can only update your own posts',
-                'code' => 403,
-            ];
+            return ['success' => false, 'message' => 'You can only update your own posts', 'code' => 403];
         }
 
-        // Only update content and privacy (no file changes allowed)
-        $allowedFields = ['content', 'privacy'];
-        $post->fill(array_intersect_key($data, array_flip($allowedFields)));
+        $post->fill(array_intersect_key($data, array_flip(['content', 'privacy'])));
         $post->save();
 
         $post->load([
@@ -377,10 +376,7 @@ class PostService
             'attachments:id,url,file_type,entity_type,entity_id',
         ]);
 
-        return [
-            'success' => true,
-            'data' => $post,
-        ];
+        return ['success' => true, 'data' => $post];
     }
 
     /**
@@ -389,20 +385,13 @@ class PostService
     public function deletePost(int $postId, int $userId): array
     {
         $post = Post::find($postId);
+
         if (!$post) {
-            return [
-                'success' => false,
-                'message' => 'Post not found',
-                'code' => 404,
-            ];
+            return ['success' => false, 'message' => 'Post not found', 'code' => 404];
         }
 
         if ($post->user_id !== $userId) {
-            return [
-                'success' => false,
-                'message' => 'You can only delete your own posts',
-                'code' => 403,
-            ];
+            return ['success' => false, 'message' => 'You can only delete your own posts', 'code' => 403];
         }
 
         // Delete attachments from Cloudinary and database
@@ -416,15 +405,18 @@ class PostService
         ];
     }
 
+    //  Admin 
+
     public function getAdminPost(array $params)
     {
         $data = Post::query()
             ->with('user')
-            ->orderByDesc('id');
+            ->orderBy('created_at', 'desc');
+
         if (empty($params['status'])) {
             $data->withTrashed();
         }
-        if (strtolower($params['status']) === 'deleted') {
+        if (strtolower($params['status'] ?? '') === 'deleted') {
             $data->onlyTrashed();
         }
         if (!empty($params['privacy'])) {
@@ -433,6 +425,7 @@ class PostService
         if (!empty($params['search'])) {
             $data->where('content', 'like', '%' . $params['search'] . '%');
         }
+
         return $data->paginate(10);
     }
 
@@ -449,45 +442,41 @@ class PostService
     public function adminDeletePostById(User $auth_user, string $id)
     {
         $post = Post::find($id);
-        if (empty($post)) {
-            return false;
-        }
+        if (empty($post)) return false;
+
         $post->delete();
-        $noti = [
+
+        $this->notiService->create([
             'receiver_id' => $post->user_id,
-            'actor_id' => $auth_user->id,
+            'actor_id'    => $auth_user->id,
             'entity_type' => Notification::ENTITY_TYPE_POST,
-            'entity_id' => $id,
-            'message' => 'Bài viết của bạn đã bị gỡ bỏ',
-        ];
-        $result = $this->notiService->create($noti);
-        return $result;
+            'entity_id'   => $id,
+            'message'     => 'Bài viết của bạn đã bị gỡ bỏ',
+        ]);
+
+        return true;
     }
 
     public function adminGetCountByDays(int $days)
     {
-        $count = Post::select(
+        return Post::select(
             DB::raw('DATE(created_at) as date'),
             DB::raw('COUNT(*) as total')
         )
-            ->where('created_at', '>=', now()->subDays($days))
-            ->groupBy('date')
-            ->get();
-        return $count;
+        ->where('created_at', '>=', now()->subDays($days))
+        ->groupBy('date')
+        ->get();
     }
+
+    // Hashtag 
 
     public function getPostsByHashtag(string $hashtagName, int $page = 1, int $perPage = 10): array
     {
-        $hashtagName = strtolower(trim($hashtagName));
-        $hashtagName = ltrim($hashtagName, '#');
-
+        $hashtagName = strtolower(ltrim(trim($hashtagName), '#'));
         $hashtag = Hashtag::where('name', $hashtagName)->first();
 
         if (!$hashtag) {
-            return [
-                'success' => false,
-                'message' => 'Hashtag not found',
-            ];
+            return ['success' => false, 'message' => 'Hashtag not found'];
         }
 
         $posts = $hashtag->posts()
@@ -501,22 +490,20 @@ class PostService
             ->paginate($perPage, ['*'], 'page', $page);
 
         return [
-            'success' => true,
-            'posts' => $posts->items(),
+            'success'    => true,
+            'posts'      => $posts->items(),
             'pagination' => [
                 'current_page' => $posts->currentPage(),
-                'last_page' => $posts->lastPage(),
-                'per_page' => $posts->perPage(),
-                'total' => $posts->total(),
+                'last_page'    => $posts->lastPage(),
+                'per_page'     => $posts->perPage(),
+                'total'        => $posts->total(),
             ],
         ];
     }
 
     public function searchHashtags(?string $keyword): array
     {
-        if (!$keyword) {
-            return [];
-        }
+        if (!$keyword) return [];
 
         $keyword = ltrim(strtolower($keyword), '#');
 
@@ -532,29 +519,88 @@ class PostService
         return Redis::zrevrange('trending:hashtags', 0, 9, 'WITHSCORES');
     }
 
+    // Search 
+
     /**
-     * Toggle like on a post.
+     * Tìm kiếm tổng hợp: users + posts (content + hashtag).
+     * Trả về { users, posts, pagination_posts }
      */
+    public function search(string $keyword, int $page = 1, int $perPage = 10): array
+    {
+        $keyword = trim($keyword);
+        if ($keyword === '') {
+            return ['users' => [], 'posts' => [], 'pagination' => null];
+        }
+
+        //  Tìm users theo username hoặc first_name/last_name 
+        $users = User::query()
+            ->with('profile:user_id,first_name,last_name,avatar_url')
+            ->where(function ($q) use ($keyword) {
+                $q->where('username', 'like', '%' . $keyword . '%')
+                  ->orWhereHas('profile', function ($pq) use ($keyword) {
+                      $pq->where(
+                          DB::raw("CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))"),
+                          'like',
+                          '%' . $keyword . '%'
+                      );
+                  });
+            })
+            ->limit(10)
+            ->get(['id', 'username', 'email']);
+
+        //  Tìm posts theo content hoặc hashtag 
+        $cleanKeyword = ltrim($keyword, '#');
+
+        $posts = Post::query()
+            ->with([
+                'user:id,username',
+                'user.profile:user_id,first_name,last_name,avatar_url',
+                'attachments:id,url,file_type,entity_type,entity_id',
+                'parent',
+                'parent.user:id,username',
+                'parent.attachments:id,url,file_type,entity_type,entity_id',
+            ])
+            ->withCount(['likes', 'comments'])
+            ->where('privacy', Post::PRIVACY_PUBLIC)
+            ->where(function ($q) use ($cleanKeyword) {
+                // Tìm theo nội dung bài viết
+                $q->where('content', 'like', '%' . $cleanKeyword . '%')
+                  // Hoặc bài viết có hashtag khớp
+                  ->orWhereHas('hashtags', function ($hq) use ($cleanKeyword) {
+                      $hq->where('name', 'like', $cleanKeyword . '%');
+                  });
+            })
+            ->orderByDesc('created_at')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'users' => $users,
+            'posts' => $posts->items(),
+            'pagination' => [
+                'current_page' => $posts->currentPage(),
+                'last_page'    => $posts->lastPage(),
+                'per_page'     => $posts->perPage(),
+                'total'        => $posts->total(),
+            ],
+        ];
+    }
+
+    // Like 
+
     public function toggleLike(int $postId, int $userId): array
     {
         if (!Post::find($postId)) {
             return ['success' => false, 'message' => 'Post not found', 'code' => 404];
         }
 
-        $like = PostLike::where('post_id', $postId)
-            ->where('user_id', $userId)
-            ->first();
+        $like = PostLike::where('post_id', $postId)->where('user_id', $userId)->first();
 
         if ($like) {
             $like->delete();
             return ['liked' => false];
         }
 
-        PostLike::create([
-            'post_id' => $postId,
-            'user_id' => $userId,
-        ]);
-
+        PostLike::create(['post_id' => $postId, 'user_id' => $userId]);
         return ['liked' => true];
     }
 
@@ -567,36 +613,25 @@ class PostService
             return ['success' => false, 'message' => 'Comment not found', 'code' => 404];
         }
 
-        $like = CommentLike::where('comment_id', $commentId)
-            ->where('user_id', $userId)
-            ->first();
+        $like = CommentLike::where('comment_id', $commentId)->where('user_id', $userId)->first();
 
         if ($like) {
             $like->delete();
             return ['liked' => false];
         }
 
-        CommentLike::create([
-            'comment_id' => $commentId,
-            'user_id' => $userId,
-        ]);
-
+        CommentLike::create(['comment_id' => $commentId, 'user_id' => $userId]);
         return ['liked' => true];
     }
 
-    /**
-     * Create a comment on a post.
-     */
+    //  Comment 
+
     public function createComment(int $postId, int $userId, array $data): array
     {
         $post = Post::find($postId);
 
         if (!$post) {
-            return [
-                'success' => false,
-                'message' => 'Post not found',
-                'code' => 404,
-            ];
+            return ['success' => false, 'message' => 'Post not found', 'code' => 404];
         }
 
         if (!empty($data['parent_id'])) {
@@ -605,19 +640,15 @@ class PostService
                 ->exists();
 
             if (!$parentExists) {
-                return [
-                    'success' => false,
-                    'message' => 'Parent comment not found in this post',
-                    'code' => 404,
-                ];
+                return ['success' => false, 'message' => 'Parent comment not found in this post', 'code' => 404];
             }
         }
 
         $comment = Comment::create([
-            'post_id' => $postId,
-            'user_id' => $userId,
+            'post_id'   => $postId,
+            'user_id'   => $userId,
             'parent_id' => $data['parent_id'] ?? null,
-            'content' => $data['content'],
+            'content'   => $data['content'],
         ]);
 
         $comment->load([
@@ -625,10 +656,7 @@ class PostService
             'user.profile:user_id,first_name,last_name,avatar_url',
         ]);
 
-        return [
-            'success' => true,
-            'data' => $comment,
-        ];
+        return ['success' => true, 'data' => $comment];
     }
 
     /**
@@ -636,68 +664,83 @@ class PostService
      */
     public function getComments(int $postId, int $page = 1, int $perPage = 10): array
     {
-        $post = Post::find($postId);
-
-        if (!$post) {
-            return [
-                'success' => false,
-                'message' => 'Post not found',
-                'code' => 404,
-            ];
+        if (!Post::find($postId)) {
+            return ['success' => false, 'message' => 'Post not found', 'code' => 404];
         }
 
         $comments = Comment::with([
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
-            'replies' => function ($q) {
-                $q->withCount('likes')->latest();
-            },
+            'replies' => function ($q) { $q->withCount('likes')->latest(); },
             'replies.user:id,username',
             'replies.user.profile:user_id,first_name,last_name,avatar_url',
         ])
-            ->withCount('likes')
-            ->where('post_id', $postId)
-            ->whereNull('parent_id')
-            ->latest()
-            ->paginate($perPage, ['*'], 'page', $page);
+        ->withCount('likes')
+        ->where('post_id', $postId)
+        ->whereNull('parent_id')
+        ->latest()
+        ->paginate($perPage, ['*'], 'page', $page);
 
         return [
-            'success' => true,
-            'comments' => $comments->items(),
+            'success'    => true,
+            'comments'   => $comments->items(),
             'pagination' => [
                 'current_page' => $comments->currentPage(),
-                'last_page' => $comments->lastPage(),
-                'per_page' => $comments->perPage(),
-                'total' => $comments->total(),
+                'last_page'    => $comments->lastPage(),
+                'per_page'     => $comments->perPage(),
+                'total'        => $comments->total(),
             ],
         ];
     }
 
+    // Share 
+
     /**
-     * Share a post by creating a new post with parent_id.
+     * Share bài viết: tạo post mới với caption tùy chọn, embed bài gốc qua parent_id.
      */
-    public function sharePost(int $postId, int $userId): array
+    public function sharePost(int $postId, int $userId, ?string $caption = null): array
     {
-        $original = Post::find($postId);
+        $original = Post::with([
+            'user:id,username',
+            'user.profile:user_id,first_name,last_name,avatar_url',
+            'attachments:id,url,file_type,entity_type,entity_id',
+        ])->find($postId);
 
         if (!$original) {
-            return [
-                'success' => false,
-                'message' => 'Post not found',
-                'code' => 404,
-            ];
+            return ['success' => false, 'message' => 'Post not found', 'code' => 404];
         }
 
-        $post = Post::create([
-            'user_id' => $userId,
-            'parent_id' => $original->id,
-            'content' => null,
-            'privacy' => $original->privacy,
+        // Không share bài đã là share (tránh share chain vô tận)
+        // Luôn trỏ về bài gốc thật sự
+        $rootId = $original->parent_id ?? $original->id;
+
+        $shared = Post::create([
+            'user_id'   => $userId,
+            'parent_id' => $rootId,
+            'content'   => $caption,                        // caption của người share (nullable)
+            'privacy'   => Post::PRIVACY_PUBLIC,
         ]);
 
-        return [
-            'success' => true,
-            'data' => $post,
-        ];
+        $shared->load([
+            'user:id,username',
+            'user.profile:user_id,first_name,last_name,avatar_url',
+            'parent',                                        // bài gốc đầy đủ
+            'parent.user:id,username',
+            'parent.user.profile:user_id,first_name,last_name,avatar_url',
+            'parent.attachments:id,url,file_type,entity_type,entity_id',
+        ]);
+
+        // Thông báo cho chủ bài gốc
+        if ($original->user_id !== $userId) {
+            $this->notiService->create([
+                'receiver_id' => $original->user_id,
+                'actor_id'    => $userId,
+                'entity_type' => Notification::ENTITY_TYPE_POST,
+                'entity_id'   => $shared->id,
+                'message'     => 'đã chia sẻ bài viết của bạn',
+            ]);
+        }
+
+        return ['success' => true, 'data' => $shared];
     }
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import HomeFriendSuggestionCard from "./HomeFriendSuggestionCard";
+import TrendingHashtags from "./TrendingHashtags";
 import type { UserCardData } from "../../../components/common/UserCard/UserCard";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import { getFriendSuggestions, getFriends, sendFriendRequest, removeSuggestion } from "../../../services/friendshipService";
@@ -71,6 +72,8 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ className }) => {
 
     return (
         <div className={`right-sidebar ${className || ""}`}>
+            <TrendingHashtags />
+
             {/* Friend Suggestions Section */}
             {suggestions.length > 0 && (
                 <div className="sidebar-section">

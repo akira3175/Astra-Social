@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { UserCard } from "../../components/common";
 import PostList from "../Home/components/PostList";
-import { searchUsers, searchPosts, type MockUser } from "./mockData";
+import postService from "../../services/postService";
 import type { Post } from "../../types/post";
+import type { UserCardData } from "../../components/common/UserCard/UserCard";
 import "./SearchPage.css";
 
 type SearchTab = "all" | "users" | "posts";
@@ -20,12 +21,40 @@ const SearchPage: React.FC = () => {
     const initialTab = (searchParams.get("tab") as SearchTab) || "all";
     const [activeTab, setActiveTab] = useState<SearchTab>(initialTab);
 
-    // Search results
-    const { users, posts } = useMemo(() => {
-        return {
-            users: searchUsers(query),
-            posts: searchPosts(query),
-        };
+    // Search results state
+    const [users, setUsers] = useState<UserCardData[]>([]);
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!query.trim()) {
+            setUsers([]);
+            setPosts([]);
+            return;
+        }
+
+        setLoading(true);
+        postService.searchAll(query, 1, 50)
+            .then(res => {
+                if (res.success) {
+                    const mappedUsers: UserCardData[] = (res.data.users || []).map(u => ({
+                        id: u.id,
+                        username: u.username,
+                        firstName: u.profile?.first_name || '',
+                        lastName: u.profile?.last_name || '',
+                        avatarUrl: u.profile?.avatar_url || null,
+                        bio: null,
+                    }));
+                    setUsers(mappedUsers);
+                    setPosts(res.data.posts || []);
+                }
+            })
+            .catch(err => {
+                console.error("Search error:", err);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }, [query]);
 
     // Total results
@@ -49,7 +78,13 @@ const SearchPage: React.FC = () => {
             {/* Search Header */}
             {query && (
                 <div className="search-header">
-                    <h1 className="search-title">Kết quả tìm kiếm cho "{query}"</h1>
+                    <h1 className="search-title">
+                        Kết quả tìm kiếm cho {query.startsWith('#') ? (
+                            <span className="search-hashtag-badge">{query}</span>
+                        ) : (
+                            `"${query}"`
+                        )}
+                    </h1>
                 </div>
             )}
 
@@ -88,8 +123,16 @@ const SearchPage: React.FC = () => {
                 </div>
             )}
 
+            {/* Loading State */}
+            {query.trim() && loading && (
+                <div className="search-empty">
+                    <div className="search-empty-icon" style={{ animation: 'spin 1s linear infinite' }}>⏳</div>
+                    <h3 className="search-empty-title">Đang tìm kiếm...</h3>
+                </div>
+            )}
+
             {/* No Results */}
-            {query.trim() && totalResults === 0 && (
+            {query.trim() && !loading && totalResults === 0 && (
                 <div className="search-empty">
                     <div className="search-empty-icon">😕</div>
                     <h3 className="search-empty-title">Không tìm thấy kết quả</h3>
@@ -100,7 +143,7 @@ const SearchPage: React.FC = () => {
             )}
 
             {/* Search Results */}
-            {query.trim() && totalResults > 0 && (
+            {query.trim() && !loading && totalResults > 0 && (
                 <div className="search-results">
                     {/* Users Section */}
                     {(activeTab === "all" || activeTab === "users") && users.length > 0 && (
@@ -148,7 +191,7 @@ const SearchPage: React.FC = () => {
                             )}
                             <PostList
                                 posts={activeTab === "all" ? posts.slice(0, 3) : posts}
-                                isLoading={false}
+                                isLoading={loading}
                             />
                         </div>
                     )}

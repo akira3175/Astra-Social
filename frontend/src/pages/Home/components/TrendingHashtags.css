@@ -1,0 +1,58 @@
+.trending-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.trending-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.trending-item:hover {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+.trending-rank {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #94a3b8;
+    min-width: 24px;
+}
+
+.trending-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.trending-name {
+    font-weight: 600;
+    color: #334155;
+    font-size: 0.95rem;
+}
+
+.trending-item:hover .trending-name {
+    color: #4f46e5;
+}
+
+.trending-count {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.trending-loading {
+    padding: 20px 0;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import type { Post } from "../../../types/post";
@@ -46,6 +46,42 @@ const getDisplayName = (user: Post["user"]): string => {
         return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
     }
     return user.username;
+};
+
+/**
+ * Render text with clickable hashtags
+ */
+const renderContentWithHashtags = (content: string) => {
+    if (!content) return null;
+    
+    // Phân tách văn bản dựa trên hashtag (bắt đầu bằng #, theo sau là chữ, số hoặc dấu gạch dưới)
+    const parts = content.split(/(#[a-zA-Z0-9_]+)/g);
+    
+    return (
+        <>
+            {parts.map((part, i) => {
+                if (part.match(/^#[a-zA-Z0-9_]+$/)) {
+                    const tagContent = part.slice(1); // Bỏ dấu # lúc truyền lên URL search
+                    return (
+                        <Link 
+                            key={i} 
+                            to={`/search?q=%23${encodeURIComponent(tagContent)}`}
+                            className="post-hashtag"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {part}
+                        </Link>
+                    );
+                }
+                // Text bình thường có thể bao gồm xuống dòng
+                return (
+                    <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+                        {part}
+                    </span>
+                );
+            })}
+        </>
+    );
 };
 
 /**
@@ -406,7 +442,7 @@ const PostList: React.FC<PostListProps> = ({
 
                             {post.content && (
                                 <div className="post-content">
-                                    <p className="post-text">{post.content}</p>
+                                    <div className="post-text">{renderContentWithHashtags(post.content)}</div>
                                 </div>
                             )}
 

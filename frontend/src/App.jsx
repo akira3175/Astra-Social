@@ -97,7 +97,7 @@ import { LoginPage, ProtectedRoute, PermissionRoute, GuestRoute, RegisterPage, F
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
 import MessagesPage from "./pages/Messages";
-import SearchPage from "./pages/Search"; // Giữ lại import này
+import SearchPage from "./pages/Search";
 import FriendsPage from "./pages/Friends";
 import NotificationsPage from "./pages/Notifications";
 import BasePage from "./pages/Base";
