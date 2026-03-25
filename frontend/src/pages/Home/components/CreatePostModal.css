@@ -268,4 +268,110 @@
 
 @keyframes ai-spin {
     to { transform: rotate(360deg); }
+}
+
+/* Privacy Dropdown */
+.create-post-header-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 8px;
+}
+
+.create-post-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.create-post-username {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.cpm-privacy-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.cpm-privacy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cpm-privacy-btn:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.cpm-privacy-caret {
+    font-size: 0.55rem;
+    color: #94a3b8;
+}
+
+.cpm-privacy-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 280px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0,0,0,0.05);
+    padding: 8px 0;
+    z-index: 1000;
+}
+
+.cpm-privacy-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cpm-privacy-item:hover {
+    background: #f8fafc;
+}
+
+.cpm-privacy-item.active {
+    background: #eff6ff;
+}
+
+.cpm-privacy-item .icon {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+.cpm-privacy-item .text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cpm-privacy-item .text strong {
+    font-size: 0.85rem;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.cpm-privacy-item .text span {
+    font-size: 0.75rem;
+    color: #64748b;
 }

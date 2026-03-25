@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import type { Post } from "../../../types/post";
@@ -177,6 +177,7 @@ const PostList: React.FC<PostListProps> = ({
 }) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
     const [showReportForm, setShowReportForm] = useState(false);
     const [focusComment, setFocusComment] = useState(false);
@@ -281,6 +282,11 @@ const PostList: React.FC<PostListProps> = ({
         setSelectedPost(post);
         setFocusComment(false);
         setSearchParams({ post: post.id.toString() });
+    };
+
+    const handleProfileClick = (userId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/profile/${userId}`);
     };
 
     const handleCommentClick = (post: Post, e: React.MouseEvent) => {
@@ -422,18 +428,35 @@ const PostList: React.FC<PostListProps> = ({
                             style={{ cursor: "pointer" }}
                         >
                             <div className="post-header">
-                                <Avatar
-                                    src={post.user.profile?.avatar_url || undefined}
-                                    alt={post.user.username}
-                                    width={44}
-                                    height={44}
-                                    className="post-avatar"
-                                >
-                                    {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
-                                </Avatar>
+                                <div onClick={(e) => handleProfileClick(post.user.id, e)}>
+                                    <Avatar
+                                        src={post.user.profile?.avatar_url || undefined}
+                                        alt={post.user.username}
+                                        width={44}
+                                        height={44}
+                                        className="post-avatar"
+                                    >
+                                        {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
+                                    </Avatar>
+                                </div>
                                 <div className="post-user-info">
-                                    <span className="post-username">{getDisplayName(post.user)}</span>
-                                    <span className="post-time">{formatRelativeTime(post.created_at)}</span>
+                                    <span 
+                                        className="post-username"
+                                        onClick={(e) => handleProfileClick(post.user.id, e)}
+                                        style={{ cursor: "pointer" }}
+                                    >
+                                        {getDisplayName(post.user)}
+                                    </span>
+                                    <span className="post-time">
+                                        {formatRelativeTime(post.created_at)}
+                                        <span 
+                                            className="post-privacy-icon" 
+                                            style={{ marginLeft: '4px', fontSize: '0.8em', color: '#64748b' }}
+                                            title={post.privacy === "FRIENDS" ? "Bạn bè" : post.privacy === "ONLY_ME" ? "Chỉ mình tôi" : "Công khai"}
+                                        >
+                                            · {post.privacy === "FRIENDS" ? "👥" : post.privacy === "ONLY_ME" ? "🔒" : "🌎"}
+                                        </span>
+                                    </span>
                                 </div>
                                 <PostMenu
                                     isOwner={isOwner}
@@ -503,6 +526,10 @@ const PostList: React.FC<PostListProps> = ({
                 startEditing={editingPostId === selectedPost?.id}
                 startDeleting={deletingPostId === selectedPost?.id}
                 onCommentAdded={handleCommentAdded}
+                initialLikeState={selectedPost ? likeStates[selectedPost.id] : undefined}
+                onLikeChanged={(postId, liked, count) => {
+                    setLikeStates((prev) => ({ ...prev, [postId]: { liked, count } }));
+                }}
             />
 
             {isLoadingMore && (

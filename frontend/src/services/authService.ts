@@ -125,22 +125,21 @@ export const refreshToken = async (): Promise<string> => {
 /**
  * Logout user and clear tokens
  */
-export const logout = async (): Promise<void> => {
-    try {
-        const refreshTokenValue = tokenService.getRefreshToken();
+export const logout = (): void => {
+    const refreshTokenValue = tokenService.getRefreshToken();
 
-        if (refreshTokenValue) {
-            await api.post(ENDPOINTS.LOGOUT, {
-                refresh_token: refreshTokenValue,
-            });
-        }
-    } catch (error) {
-        // Ignore errors during logout, still clear tokens
-        console.error("Logout API error:", error);
-    } finally {
-        // Clear tokens
-        tokenService.clear();
+    // Fire the API call in the background without blocking
+    if (refreshTokenValue) {
+        api.post(ENDPOINTS.LOGOUT, {
+            refresh_token: refreshTokenValue,
+        }).catch((error) => {
+            console.error("Logout API error:", error);
+        });
     }
+
+    // Immediately clear tokens and redirect to login
+    tokenService.clear();
+    window.location.href = "/login";
 };
 
 /**

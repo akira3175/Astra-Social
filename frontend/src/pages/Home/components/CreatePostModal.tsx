@@ -24,6 +24,9 @@ interface FileWithPreview {
 
 const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPostCreated }) => {
     const [content, setContent] = useState<string>("");
+    const [privacy, setPrivacy] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
+    const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
+    const privacyDropdownRef = useRef<HTMLDivElement>(null);
     const [filesWithPreview, setFilesWithPreview] = useState<FileWithPreview[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
@@ -33,10 +36,19 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPost
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (privacyDropdownRef.current && !privacyDropdownRef.current.contains(event.target as Node)) {
+                setShowPrivacyDropdown(false);
+            }
+        };
+        if (showPrivacyDropdown) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
         return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
             filesWithPreview.forEach((f) => URL.revokeObjectURL(f.previewUrl));
         };
-    }, []);
+    }, [showPrivacyDropdown, filesWithPreview]);
 
     const handleClose = () => {
         filesWithPreview.forEach((f) => URL.revokeObjectURL(f.previewUrl));
@@ -57,7 +69,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPost
             const files = filesWithPreview.map((f) => f.file);
             await createPost({
                 content: content.trim() || undefined,
-                privacy: "PUBLIC",
+                privacy: privacy,
                 files: files.length > 0 ? files : undefined,
             });
             handleClose();
@@ -145,14 +157,69 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPost
                     >
                         {!currentUser?.avatar && (currentUser?.firstName?.[0] || currentUser?.username?.[0] || "U")}
                     </Avatar>
-                    <textarea
-                        className="create-post-modal-textarea"
-                        placeholder="Bạn đang nghĩ gì?"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        rows={4}
-                        disabled={isBusy}
-                    />
+                    <div className="create-post-header-content">
+                        <div className="create-post-user-info">
+                            <span className="create-post-username">
+                                {currentUser?.firstName || currentUser?.lastName
+                                    ? `${currentUser?.firstName || ""} ${currentUser?.lastName || ""}`.trim()
+                                    : currentUser?.username}
+                            </span>
+                            
+                            <div className="cpm-privacy-dropdown-container" ref={privacyDropdownRef}>
+                                <button 
+                                    className="cpm-privacy-btn" 
+                                    onClick={() => setShowPrivacyDropdown(!showPrivacyDropdown)}
+                                    type="button"
+                                >
+                                    {privacy === "PUBLIC" ? "🌎 Công khai" : privacy === "FRIENDS" ? "👥 Bạn bè" : "🔒 Chỉ mình tôi"}
+                                    <span className="cpm-privacy-caret">▼</span>
+                                </button>
+                                {showPrivacyDropdown && (
+                                    <div className="cpm-privacy-menu">
+                                        <div 
+                                            className={`cpm-privacy-item ${privacy === "PUBLIC" ? "active" : ""}`} 
+                                            onClick={() => { setPrivacy("PUBLIC"); setShowPrivacyDropdown(false); }}
+                                        >
+                                            <span className="icon">🌎</span>
+                                            <div className="text">
+                                                <strong>Công khai</strong>
+                                                <span>Mọi người trên hoặc ngoài nền tảng</span>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            className={`cpm-privacy-item ${privacy === "FRIENDS" ? "active" : ""}`} 
+                                            onClick={() => { setPrivacy("FRIENDS"); setShowPrivacyDropdown(false); }}
+                                        >
+                                            <span className="icon">👥</span>
+                                            <div className="text">
+                                                <strong>Bạn bè</strong>
+                                                <span>Chỉ bạn bè của bạn mới có thể xem</span>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            className={`cpm-privacy-item ${privacy === "ONLY_ME" ? "active" : ""}`} 
+                                            onClick={() => { setPrivacy("ONLY_ME"); setShowPrivacyDropdown(false); }}
+                                        >
+                                            <span className="icon">🔒</span>
+                                            <div className="text">
+                                                <strong>Chỉ mình tôi</strong>
+                                                <span>Chỉ bạn mới có thể xem bài viết này</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <textarea
+                            className="create-post-modal-textarea"
+                            placeholder="Bạn đang nghĩ gì?"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            rows={4}
+                            disabled={isBusy}
+                        />
+                    </div>
                 </div>
 
                 {/* AI toolbar — appears when there's content or images */}

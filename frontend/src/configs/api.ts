@@ -25,7 +25,8 @@ const api: AxiosInstance = axios.create({
     baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
-        "Access": "application/json",
+        "Accept": "application/json",
+        "ngrok-skip-browser-warning": "true",
     },
     timeout: 60000,
 });
@@ -34,7 +35,8 @@ const apiNoAuth = axios.create({
     baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
-        "Access": "application/json",
+        "Accept": "application/json",
+        "ngrok-skip-browser-warning": "true",
     },
     timeout: 15000,
 });

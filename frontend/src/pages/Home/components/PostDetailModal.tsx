@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import {
@@ -28,6 +28,8 @@ interface PostDetailModalProps {
     focusComment?: boolean;
     startEditing?: boolean;
     startDeleting?: boolean;
+    initialLikeState?: { liked: boolean; count: number };
+    onLikeChanged?: (postId: number, liked: boolean, count: number) => void;
 }
 
 const formatRelativeTime = (dateString: string): string => {
@@ -100,8 +102,17 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     focusComment = false,
     startEditing = false,
     startDeleting = false,
+    initialLikeState,
+    onLikeChanged,
 }) => {
     const { currentUser } = useCurrentUser() ?? {};
+    const navigate = useNavigate();
+
+    const handleProfileClick = (userId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onClose();
+        navigate(`/profile/${userId}`);
+    };
 
     // Edit state
     const [isEditing, setIsEditing] = useState(false);
@@ -139,23 +150,31 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     useEffect(() => {
         if (post) {
             // First set with props data immediately
-            setLikeState({
-                liked: post.is_liked ?? false,
-                count: post.likes_count ?? 0,
-            });
+            if (initialLikeState) {
+                setLikeState(initialLikeState);
+            } else {
+                setLikeState({
+                    liked: post.is_liked ?? false,
+                    count: post.likes_count ?? 0,
+                });
+            }
             setLocalCommentCount(post.comments_count ?? 0);
 
             // Then fetch latest data from backend to ensure accuracy
             getPostById(post.id).then((res) => {
                 if (res.data) {
-                    setLikeState({
+                    const newLikeState = {
                         liked: res.data.is_liked ?? false,
                         count: res.data.likes_count ?? 0,
-                    });
+                    };
+                    setLikeState(newLikeState);
+                    onLikeChanged?.(post.id, newLikeState.liked, newLikeState.count);
+                    
                     setLocalCommentCount(res.data.comments_count ?? 0);
                 }
             }).catch(console.error);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [post?.id]);
 
     // Fetch comments when modal opens
@@ -251,15 +270,19 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     const handleLike = async () => {
         if (!post) return;
         const prev = { ...likeState };
-        // Optimistic update
-        setLikeState({
+        const next = {
             liked: !prev.liked,
             count: prev.liked ? prev.count - 1 : prev.count + 1,
-        });
+        };
+        // Optimistic update
+        setLikeState(next);
+        onLikeChanged?.(post.id, next.liked, next.count);
+        
         try {
             await toggleLike(post.id);
         } catch {
             setLikeState(prev); // rollback
+            onLikeChanged?.(post.id, prev.liked, prev.count);
         }
     };
 
@@ -376,17 +399,34 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
                     {/* Header */}
                     <div className="pdm-header">
-                        <Avatar
-                            src={post.user.profile?.avatar_url || undefined}
-                            alt={post.user.username}
-                            width={40}
-                            height={40}
-                        >
-                            {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
-                        </Avatar>
+                        <div onClick={(e) => handleProfileClick(post.user.id, e)} style={{ cursor: "pointer" }}>
+                            <Avatar
+                                src={post.user.profile?.avatar_url || undefined}
+                                alt={post.user.username}
+                                width={40}
+                                height={40}
+                            >
+                                {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
+                            </Avatar>
+                        </div>
                         <div className="pdm-user-info">
-                            <span className="pdm-username">{getDisplayName(post.user)}</span>
-                            <span className="pdm-time">{formatRelativeTime(post.created_at)}</span>
+                            <span 
+                                className="pdm-username"
+                                onClick={(e) => handleProfileClick(post.user.id, e)}
+                                style={{ cursor: "pointer" }}
+                            >
+                                {getDisplayName(post.user)}
+                            </span>
+                            <span className="pdm-time">
+                                {formatRelativeTime(post.created_at)}
+                                <span 
+                                    className="pdm-privacy-icon" 
+                                    style={{ marginLeft: '4px', fontSize: '0.8em', color: '#64748b' }}
+                                    title={post.privacy === "FRIENDS" ? "Bạn bè" : post.privacy === "ONLY_ME" ? "Chỉ mình tôi" : "Công khai"}
+                                >
+                                    · {post.privacy === "FRIENDS" ? "👥" : post.privacy === "ONLY_ME" ? "🔒" : "🌎"}
+                                </span>
+                            </span>
                         </div>
 
                         {/* Post Menu - now uses shared component */}
@@ -551,6 +591,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                                             comment={comment}
                                             postId={post.id}
                                             postAuthorId={post.user_id}
+                                            onNavigateProfile={handleProfileClick}
                                         />
                                     ))}
                                     {commentHasMore && (
@@ -664,6 +705,7 @@ interface CommentItemProps {
     postAuthorId?: number;
     onReplySubmitted?: (parentId: number, newReply: Comment) => void;
     depth?: number;
+    onNavigateProfile?: (userId: number, e: React.MouseEvent) => void;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -672,6 +714,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
     postAuthorId,
     onReplySubmitted,
     depth = 0,
+    onNavigateProfile,
 }) => {
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState("");
@@ -726,7 +769,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
     return (
         <div className={`pdm-comment-item ${depth > 0 ? "pdm-comment-item--reply" : ""}`}>
-            <div className="avatar-wrapper">
+            <div className="avatar-wrapper" onClick={(e) => onNavigateProfile?.(comment.user_id, e)} style={{ cursor: "pointer" }}>
                 <Avatar
                     src={comment.user.profile?.avatar_url || undefined}
                     alt={comment.user.username}
@@ -741,7 +784,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 {/* Bubble containing author, text, and floating like badge */}
                 <div className="pdm-comment-bubble">
                     <div className="pdm-comment-header">
-                        <span className="pdm-comment-author">{displayName}</span>
+                        <span 
+                            className="pdm-comment-author"
+                            onClick={(e) => onNavigateProfile?.(comment.user_id, e)}
+                            style={{ cursor: "pointer" }}
+                        >
+                            {displayName}
+                        </span>
                         {isAuthor && <span className="pdm-comment-author-badge">Tác giả</span>}
                     </div>
                     <p className="pdm-comment-text">{renderContentWithHashtags(comment.content)}</p>
@@ -810,6 +859,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                                 postId={postId}
                                 postAuthorId={postAuthorId}
                                 depth={depth + 1}
+                                onNavigateProfile={onNavigateProfile}
                             />
                         ))}
                     </div>

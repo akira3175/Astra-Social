@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { getUnreadCount } from '../services/notificationService';
 import { usePolling } from './usePolling';
 
@@ -9,6 +9,7 @@ import { usePolling } from './usePolling';
  */
 export function useNotificationPolling(userId: number | null) {
     const [unreadCount, setUnreadCount] = useState(0);
+    const countRef = useRef(0);
 
     const pollNotifications = useCallback(async (): Promise<boolean> => {
         if (!userId) return false;
@@ -16,13 +17,17 @@ export function useNotificationPolling(userId: number | null) {
         try {
             const res = await getUnreadCount(userId, false);
             const newCount = res.count || 0;
-            const changed = newCount !== unreadCount;
-            setUnreadCount(newCount);
+            const changed = newCount !== countRef.current;
+            
+            if (changed) {
+                countRef.current = newCount;
+                setUnreadCount(newCount);
+            }
             return changed;
         } catch {
             return false;
         }
-    }, [userId, unreadCount]);
+    }, [userId]);
 
     usePolling(pollNotifications, 5000, 15000, !!userId);
 
@@ -30,7 +35,11 @@ export function useNotificationPolling(userId: number | null) {
     useEffect(() => {
         if (userId) {
             getUnreadCount(userId, false)
-                .then(res => setUnreadCount(res.count || 0))
+                .then(res => {
+                    const newCount = res.count || 0;
+                    countRef.current = newCount;
+                    setUnreadCount(newCount);
+                })
                 .catch(() => {});
         }
     }, [userId]);

@@ -16,22 +16,27 @@ export function usePolling(
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isActiveRef = useRef(false);
     const mountedRef = useRef(true);
+    const callbackRef = useRef(callback);
+
+    useEffect(() => {
+        callbackRef.current = callback;
+    }, [callback]);
 
     const poll = useCallback(async () => {
         if (!mountedRef.current || !enabled) return;
 
         try {
-            const hasNew = await callback();
+            const hasNew = await callbackRef.current();
             isActiveRef.current = hasNew;
         } catch (e) {
             // Silently fail — will retry on next interval
         }
 
-        if (!mountedRef.current) return;
+        if (!mountedRef.current || !enabled) return;
 
         const nextInterval = isActiveRef.current ? activeInterval : idleInterval;
         timerRef.current = setTimeout(poll, nextInterval);
-    }, [callback, activeInterval, idleInterval, enabled]);
+    }, [activeInterval, idleInterval, enabled]);
 
     useEffect(() => {
         mountedRef.current = true;

@@ -81,7 +81,9 @@ const HomePage: React.FC = () => {
                 {/* Left sidebar */}
                 {!isMobile && (
                     <div className="sidebar-container sidebar-left">
-                        <LeftSidebar onToggleChat={() => { }} />
+                        <div className="sidebar-inner">
+                            <LeftSidebar onToggleChat={() => { }} />
+                        </div>
                     </div>
                 )}
 
@@ -102,7 +104,9 @@ const HomePage: React.FC = () => {
                 {/* Right sidebar */}
                 {!isSmallScreen && (
                     <div className="sidebar-container sidebar-right">
-                        <RightSidebar />
+                        <div className="sidebar-inner">
+                            <RightSidebar />
+                        </div>
                     </div>
                 )}
             </div>
