@@ -46,11 +46,50 @@ const formatRelativeTime = (dateString: string): string => {
     return date.toLocaleDateString("vi-VN");
 };
 
+
+
 const getDisplayName = (user: Post["user"]): string => {
     if (user.profile?.first_name || user.profile?.last_name) {
         return `${user.profile.last_name || ""} ${user.profile.first_name || ""}`.trim();
     }
     return user.username;
+};
+
+/**
+ * Shared/parent post preview displayed inside the detail modal
+ */
+const SharedPostPreviewInModal: React.FC<{ parent: Post["parent"] }> = ({ parent }) => {
+    if (!parent) return null;
+    const firstImage = parent.attachments?.find((a) => a.file_type === "IMAGE");
+    const displayName = getDisplayName(parent.user);
+    return (
+        <div className="shared-post-preview" style={{ margin: "12px 0" }}>
+            <div className="shared-preview-author">
+                <Avatar
+                    src={parent.user.profile?.avatar_url || undefined}
+                    alt={parent.user.username}
+                    width={28}
+                    height={28}
+                >
+                    {displayName[0]?.toUpperCase() || "U"}
+                </Avatar>
+                <div className="shared-preview-meta">
+                    <span className="shared-preview-name">{displayName}</span>
+                </div>
+            </div>
+            {parent.content && (
+                <p className="shared-preview-content">{parent.content}</p>
+            )}
+            {firstImage && (
+                <div className="shared-preview-image">
+                    <img src={firstImage.url} alt="" />
+                </div>
+            )}
+            {!parent.content && !firstImage && (
+                <p className="shared-preview-deleted">Bài viết gốc không có nội dung</p>
+            )}
+        </div>
+    );
 };
 
 /**
@@ -524,6 +563,30 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         ) : (
                             post.content && <p className="pdm-text">{renderContentWithHashtags(post.content)}</p>
                         )}
+
+                        {/* Shared/parent post preview */}
+                        {post.parent && <SharedPostPreviewInModal parent={post.parent} />}
+
+                        {/* Attachments for non-share posts */}
+                        {!post.parent && post.attachments && post.attachments.filter(a => a.file_type !== "IMAGE").map(att => {
+                            if (att.file_type === "VIDEO") {
+                                return (
+                                    <div key={att.id} style={{ margin: "8px 0" }}>
+                                        <video src={att.url} controls preload="metadata" style={{ maxWidth: "100%", borderRadius: "8px" }} />
+                                    </div>
+                                );
+                            }
+                            if (att.file_type === "FILE") {
+                                const fileName = att.url.split('/').pop() || 'Tệp đính kèm';
+                                return (
+                                    <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" className="post-file-item" style={{ display: "flex", alignItems: "center", gap: "8px", margin: "8px 0", padding: "8px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", textDecoration: "none", color: "inherit" }}>
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+                                        <span>{decodeURIComponent(fileName)}</span>
+                                    </a>
+                                );
+                            }
+                            return null;
+                        })}
                     </div>
 
                     {/* Dùng localCommentCount */}

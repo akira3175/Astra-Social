@@ -320,7 +320,7 @@ const PostList: React.FC<PostListProps> = ({
     const handlePostClick = (post: Post) => {
         setSelectedPost(post);
         setFocusComment(false);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleProfileClick = (userId: number, e: React.MouseEvent) => {
@@ -332,7 +332,7 @@ const PostList: React.FC<PostListProps> = ({
         e.stopPropagation();
         setSelectedPost(post);
         setFocusComment(true);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleCloseModal = () => {
@@ -340,20 +340,19 @@ const PostList: React.FC<PostListProps> = ({
         setFocusComment(false);
         setEditingPostId(null);
         setDeletingPostId(null);
-        searchParams.delete("post");
-        setSearchParams(searchParams);
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete("post"); return next; });
     };
 
     const handleEditClick = (post: Post) => {
         setSelectedPost(post);
         setEditingPostId(post.id);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleDeleteClick = (post: Post) => {
         setSelectedPost(post);
         setDeletingPostId(post.id);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleLike = async (postId: number) => {

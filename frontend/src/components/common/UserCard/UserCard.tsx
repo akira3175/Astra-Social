@@ -26,7 +26,7 @@ export interface UserCardProps {
 }
 
 const baseActionClass =
-    "inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[14px] font-semibold whitespace-nowrap transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60";
 
 const spinnerClass =
     "h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white";
@@ -101,13 +101,13 @@ const UserCard: React.FC<UserCardProps> = ({
     };
 
     const cardClassName = [
-        "group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition",
-        "hover:-translate-y-1 hover:shadow-lg",
+        "group relative rounded-[20px] border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300",
+        "hover:-translate-y-1.5 hover:shadow-[0_12px_30px_rgb(0,0,0,0.08)]",
         "cursor-pointer",
         isLoading ? "pointer-events-none opacity-70" : "",
         variant === "friend"
-            ? "flex min-h-[240px] basis-full flex-col gap-3 sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.75rem)] xl:basis-[calc(25%-0.75rem)]"
-            : "flex items-start gap-4",
+            ? "flex min-h-[250px] w-full flex-col gap-4"
+            : "flex items-start w-full gap-4",
     ]
         .filter(Boolean)
         .join(" ");
@@ -120,14 +120,14 @@ const UserCard: React.FC<UserCardProps> = ({
                 return (
                     <div className="mt-2 flex items-center gap-2">
                         <button
-                            className={`${baseActionClass} min-w-[100px] bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
+                            className={`${baseActionClass} min-w-[100px] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_auto] text-white shadow-md shadow-indigo-500/20 hover:bg-[position:right_center] hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.98]`}
                             onClick={handlePrimaryClick}
                             disabled={isLoading}
                         >
                             {isLoading ? <span className={spinnerClass} /> : "Kết bạn"}
                         </button>
                         <button
-                            className={`${baseActionClass} bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
+                            className={`${baseActionClass} bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 active:scale-[0.98] ring-1 ring-inset ring-slate-200/60`}
                             onClick={handleSecondaryClick}
                             disabled={isLoading}
                         >
@@ -140,14 +140,14 @@ const UserCard: React.FC<UserCardProps> = ({
                 return (
                     <div className="mt-2 flex items-center gap-2">
                         <button
-                            className={`${baseActionClass} min-w-[100px] bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
+                            className={`${baseActionClass} min-w-[100px] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_auto] text-white shadow-md shadow-indigo-500/20 hover:bg-[position:right_center] hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.98]`}
                             onClick={handlePrimaryClick}
                             disabled={isLoading}
                         >
                             {isLoading ? <span className={spinnerClass} /> : "Chấp nhận"}
                         </button>
                         <button
-                            className={`${baseActionClass} bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
+                            className={`${baseActionClass} bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 active:scale-[0.98] ring-1 ring-inset ring-slate-200/60`}
                             onClick={handleSecondaryClick}
                             disabled={isLoading}
                         >
@@ -158,29 +158,29 @@ const UserCard: React.FC<UserCardProps> = ({
 
             case "friend":
                 return (
-                    <div className="mt-auto flex w-full items-center justify-between gap-2" ref={dropdownRef}>
+                    <div className="relative mt-auto flex w-full items-stretch justify-between gap-2.5" ref={dropdownRef}>
                         <button
-                            className={`${baseActionClass} flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700`}
+                            className={`${baseActionClass} flex-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_auto] text-white shadow-md shadow-indigo-500/20 hover:bg-[position:right_center] hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.98]`}
                             onClick={handlePrimaryClick}
                         >
                             Nhắn tin
                         </button>
                         <button
-                            className={`${baseActionClass} px-3 text-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`}
+                            className={`${baseActionClass} px-3 text-lg bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 active:scale-[0.98] ring-1 ring-inset ring-slate-200/60`}
                             onClick={handleDropdownToggle}
                         >
                             ⋮
                         </button>
                         {showDropdown && (
-                            <div className="absolute right-0 top-full z-20 mt-2 min-w-[150px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                            <div className="absolute right-0 top-[110%] z-50 min-w-[160px] origin-top-right overflow-hidden rounded-2xl border border-slate-100 bg-white p-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.1)] outline-none">
                                 <button
-                                    className="block w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-100"
+                                    className="block w-full rounded-xl px-4 py-2.5 text-left text-[14px] font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-indigo-600"
                                     onClick={handleUnfriendClick}
                                 >
                                     Hủy kết bạn
                                 </button>
                                 <button
-                                    className="block w-full px-4 py-3 text-left text-sm text-red-500 transition hover:bg-red-50"
+                                    className="block w-full rounded-xl px-4 py-2.5 text-left text-[14px] font-medium text-red-600 transition-colors hover:bg-red-50"
                                     onClick={handleBlockClick}
                                 >
                                     Chặn
@@ -194,7 +194,7 @@ const UserCard: React.FC<UserCardProps> = ({
                 return (
                     <div className="mt-2 flex items-center gap-2">
                         <button
-                            className={`${baseActionClass} bg-red-50 text-red-500 hover:bg-red-500 hover:text-white`}
+                            className={`${baseActionClass} bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 active:scale-[0.98]`}
                             onClick={handlePrimaryClick}
                             disabled={isLoading}
                         >
@@ -206,7 +206,7 @@ const UserCard: React.FC<UserCardProps> = ({
             default:
                 return (
                     <button
-                        className={`${baseActionClass} mt-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white`}
+                        className={`${baseActionClass} mt-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 active:scale-[0.98]`}
                         onClick={handlePrimaryClick}
                     >
                         Kết bạn
@@ -218,23 +218,27 @@ const UserCard: React.FC<UserCardProps> = ({
     return (
         <div className={cardClassName} onClick={onClick}>
             <div className={variant === "friend" ? "relative self-start" : "relative shrink-0"}>
-                <Avatar src={user.avatarUrl || undefined} width={56} height={56}>
-                    {displayName[0]?.toUpperCase() || "U"}
-                </Avatar>
+                <div className="rounded-full ring-4 ring-slate-50/50">
+                    <Avatar src={user.avatarUrl || undefined} width={64} height={64}>
+                        {displayName[0]?.toUpperCase() || "U"}
+                    </Avatar>
+                </div>
                 {user.isVerified && (
-                    <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-indigo-500 text-[11px] text-white">
+                    <span className="absolute bottom-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-indigo-500 text-[11px] text-white shadow-sm">
                         ✓
                     </span>
                 )}
             </div>
 
             <div className={variant === "friend" ? "w-full min-w-0" : "min-w-0 flex-1 pt-1"}>
-                <div className="mb-1 truncate text-base font-semibold text-slate-800">{displayName}</div>
-                <div className="mb-2 text-sm text-slate-500">@{user.username}</div>
+                <div className="mb-0.5 truncate text-[17px] font-bold tracking-tight text-slate-800">{displayName}</div>
+                <div className="mb-2.5 text-[13px] font-medium text-slate-400">@{user.username}</div>
                 {user.bio && (
-                    <div className="mb-2 line-clamp-2 text-sm leading-6 text-slate-700">{user.bio}</div>
+                    <div className="mb-3 line-clamp-2 text-[14px] leading-relaxed text-slate-600">{user.bio}</div>
                 )}
-                <div className="text-sm font-medium text-indigo-600">{user.mutualFriends} bạn chung</div>
+                {user.mutualFriends !== undefined && (
+                    <div className="text-[13px] font-semibold text-indigo-500/90">{user.mutualFriends} bạn chung</div>
+                )}
             </div>
 
             {renderActions()}
