@@ -29,9 +29,14 @@ interface PostListProps {
  * Format relative time
  */
 const formatRelativeTime = (dateString: string): string => {
-    const localDateString = dateString.replace(/Z$/i, "");
-    const date = new Date(localDateString);
-    if (isNaN(date.getTime())) return dateString;
+    // Ensure ISO format for Safari compatibility and preserve 'Z' for UTC
+    let formattedString = dateString.replace(" ", "T");
+    if (!formattedString.endsWith("Z") && !formattedString.includes("+")) {
+        formattedString += "Z";
+    }
+    const date = new Date(formattedString);
+    if (isNaN(date.getTime())) return "Gần đây";
+    
     const diffInSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diffInSeconds < 0) return "Vừa xong";
     if (diffInSeconds < 60) return "Vừa xong";

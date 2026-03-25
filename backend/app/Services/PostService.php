@@ -637,7 +637,8 @@ class PostService
 
     public function toggleLike(int $postId, int $userId): array
     {
-        if (!Post::find($postId)) {
+        $post = Post::find($postId);
+        if (!$post) {
             return ['success' => false, 'message' => 'Post not found', 'code' => 404];
         }
 
@@ -649,6 +650,19 @@ class PostService
         }
 
         PostLike::create(['post_id' => $postId, 'user_id' => $userId]);
+
+        // Notify the post owner (skip self-like)
+        if ($post->user_id !== $userId) {
+            $this->notiService->create([
+                'receiver_id' => $post->user_id,
+                'actor_id'    => $userId,
+                'type'        => 'LIKE',
+                'entity_type' => Notification::ENTITY_TYPE_POST,
+                'entity_id'   => $postId,
+                'message'     => 'đã thích bài viết của bạn',
+            ]);
+        }
+
         return ['liked' => true];
     }
 
@@ -703,6 +717,34 @@ class PostService
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
         ]);
+
+        // Notify based on comment type
+        if (!empty($data['parent_id'])) {
+            // REPLY: notify the parent comment's author
+            $parentComment = Comment::find($data['parent_id']);
+            if ($parentComment && $parentComment->user_id !== $userId) {
+                $this->notiService->create([
+                    'receiver_id' => $parentComment->user_id,
+                    'actor_id'    => $userId,
+                    'type'        => 'REPLY',
+                    'entity_type' => Notification::ENTITY_TYPE_POST,
+                    'entity_id'   => $postId,
+                    'message'     => 'đã trả lời bình luận của bạn',
+                ]);
+            }
+        } else {
+            // COMMENT: notify the post owner (skip self-comment)
+            if ($post->user_id !== $userId) {
+                $this->notiService->create([
+                    'receiver_id' => $post->user_id,
+                    'actor_id'    => $userId,
+                    'type'        => 'COMMENT',
+                    'entity_type' => Notification::ENTITY_TYPE_POST,
+                    'entity_id'   => $postId,
+                    'message'     => 'đã bình luận về bài viết của bạn',
+                ]);
+            }
+        }
 
         return ['success' => true, 'data' => $comment];
     }

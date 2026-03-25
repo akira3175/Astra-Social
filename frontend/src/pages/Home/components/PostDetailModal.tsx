@@ -33,9 +33,13 @@ interface PostDetailModalProps {
 }
 
 const formatRelativeTime = (dateString: string): string => {
-    // Giữ nguyên chuỗi, browser tự parse UTC và convert sang local timezone
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
+    // Ensure ISO format for Safari compatibility and preserve 'Z' for UTC
+    let formattedString = dateString.replace(" ", "T");
+    if (!formattedString.endsWith("Z") && !formattedString.includes("+")) {
+        formattedString += "Z";
+    }
+    const date = new Date(formattedString);
+    if (isNaN(date.getTime())) return "Gần đây";
 
     const diffInSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diffInSeconds < 0) return "Vừa xong";

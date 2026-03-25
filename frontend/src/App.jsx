@@ -122,10 +122,10 @@ const RouteApp = () => {
           </Route>
 
           {/* Public routes không cần auth */}
-          <Route path="/posts/:id" element={<PostDetailPage />} />
 
           {/* Protected routes - có Navbar thông qua BasePage layout */}
           <Route element={<BasePage />}>
+            <Route path="/posts/:id" element={<PostDetailPage />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/messages" element={<MessagesPage />} />
