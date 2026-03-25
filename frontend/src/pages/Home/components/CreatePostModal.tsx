@@ -14,6 +14,7 @@ interface CreatePostModalProps {
     open: boolean;
     onClose: () => void;
     onPostCreated?: () => void;
+    initialAction?: "photo" | "video" | null;
 }
 
 interface FileWithPreview {
@@ -22,7 +23,7 @@ interface FileWithPreview {
     id: string;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPostCreated }) => {
+const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPostCreated, initialAction }) => {
     const [content, setContent] = useState<string>("");
     const [privacy, setPrivacy] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
     const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
@@ -34,6 +35,21 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPost
     const [error, setError] = useState<string | null>(null);
     const { currentUser } = useCurrentUser() ?? {};
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [fileAccept, setFileAccept] = useState<string>("image/*");
+
+    useEffect(() => {
+        if (open && initialAction) {
+            const accept = initialAction === "photo" ? "image/*" : "video/*";
+            setFileAccept(accept);
+            // Wait for DOM to be ready
+            setTimeout(() => {
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                    fileInputRef.current.click();
+                }
+            }, 100);
+        }
+    }, [open, initialAction]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -282,7 +298,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPost
                 <div className="create-post-modal-actions">
                     <button className="create-post-add-image-btn" onClick={handleImageClick} disabled={isBusy} type="button">
                         <ImageIcon size={20} />
-                        Thêm ảnh
+                        Thêm ảnh/video
                     </button>
                     <button
                         className="create-post-submit-btn"
@@ -295,7 +311,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPost
                     </button>
                 </div>
 
-                <input type="file" accept="image/*" multiple style={{ display: "none" }} ref={fileInputRef} onChange={handleFileChange} />
+                <input type="file" accept={fileAccept} multiple style={{ display: "none" }} ref={fileInputRef} onChange={handleFileChange} />
             </div>
         </Modal>
     );
