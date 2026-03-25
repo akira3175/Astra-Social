@@ -9,6 +9,13 @@ export interface LoginRequest {
     password: string;
 }
 
+export interface ValidateStep1Request {
+    username: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+}
+
 export interface SendRegisterOtpRequest {
     username: string;
     email: string;

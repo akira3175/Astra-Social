@@ -6,6 +6,7 @@ import type {
     RegisterRequest,
     RegisterResponse,
     RefreshResponse,
+    ValidateStep1Request,
     SendRegisterOtpRequest,
     SendOtpResponse,
     ForgotPasswordRequest,
@@ -25,6 +26,7 @@ import type {
 
 const ENDPOINTS = {
     LOGIN: "/auth/login",
+    VALIDATE_STEP1: "/auth/validate-step1",
     REGISTER: "/auth/register",
     SEND_REGISTER_OTP: "/auth/send-register-otp",
     REFRESH: "/auth/refresh",
@@ -57,6 +59,18 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
     }
 
     return data;
+};
+
+/**
+ * Validate step 1 registration data (username, email uniqueness)
+ */
+export const validateRegisterStep1 = async (userData: ValidateStep1Request): Promise<{ success: boolean; message: string }> => {
+    const response = await apiNoAuth.post<{ success: boolean; message: string }>(
+        ENDPOINTS.VALIDATE_STEP1,
+        userData
+    );
+
+    return response.data;
 };
 
 /**

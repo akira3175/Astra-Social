@@ -9,6 +9,7 @@ use App\Http\Requests\RefreshTokenRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\SendRegisterOtpRequest;
+use App\Http\Requests\ValidateRegisterStep1Request;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,18 @@ class AuthController extends Controller
     public function __construct(
         private AuthService $authService
     ) {}
+
+    /**
+     * Validate the first step of registration.
+     */
+    public function validateStep1(ValidateRegisterStep1Request $request): JsonResponse
+    {
+        // If it passes the FormRequest, it means the validation is successful.
+        return response()->json([
+            'success' => true,
+            'message' => 'Validation successful'
+        ]);
+    }
 
     /**
      * Send OTP for registration.
