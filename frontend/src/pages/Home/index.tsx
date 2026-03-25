@@ -6,7 +6,7 @@ import RightSidebar from "./components/RightSidebar";
 import CreatePost from "./components/CreatePost";
 import PostList from "./components/PostList";
 import MobileBottomNav from "./components/MobileBottomNav";
-import { getMyPosts } from "../../services/postService";
+import { getNewsFeed } from "../../services/postService";
 import type { Post } from "../../types/post";
 import "./HomePage.css";
 
@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
             } else {
                 setIsLoading(true);
             }
-            const response = await getMyPosts(page, PER_PAGE);
+            const response = await getNewsFeed(page, PER_PAGE);
             if (response.success) {
                 if (append) {
                     setPosts(prev => [...prev, ...response.data]);
@@ -81,7 +81,9 @@ const HomePage: React.FC = () => {
                 {/* Left sidebar */}
                 {!isMobile && (
                     <div className="sidebar-container sidebar-left">
-                        <LeftSidebar onToggleChat={() => { }} />
+                        <div className="sidebar-inner">
+                            <LeftSidebar onToggleChat={() => { }} />
+                        </div>
                     </div>
                 )}
 
@@ -102,7 +104,9 @@ const HomePage: React.FC = () => {
                 {/* Right sidebar */}
                 {!isSmallScreen && (
                     <div className="sidebar-container sidebar-right">
-                        <RightSidebar />
+                        <div className="sidebar-inner">
+                            <RightSidebar />
+                        </div>
                     </div>
                 )}
             </div>

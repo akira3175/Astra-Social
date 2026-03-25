@@ -28,6 +28,8 @@ class User extends Authenticatable
         'last_login',
     ];
 
+    protected $appends = ['avatar_url', 'firstName', 'lastName', 'avatar'];
+
     protected $hidden = [
         'password',
     ];
@@ -45,12 +47,32 @@ class User extends Authenticatable
 
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class)->withTrashed();
     }
 
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        return $this->profile?->avatar_url;
+    }
+
+    public function getFirstNameAttribute()
+    {
+        return $this->profile?->first_name;
+    }
+
+    public function getLastNameAttribute()
+    {
+        return $this->profile?->last_name;
+    }
+
+    public function getAvatarAttribute()
+    {
+        return $this->profile?->avatar_url;
     }
 
     public function authTokens(): HasMany
@@ -136,5 +158,16 @@ class User extends Authenticatable
         return UserBlock::where('blocker_id', $userId)
                         ->where('blocked_id', $this->id)
                         ->exists();
+    }
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_members', 'user_id', 'conversation_id')
+                    ->withPivot('role')
+                    ->withTimestamps();
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
     }
 }

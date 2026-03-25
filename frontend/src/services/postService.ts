@@ -4,6 +4,7 @@ import type {
     PostResponse,
     CreatePostPayload,
     UpdatePostPayload,
+    Post,
 } from "../types/post";
 
 // ============ Types ============
@@ -44,6 +45,31 @@ export interface ToggleLikeResponse {
     data: { liked: boolean };
 }
 
+export interface SearchUser {
+    id: number;
+    username: string;
+    email?: string;
+    profile?: {
+        first_name?: string;
+        last_name?: string;
+        avatar_url?: string;
+    };
+}
+
+export interface SearchResponse {
+    success: boolean;
+    data: {
+        users: SearchUser[];
+        posts: Post[];
+    };
+    pagination: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
+}
+
 // ============ Endpoints ============
 
 const ENDPOINTS = {
@@ -59,6 +85,7 @@ const ENDPOINTS = {
     POST_SHARE: (postId: number) => `/posts/${postId}/share`,
     COMMENT_LIKE: (commentId: number) => `/comments/${commentId}/like`,
     USER_POSTS: (userId: number | string) => `/users/${userId}/posts`,
+    SEARCH: "/search",
 } as const;
 
 // ============ Post API ============
@@ -84,6 +111,19 @@ export const getPosts = async (
     perPage: number = 10
 ): Promise<PostsResponse> => {
     const response = await api.get<PostsResponse>(ENDPOINTS.POSTS, {
+        params: { page, per_page: perPage },
+    });
+    return response.data;
+};
+
+/**
+ * Get ranked News Feed for the authenticated user
+ */
+export const getNewsFeed = async (
+    page: number = 1,
+    perPage: number = 10
+): Promise<PostsResponse> => {
+    const response = await api.get<PostsResponse>('/posts/feed', {
         params: { page, per_page: perPage },
     });
     return response.data;
@@ -225,17 +265,31 @@ export const toggleCommentLike = async (
 // ============ Share API ============
 
 export const sharePost = async (
-    postId: number
+    postId: number,
+    caption?: string
 ): Promise<{ success: boolean; data: unknown }> => {
     const response = await api.post<{ success: boolean; data: unknown }>(
-        ENDPOINTS.POST_SHARE(postId)
+        ENDPOINTS.POST_SHARE(postId),
+        { caption: caption || undefined }
     );
+    return response.data;
+};
+
+export const searchAll = async (
+    query: string,
+    page: number = 1,
+    perPage: number = 10
+): Promise<SearchResponse> => {
+    const response = await api.get<SearchResponse>(ENDPOINTS.SEARCH, {
+        params: { q: query, page, per_page: perPage },
+    });
     return response.data;
 };
 
 export default {
     getMyPosts,
     getPosts,
+    getNewsFeed,
     getPostById,
     getPostsByUser,
     getPostsByUserId,
@@ -250,4 +304,5 @@ export default {
     createComment,
     toggleCommentLike,
     sharePost,
+    searchAll,
 };

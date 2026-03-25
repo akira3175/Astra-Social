@@ -206,39 +206,48 @@
     color: #65676b;
 }
 
-/* Body */
-.pdm-body {
+/* Scrollable Content Wrapper */
+.pdm-scrollable-content {
     flex: 1;
-    padding: 16px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Custom Scrollbar */
-.pdm-body::-webkit-scrollbar,
+.pdm-scrollable-content::-webkit-scrollbar,
 .pdm-edit-textarea::-webkit-scrollbar,
 .pdm-comment-field::-webkit-scrollbar {
     width: 8px;
 }
 
-.pdm-body::-webkit-scrollbar-track,
+.pdm-scrollable-content::-webkit-scrollbar-track,
 .pdm-edit-textarea::-webkit-scrollbar-track,
 .pdm-comment-field::-webkit-scrollbar-track {
     background: #f0f2f5;
     border-radius: 4px;
 }
 
-.pdm-body::-webkit-scrollbar-thumb,
+.pdm-scrollable-content::-webkit-scrollbar-thumb,
 .pdm-edit-textarea::-webkit-scrollbar-thumb,
 .pdm-comment-field::-webkit-scrollbar-thumb {
     background: #bcc0c4;
     border-radius: 4px;
 }
 
-.pdm-body::-webkit-scrollbar-thumb:hover,
+.pdm-scrollable-content::-webkit-scrollbar-thumb:hover,
 .pdm-edit-textarea::-webkit-scrollbar-thumb:hover,
 .pdm-comment-field::-webkit-scrollbar-thumb:hover {
     background: #8d9197;
 }
+
+/* Body */
+.pdm-body {
+    padding: 16px;
+    flex-shrink: 0;
+}
+
+
 
 .pdm-text {
     font-size: 15px;
@@ -356,9 +365,14 @@
 
 /* Comments */
 .pdm-comments-section {
+    padding: 0 16px 16px 16px;
+}
+
+.pdm-comment-input-fixed {
     padding: 12px 16px;
     border-top: 1px solid #eee;
-    margin-top: auto;
+    background: #fff;
+    flex-shrink: 0;
 }
 
 .pdm-comment-input {
@@ -577,80 +591,237 @@
     }
 }
 
-/* Header của mỗi comment: tên + badge + thời gian trên 1 hàng */
+/* ============ COMMENTS REDESIGN ============ */
+.pdm-comment-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.pdm-comment-item--reply {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.pdm-comment-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.pdm-comment-bubble {
+    position: relative;
+    background-color: #f0f2f5;
+    border-radius: 18px;
+    padding: 8px 12px;
+    width: fit-content;
+    max-width: 100%;
+}
+
 .pdm-comment-header {
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
     margin-bottom: 2px;
 }
- 
+
 .pdm-comment-author {
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-primary);
-    line-height: 1.3;
+    color: #050505;
+    line-height: 1.2;
 }
- 
-/* Badge "Tác giả" nhỏ gọn */
+
 .pdm-comment-author-badge {
     display: inline-flex;
     align-items: center;
-    font-size: 11px;
-    font-weight: 500;
-    color: #1877f2;
-    background: #e7f0fd;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    background: #1877f2;
     border-radius: 4px;
-    padding: 1px 5px;
-    line-height: 1.4;
-    white-space: nowrap;
+    padding: 2px 4px;
+    line-height: 1;
 }
- 
-/* Thời gian comment */
-.pdm-comment-time {
-    font-size: 12px;
-    color: var(--color-text-tertiary);
-    margin-left: auto;   /* đẩy sang phải */
-    white-space: nowrap;
-    flex-shrink: 0;
-}
- 
-/* Nội dung comment */
+
 .pdm-comment-text {
     font-size: 14px;
-    color: var(--color-text-primary);
-    margin: 0 0 4px;
-    line-height: 1.5;
+    color: #050505;
+    margin: 0;
+    line-height: 1.4;
     word-break: break-word;
 }
- 
-/* Actions like / trả lời */
+
+/* Floating Like Badge on Bubble */
+.pdm-comment-like-count {
+    position: absolute;
+    bottom: -10px;
+    right: 0px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 2px 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #65676b;
+    z-index: 1;
+}
+
+.pdm-comment-like-count .icon {
+    font-size: 12px;
+}
+
+/* Actions below bubble */
 .pdm-comment-actions {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-top: 2px;
+    margin-top: 4px;
+    margin-left: 12px;
 }
- 
+
+.pdm-comment-time {
+    font-size: 12px;
+    color: #65676b;
+}
+
 .pdm-comment-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
     background: none;
     border: none;
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    color: var(--color-text-secondary);
-    padding: 2px 0;
-    transition: color 0.15s;
+    color: #65676b;
+    padding: 0;
+    transition: color 0.1s;
 }
- 
+
 .pdm-comment-action:hover {
-    color: var(--color-text-primary);
+    text-decoration: underline;
 }
- 
+
 .pdm-comment-action--liked {
     color: #1877f2;
+}
+
+.pdm-reply-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* Custom Privacy Dropdown */
+.pdm-privacy-dropdown-container {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+
+.pdm-privacy-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #e4e6eb;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #050505;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.pdm-privacy-btn:hover {
+    background: #d8dadf;
+}
+
+.pdm-privacy-caret {
+    font-size: 10px;
+    color: #65676b;
+}
+
+.pdm-privacy-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 280px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    z-index: 100;
+    border: 1px solid #ddd;
+}
+
+.pdm-privacy-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.pdm-privacy-item:hover {
+    background: #f0f2f5;
+}
+
+.pdm-privacy-item.active {
+    background: #e7f3ff;
+}
+
+.pdm-privacy-item .icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #e4e6eb;
+    border-radius: 50%;
+}
+
+.pdm-privacy-item.active .icon {
+    background: #1877f2;
+    color: #fff;
+}
+
+.pdm-privacy-item .text {
+    display: flex;
+    flex-direction: column;
+}
+
+.pdm-privacy-item .text strong {
+    font-size: 14px;
+    color: #050505;
+    font-weight: 600;
+}
+
+.pdm-privacy-item.active .text strong {
+    color: #1877f2;
+}
+
+.pdm-privacy-item .text span {
+    font-size: 12px;
+    color: #65676b;
+    margin-top: 2px;
+}
+
+/* Hashtag Styles */
+.post-hashtag {
+    color: #1877f2;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.post-hashtag:hover {
+    text-decoration: underline;
+    color: #166fe5;
 }

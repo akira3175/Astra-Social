@@ -1,3 +1,4 @@
+import { Pagination } from "./post";
 
 export interface AdminUser {
     id: number;
@@ -21,7 +22,7 @@ export interface AdminPost {
     comments_count: number;
     created_at: string;
     deleted_at: string | null;
-    user: AdminUser ;
+    user: AdminUser;
     report_count: number;
 }
 
@@ -33,6 +34,7 @@ export interface AdminComment {
     created_at: string;
     user: AdminUser;
     post_preview: string;
+    post?: AdminPost | null;
 }
 
 export interface AdminReport {
@@ -45,7 +47,11 @@ export interface AdminReport {
     target_type: 'POST' | 'COMMENT' | 'USER';
     target_id: number;
     target_preview: string;
-    target_author: string;
+    target_author: {
+        id: number;
+        username: string;
+        avatar_url: string | null;
+    };
     reason: string;
     status: 'PENDING' | 'RESOLVED' | 'REJECTED';
     created_at: string;
@@ -53,14 +59,10 @@ export interface AdminReport {
 }
 
 export interface DashboardStats {
-    total_users: number;
-    total_posts: number;
-    total_comments: number;
-    pending_reports: number;
-    user_growth: number;    // percentage
-    post_growth: number;
-    comment_growth: number;
-    report_change: number;
+    users: UsersResponse;
+    posts: PostsResponse;
+    comments: CommentsResponse;
+    reports: ReportsResponse;
 }
 
 export interface DailyActivity {
@@ -78,45 +80,91 @@ export interface Permission {
 }
 
 export interface Role {
-    id: number;
-    name: string;
-    description: string;
-    is_default: boolean;
-    user_count: number;
+    id?: number;
+    name?: string;
+    description?: string;
+    is_default?: boolean;
+    user_count?: number;
     permissions: Permission[];
-    created_at: string;
+    created_at?: string;
 }
 
-export interface RolesResponse{
-    success: boolean,
-    message: string | null,
-    data: Role[],
-}
-export interface ReportsResponse{
-    success: boolean,
-    data: Report[],
-    pagination: Pagination,
+export interface RolesResponse {
+    success: boolean;
+    message: string | null;
+    data: Role[];
 }
 
-export interface PermissionsResponse{
-    success: boolean,
-    data: Permission[],
+export interface ReportsResponse {
+    success: boolean;
+    data: AdminReport[];
+    pagination: Pagination;
 }
 
-export interface UsersResponse{
-    success: boolean,
-    data: AdminUser[],
-    message: string | null,
+export interface PermissionsResponse {
+    success: boolean;
+    data: Permission[];
 }
 
-export interface PostsResponse{
-    success: boolean,
-    data: AdminPost[],
-    message: string | null,
+export interface PaginatedAdminUsers {
+    current_page: number;
+    data: AdminUser[];
+    first_page_url?: string;
+    from?: number;
+    last_page: number;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    path?: string;
+    per_page: number;
+    prev_page_url?: string | null;
+    to?: number;
+    total: number;
 }
 
-export interface CommentsResponse{
-    success: boolean,
-    data: AdminComment[],
-    message: string | null,
+export interface UsersResponse {
+    success: boolean;
+    data: PaginatedAdminUsers;
+    message: string | null;
+}
+
+export interface PaginatedAdminPosts {
+    current_page: number;
+    data: AdminPost[];
+    first_page_url?: string;
+    from?: number;
+    last_page: number;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    path?: string;
+    per_page: number;
+    prev_page_url?: string | null;
+    to?: number;
+    total: number;
+}
+
+export interface PostsResponse {
+    success: boolean;
+    data: PaginatedAdminPosts;
+    message: string | null;
+}
+
+export interface PaginatedAdminComments {
+    current_page: number;
+    data: AdminComment[];
+    first_page_url?: string;
+    from?: number;
+    last_page: number;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    path?: string;
+    per_page: number;
+    prev_page_url?: string | null;
+    to?: number;
+    total: number;
+}
+
+export interface CommentsResponse {
+    success: boolean;
+    data: PaginatedAdminComments;
+    message: string | null;
 }

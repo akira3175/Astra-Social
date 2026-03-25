@@ -8,7 +8,7 @@ class UserService{
     public function getUsers(array $params){
         $users = User::query()
                     ->with('role')
-                    ->orderBy('created_at', 'desc');
+                    ->orderByDesc('id');
         if(!empty($params['role']) ){
             $users->whereHas('role', function ($q) use ($params){
                 $q->where('name', $params['role']);
@@ -23,13 +23,13 @@ class UserService{
             $users->where('is_active', true);
         }
         if(strtolower($params['status'])==='banned'){
-            $users->whereNotNull('deleted_at');
+            $users->where('is_active', false);
         }
         if(strtolower($params['status'])==='verified'){
             $users->where('is_verified', true);
         }
         if(strtolower($params['status'])==='unverified'){
-            $users->where('is_active', false);
+            $users->where('is_verified', false);
         }
         return $users->paginate(10);
     }

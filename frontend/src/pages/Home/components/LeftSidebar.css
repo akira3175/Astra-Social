@@ -58,6 +58,7 @@
 }
 
 .menu-icon {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -65,6 +66,32 @@
     height: 24px;
     color: #64748b;
     transition: color 0.2s ease;
+}
+
+/* Notification Badge */
+.menu-badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #fff;
+    background: #ef4444;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+    animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
 .sidebar-menu-item:hover .menu-icon {

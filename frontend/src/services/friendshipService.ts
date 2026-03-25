@@ -10,6 +10,7 @@ import type {
     Friend,
     BlockedUser,
     FriendUser,
+    FriendshipRelationStatus,
 } from "../types/friendship";
 
 type PendingRequestResponseItem = {
@@ -51,7 +52,7 @@ const mapUser = (
 ): FriendUser => ({
     id: user.id,
     username: user.username,
-    firstName: user.profile?.first_name || user.username,
+    firstName: user.profile?.first_name || "",
     lastName: user.profile?.last_name || "",
     avatarUrl: user.profile?.avatar_url || null,
     bio: user.profile?.bio || null,
@@ -60,11 +61,40 @@ const mapUser = (
 });
 
 /**
- * Get friend suggestions.
- * Backend does not expose this endpoint yet.
+ * Get friend suggestions from backend.
+ * Uses mutual friends algorithm.
  */
 export const getFriendSuggestions = async (): Promise<FriendSuggestion[]> => {
-    return [];
+    const response = await api.get<{
+        success: boolean;
+        suggestions: Array<{
+            id: number;
+            username: string;
+            is_verified?: boolean;
+            mutual_count: number;
+            profile?: {
+                first_name?: string | null;
+                last_name?: string | null;
+                avatar_url?: string | null;
+                bio?: string | null;
+            } | null;
+        }>;
+    }>("/friendships/suggestions");
+
+    return response.data.suggestions.map((item) => ({
+        id: item.id,
+        mutualFriends: item.mutual_count,
+        user: {
+            id: item.id,
+            username: item.username,
+            firstName: item.profile?.first_name || "",
+            lastName: item.profile?.last_name || "",
+            avatarUrl: item.profile?.avatar_url || null,
+            bio: item.profile?.bio || null,
+            isVerified: item.is_verified ?? false,
+            mutualFriends: item.mutual_count,
+        },
+    }));
 };
 
 /**
@@ -78,7 +108,7 @@ export const getFriendRequests = async (): Promise<FriendRequest[]> => {
         user: {
             id: item.user_id,
             username: item.username,
-            firstName: item.profile?.first_name || item.username,
+            firstName: item.profile?.first_name || "",
             lastName: item.profile?.last_name || "",
             avatarUrl: item.profile?.avatar_url || null,
             bio: item.profile?.bio || null,
@@ -103,11 +133,53 @@ export const getFriends = async (): Promise<Friend[]> => {
 };
 
 /**
- * Get blocked users.
- * Backend does not expose this endpoint yet.
+ * Get blocked users from backend.
  */
 export const getBlockedUsers = async (): Promise<BlockedUser[]> => {
-    return [];
+    const response = await api.get<{
+        success: boolean;
+        data: Array<{
+            id: number;
+            username: string;
+            is_verified?: boolean;
+            profile?: {
+                first_name?: string | null;
+                last_name?: string | null;
+                avatar_url?: string | null;
+            } | null;
+        }>;
+    }>("/friendships/blocked");
+
+    return response.data.data.map((item) => ({
+        friendshipId: item.id,
+        user: {
+            id: item.id,
+            username: item.username,
+            firstName: item.profile?.first_name || "",
+            lastName: item.profile?.last_name || "",
+            avatarUrl: item.profile?.avatar_url || null,
+            bio: null,
+            isVerified: item.is_verified ?? false,
+            mutualFriends: 0,
+        },
+        blockedAt: new Date().toISOString(),
+    }));
+};
+
+/**
+ * Get friendship status between auth user and target user.
+ */
+export const getFriendshipStatus = async (userId: number): Promise<FriendshipRelationStatus> => {
+    const response = await api.get<{ status: FriendshipRelationStatus }>(`/friendships/status/${userId}`);
+    return response.data.status;
+};
+
+/**
+ * Cancel a pending friend request that was sent by the auth user.
+ */
+export const cancelFriendRequest = async (userId: number): Promise<{ success: boolean }> => {
+    await api.post(`/friendships/cancel/${userId}`);
+    return { success: true };
 };
 
 /**
@@ -175,7 +247,9 @@ export default {
     getFriendRequests,
     getFriends,
     getBlockedUsers,
+    getFriendshipStatus,
     sendFriendRequest,
+    cancelFriendRequest,
     acceptFriendRequest,
     declineFriendRequest,
     removeSuggestion,

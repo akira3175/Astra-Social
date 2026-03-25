@@ -24,6 +24,16 @@ class Notification extends Model{
         'is_read',
     ];
 
+    protected $appends = ['isRead', 'actorId', 'receiverId', 'entityType', 'entityId'];
+
+    public function getIsReadAttribute() { return $this->attributes['is_read'] ?? null; }
+    public function getActorIdAttribute() { return $this->attributes['actor_id'] ?? null; }
+    public function getReceiverIdAttribute() { return $this->attributes['receiver_id'] ?? null; }
+    public function getEntityTypeAttribute() { return $this->attributes['entity_type'] ?? null; }
+    public function getEntityIdAttribute() { return $this->attributes['entity_id'] ?? null; }
+
+
+
     protected $dates = [
             'created_at',
             'updated_at',

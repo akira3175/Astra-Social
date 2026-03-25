@@ -69,7 +69,7 @@ class ReportService{
             string $search = '',
         ){
 
-        $query = Report::query()->orderBy('created_at', 'desc');
+        $query = Report::query();
 
         if (trim($search)!=='' ){
             $query = $query->where('reason', 'like', '%' . $search . '%');

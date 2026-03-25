@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
     SearchIcon,
     TrashIcon,
@@ -9,15 +9,14 @@ import {
     FileTextIcon,
 } from "../../components/ui";
 import {ENDPOINTS, getPosts, deletePost, restorePost } from "../../services/adminService";
-import type { AdminPost } from "../../types/admin";
+import type { AdminPost, PostsResponse } from "../../types/admin";
 import "./AdminTable.css";
 import { useCurrentUser } from "../../context/currentUserContext";
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 
 const AdminPosts: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
-    const [posts, setPosts] = useState<AdminPost[]>([]);
+    const [posts, setPosts] = useState<PostsResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [privacyFilter, setPrivacyFilter] = useState<string>("");
@@ -33,7 +32,12 @@ const AdminPosts: React.FC = () => {
         return () => clearTimeout(timer);
     }, [loading, currentPage, privacyFilter, statusFilter, searchQuery]);
 
-    const loadPosts = async (currentPage, privacyFilter, statusFilter, searchQuery) => {
+    const loadPosts = async (
+        currentPage: number, 
+        privacyFilter: string, 
+        statusFilter: string, 
+        searchQuery: string
+    ) => {
         try {
             const data = await getPosts(currentPage, privacyFilter,statusFilter, searchQuery);
             setPosts(data);
@@ -44,8 +48,8 @@ const AdminPosts: React.FC = () => {
         }
     };
 
-    let totalPages;
-    if(!loading){
+    let totalPages: number = 0;
+    if(!loading && posts?.data){
         totalPages= posts.data.last_page;
     }
     const navigate = useNavigate();
@@ -174,7 +178,7 @@ const AdminPosts: React.FC = () => {
                                     ))}
                                 </tr>
                             ))
-                        ) : !posts.success ?(
+                        ) : !posts?.success ?(
                             <tr>
                                 <td colSpan={9}>
                                     <div className="admin-empty">
@@ -215,7 +219,7 @@ const AdminPosts: React.FC = () => {
                                     </td>
                                     <td>
                                         <div className="cell-actions d-flex flex-row justify-content-center">
-                                            {currentUser.role.permissions.find(p=>p.slug==='post.view') && (
+                                            {currentUser?.role?.permissions.find(p=>p.slug==='post.view') && (
                                                 <button
                                                     className="action-btn view"
                                                     title="Xem chi tiết"
@@ -225,7 +229,7 @@ const AdminPosts: React.FC = () => {
                                                 </button>
                                             )}
                                             {post.deleted_at ? (
-                                                currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                                currentUser?.role?.permissions.find(p=>p.slug==='post.restore') && (
                                                     <button
                                                         className="action-btn restore"
                                                         title="Khôi phục"
@@ -235,7 +239,7 @@ const AdminPosts: React.FC = () => {
                                                     </button>
                                                 )
                                             ) : (
-                                                currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                                currentUser?.role?.permissions.find(p=>p.slug==='post.delete') && (
                                                     <button
                                                         className="action-btn delete"
                                                         title="Xóa bài viết"
@@ -252,7 +256,7 @@ const AdminPosts: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                {!loading && posts.success && (
+                {!loading && posts?.success && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
                             Hiển thị {posts.data.data.length} / {posts.data.total} bài viết
@@ -336,7 +340,7 @@ const AdminPosts: React.FC = () => {
                             {/* Actions in modal */}
                             <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
                                 {selectedPost.deleted_at ? (
-                                    currentUser.role.permissions.find(p=>p.slug==='post.restore') && (
+                                    currentUser?.role?.permissions.find(p=>p.slug==='post.restore') && (
                                         <button
                                             style={{
                                                 display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
@@ -351,7 +355,7 @@ const AdminPosts: React.FC = () => {
                                         </button>
                                     )
                                 ) : (
-                                    currentUser.role.permissions.find(p=>p.slug==='post.delete') && (
+                                    currentUser?.role?.permissions.find(p=>p.slug==='post.delete') && (
                                         <button
                                             style={{
                                                 display: "flex", flexDirection: "row", flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,

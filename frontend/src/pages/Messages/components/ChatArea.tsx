@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { SendIcon, ImageIcon, MoreVertIcon, PersonAddIcon, EditIcon, ExitIcon, CrownIcon, BlockIcon, PlusIcon } from "../../../components/ui";
-import type { Conversation, Message, MessageAttachment } from "../../../types/message";
+import type { Conversation, Message } from "../../../types/message";
 
 interface FilePreview {
     file: File;
@@ -51,15 +51,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         if (conversation.type === "GROUP" && conversation.name) {
             return conversation.name;
         }
-        const otherMember = conversation.members.find(m => m.userId !== currentUserId);
+        
+        // Find other member - handle both userId and user_id naming
+        const otherMember = conversation.members.find((m: any) => 
+            Number(m.userId || m.user_id) !== Number(currentUserId)
+        );
+
         if (otherMember?.user) {
             const { firstName, lastName, username } = otherMember.user;
             if (firstName || lastName) {
-                return `${firstName || ""} ${lastName || ""}`.trim();
+                return `${lastName || ""} ${firstName || ""}`.trim();
             }
             return username;
         }
-        return "Unknown";
+        return "Người dùng";
     };
 
     // Get avatar initial
@@ -73,13 +78,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         if (conversation.type === "GROUP") {
             return conversation.imageUrl;
         }
-        const otherMember = conversation.members.find(m => m.userId !== currentUserId);
-        return otherMember?.user?.avatar;
+        const otherMember = conversation.members.find((m: any) => 
+            Number(m.userId || m.user_id) !== Number(currentUserId)
+        );
+        return (otherMember?.user as any)?.avatar || (otherMember?.user as any)?.avatarUrl;
     };
 
     // Format message time
-    const formatMessageTime = (dateString: string): string => {
+    const formatMessageTime = (dateString: string | undefined): string => {
+        if (!dateString) return "";
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return "";
         return date.toLocaleTimeString("vi-VN", {
             hour: "2-digit",
             minute: "2-digit",
@@ -124,9 +133,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         };
     }, [showMenu]);
 
-    // Check if current user is admin
-    const isAdmin = conversation.members.find(m => m.userId === currentUserId)?.role === 'ADMIN';
+    // Check if current conversation is a group
     const isGroup = conversation.type === 'GROUP';
+    const isAdmin = isGroup && conversation.members.some((m: any) => 
+        Number(m.userId || m.user_id) === Number(currentUserId) && m.role === 'ADMIN'
+    );
 
     // Auto-resize textarea
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -251,27 +262,33 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         <div className="chat-dropdown-menu">
                             {isGroup ? (
                                 <>
-                                    {isAdmin && onAddMember && (
+                                    { onAddMember && (
                                         <button className="dropdown-item" onClick={() => { onAddMember(); setShowMenu(false); }}>
-                                            <PersonAddIcon size={18} />
+                                            <PersonAddIcon size={20} />
                                             <span>Thêm thành viên</span>
                                         </button>
                                     )}
-                                    {isAdmin && onRenameGroup && (
+                                    { onRenameGroup && (
                                         <button className="dropdown-item" onClick={() => { onRenameGroup(); setShowMenu(false); }}>
-                                            <EditIcon size={18} />
+                                            <EditIcon size={20} />
                                             <span>Đổi tên nhóm</span>
                                         </button>
                                     )}
-                                    {isAdmin && onTransferAdmin && (
+                                    {onTransferAdmin && isAdmin && (
                                         <button className="dropdown-item" onClick={() => { onTransferAdmin(); setShowMenu(false); }}>
-                                            <CrownIcon size={18} />
+                                            <CrownIcon size={20} />
                                             <span>Chuyển nhóm trưởng</span>
                                         </button>
                                     )}
-                                    {onLeaveGroup && (
+                                    {onLeaveGroup && !isAdmin && (
                                         <button className="dropdown-item danger" onClick={() => { onLeaveGroup(); setShowMenu(false); }}>
-                                            <ExitIcon size={18} />
+                                            <ExitIcon size={20} />
+                                            <span>Rời nhóm</span>
+                                        </button>
+                                    )}
+                                    {onLeaveGroup && isAdmin && (
+                                        <button className="dropdown-item danger" onClick={() => { alert("Bạn là nhóm trưởng, vui lòng chuyển quyền trước khi rời nhóm."); setShowMenu(false); }}>
+                                            <ExitIcon size={20} />
                                             <span>Rời nhóm</span>
                                         </button>
                                     )}
@@ -280,13 +297,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 <>
                                     {onCreateGroup && (
                                         <button className="dropdown-item" onClick={() => { onCreateGroup(); setShowMenu(false); }}>
-                                            <PlusIcon size={18} />
+                                            <PlusIcon size={20} />
                                             <span>Tạo nhóm chat</span>
                                         </button>
                                     )}
                                     {onBlockUser && (
                                         <button className="dropdown-item danger" onClick={() => { onBlockUser(); setShowMenu(false); }}>
-                                            <BlockIcon size={18} />
+                                            <BlockIcon size={20} />
                                             <span>Chặn người dùng</span>
                                         </button>
                                     )}
@@ -299,16 +316,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
             {/* Messages */}
             <div className="messages-container">
-                {messages.map((message) => {
-                    const isSent = message.senderId === currentUserId;
+                {messages.map((message: any) => {
+                    const messageSenderId = Number(message.senderId || message.sender_id || 0);
+                    const authUserId = Number(currentUserId);
+                    const isSent = messageSenderId === authUserId;
+                    
                     const hasAttachments = message.attachments && message.attachments.length > 0;
+                    const msgCreatedAt = message.createdAt || message.created_at;
 
                     // Get sender info for received messages
                     const sender = !isSent
-                        ? conversation.members.find(m => m.userId === message.senderId)?.user
+                        ? conversation.members.find((m: any) => Number(m.userId || m.user_id) === messageSenderId)?.user
                         : null;
                     const senderInitial = sender
-                        ? (sender.firstName?.charAt(0) || sender.username.charAt(0)).toUpperCase()
+                        ? (sender.firstName?.charAt(0) || sender.username?.charAt(0) || "?").toUpperCase()
                         : "?";
 
                     return (
@@ -330,39 +351,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 {/* Render attachments */}
                                 {hasAttachments && (
                                     <div className="bubble-attachments">
-                                        {message.attachments!.map((attachment) => (
-                                            <div key={attachment.id} className={`attachment-item ${attachment.type}`}>
-                                                {attachment.type === 'image' && (
-                                                    <div className="bubble-image">
-                                                        <img src={attachment.url} alt="" />
-                                                    </div>
-                                                )}
-                                                {attachment.type === 'video' && (
-                                                    <div className="bubble-video">
-                                                        <video src={attachment.url} controls />
-                                                    </div>
-                                                )}
-                                                {attachment.type === 'file' && (
-                                                    <a href={attachment.url} download={attachment.name} className="bubble-file">
-                                                        <span className="file-icon">📎</span>
-                                                        <div className="file-details">
-                                                            <span className="file-name">{attachment.name}</span>
-                                                            <span className="file-size">{formatFileSize(attachment.size)}</span>
+                                        {message.attachments!.map((rawAttachment: any) => {
+                                            const type = rawAttachment.type || (rawAttachment.file_type === 'IMAGE' ? 'image' : rawAttachment.file_type === 'VIDEO' ? 'video' : 'file');
+                                            const name = rawAttachment.name || rawAttachment.original_name || `file-${rawAttachment.id}`;
+                                            const size = rawAttachment.size || rawAttachment.file_size || 0;
+
+                                            return (
+                                                <div key={rawAttachment.id} className={`attachment-item ${type}`}>
+                                                    {type === 'image' && (
+                                                        <div className="bubble-image">
+                                                            <img src={rawAttachment.url} alt="" />
                                                         </div>
-                                                    </a>
-                                                )}
-                                            </div>
-                                        ))}
+                                                    )}
+                                                    {type === 'video' && (
+                                                        <div className="bubble-video">
+                                                            <video src={rawAttachment.url} controls />
+                                                        </div>
+                                                    )}
+                                                    {type === 'file' && (
+                                                        <a href={rawAttachment.url} download={name} target="_blank" rel="noopener noreferrer" className="bubble-file">
+                                                            <span className="file-icon">📎</span>
+                                                            <div className="file-details">
+                                                                <span className="file-name">{name}</span>
+                                                                {size > 0 && <span className="file-size">{formatFileSize(size)}</span>}
+                                                            </div>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                                 {/* Render text content */}
                                 {message.content && (
-                                    <div className="bubble-content">
+                                    <div className={`bubble-content ${isSent ? "sent" : "received"}`}>
                                         {message.content}
                                     </div>
                                 )}
-                                <span className="message-time">
-                                    {formatMessageTime(message.createdAt)}
+                                <span className={`message-time ${isSent ? "sent" : "received"}`}>
+                                    {formatMessageTime(msgCreatedAt)}
                                 </span>
                             </div>
                         </div>

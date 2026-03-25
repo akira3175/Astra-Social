@@ -21,21 +21,30 @@ const NotificationsPage: React.FC = () => {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const fetchNotifications = useCallback(async (pageNum: number, reset: boolean = false) => {
+        if (!currentUser?.id) return;
+        
         try {
             if (reset) {
                 setIsLoading(true);
             } else {
                 setIsLoadingMore(true);
             }
+
             const response = await getNotifications(Number(currentUser.id), pageNum, 10);
-            console.log(Number(currentUser.id));
+            
             if (response.success) {
+                const newData = Array.isArray(response.data) ? response.data : (response.data as any).data;
+                
                 setNotifications((prev) =>
-                    reset ? response.data : [...prev, ...response.data]
+                    reset ? newData : [...prev, ...newData]
                 );
-                setHasMore(
-                    response.meta ? pageNum < response.meta.lastPage : response.data.length === 10
-                );
+                if (response.meta) {
+                    // Backend trả về snake_case: last_page
+                    const lastPage = (response.meta as any).last_page ?? response.meta.lastPage;
+                    setHasMore(pageNum < lastPage);
+                } else {
+                    setHasMore(newData.length === 10);
+                }
             }
         } catch (error) {
             console.error("Error fetching notifications:", error);
@@ -43,19 +52,24 @@ const NotificationsPage: React.FC = () => {
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, []);
+    }, [currentUser?.id]);
 
     useEffect(() => {
-        fetchNotifications(1, true);
-    }, [fetchNotifications]);
+        if (currentUser?.id) {
+            fetchNotifications(1, true);
+            setPage(1);
+        }
+    }, [fetchNotifications, currentUser?.id]);
 
     const handleNotificationClick = async (notification: Notification) => {
         if (!notification.isRead) {
             try {
-                await markAsRead(notification.id);
-                setNotifications((prev) =>
-                    prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
-                );
+                const res = await markAsRead(notification.id);
+                if (res.success) {
+                    setNotifications((prev) =>
+                        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
+                    );
+                }
             } catch (error) {
                 console.error("Error marking notification as read:", error);
             }
@@ -63,20 +77,35 @@ const NotificationsPage: React.FC = () => {
     };
 
     const handleMarkAllAsRead = async () => {
+        if (!currentUser?.id) return;
         try {
-            await markAllAsRead();
-            setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+            const res = await markAllAsRead(Number(currentUser.id));
+            if (res.success) {
+                setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+            }
         } catch (error) {
             console.error("Error marking all notifications as read:", error);
         }
     };
 
-    const handleLoadMore = () => {
+    const handleLoadMore = useCallback(() => {
+        if (!hasMore || isLoadingMore) return;
         const nextPage = page + 1;
         setPage(nextPage);
         fetchNotifications(nextPage, false);
+    }, [page, fetchNotifications, hasMore, isLoadingMore]);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const target = e.currentTarget;
+        // Bắt sự kiện cuộn khi gần chạm đáy (cách 50px)
+        if (target.scrollHeight - target.scrollTop - target.clientHeight < 50) {
+            if (hasMore && !isLoadingMore) {
+                handleLoadMore();
+            }
+        }
     };
 
+    // Filter dữ liệu cho các Tab
     const filteredNotifications =
         activeTab === "unread"
             ? notifications.filter((n) => !n.isRead)
@@ -115,7 +144,7 @@ const NotificationsPage: React.FC = () => {
                 </button>
             </div>
 
-            <div className="notifications-content">
+            <div className="notifications-content" onScroll={handleScroll}>
                 {isLoading ? (
                     <div className="notifications-loading">
                         <div className="notifications-loading-spinner" />
@@ -142,19 +171,18 @@ const NotificationsPage: React.FC = () => {
                                 <NotificationItem
                                     key={notification.id}
                                     notification={notification}
-                                    onClick={handleNotificationClick}
+                                    onClick={() => handleNotificationClick(notification)}
                                 />
                             ))}
                         </ul>
                         {hasMore && activeTab === "all" && (
                             <div className="notifications-load-more">
-                                <button
-                                    className="notifications-load-more-btn"
-                                    onClick={handleLoadMore}
-                                    disabled={isLoadingMore}
-                                >
-                                    {isLoadingMore ? "Đang tải..." : "Xem thêm"}
-                                </button>
+                                {isLoadingMore && (
+                                    <>
+                                        <div className="notifications-loading-spinner" style={{ width: 24, height: 24 }} />
+                                        <span style={{ marginLeft: 8, color: '#64748b' }}>Đang tải thêm...</span>
+                                    </>
+                                )}
                             </div>
                         )}
                     </>

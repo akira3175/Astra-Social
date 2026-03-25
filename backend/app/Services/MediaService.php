@@ -41,6 +41,8 @@ class MediaService
                 $attachment = MediaAttachment::create([
                     'url' => $result['url'],
                     'file_type' => $this->cloudinaryService->detectFileType($file),
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
                     'entity_type' => $entityType,
                     'entity_id' => $entityId,
                     'created_at' => now(),

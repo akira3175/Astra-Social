@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import type { Post } from "../../../types/post";
 import PostDetailModal from "./PostDetailModal";
-import { createReport } from "../../../services/ReportService";
+import { createReport, CreateReportDto } from "../../../services/ReportService";
 import PostMenu from "./PostMenu";
-import { toggleLike, sharePost } from "../../../services/postService";
+import { toggleLike } from "../../../services/postService";
 import PostReportModal from "./PostReportModal";
+import SharePostModal from "./SharePostModal";
 import "./PostList.css";
+import "./SharePostModal.css";
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
+// import withReactContent from 'sweetalert2-react-content';
 
 interface PostListProps {
     posts: Post[];
@@ -43,17 +45,95 @@ const formatRelativeTime = (dateString: string): string => {
  */
 const getDisplayName = (user: Post["user"]): string => {
     if (user.profile?.first_name || user.profile?.last_name) {
-        return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
+        return `${user.profile.last_name || ""} ${user.profile.first_name || ""}`.trim();
     }
     return user.username;
 };
 
 /**
- * Media Grid Component
+ * Render text with clickable hashtags
+ */
+const renderContentWithHashtags = (content: string) => {
+    if (!content) return null;
+    
+    // Phân tách văn bản dựa trên hashtag (bắt đầu bằng #, theo sau là chữ Unicode, số hoặc dấu gạch dưới)
+    // Sử dụng flag 'u' và \p{L} để hỗ trợ các ký tự Unicode (tiếng Việt)
+    const hashtagRegex = /(#[\p{L}0-9_]+)/gu;
+    const parts = content.split(hashtagRegex);
+    
+    return (
+        <>
+            {parts.map((part, i) => {
+                // Kiểm tra xem part có phải là hashtag không (bắt đầu bằng #)
+                if (part.startsWith('#') && part.match(/^#[\p{L}0-9_]+$/u)) {
+                    const tagContent = part.slice(1); // Bỏ dấu # lúc truyền lên URL search
+                    return (
+                        <Link 
+                            key={i} 
+                            to={`/search?q=%23${encodeURIComponent(tagContent)}`}
+                            className="post-hashtag"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {part}
+                        </Link>
+                    );
+                }
+                // Text bình thường có thể bao gồm xuống dòng
+                return (
+                    <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+                        {part}
+                    </span>
+                );
+            })}
+        </>
+    );
+};
+
+/**
+ * Embedded shared post preview — shown inside a post card when post.parent exists
+ */
+const SharedPostPreview: React.FC<{ post: Post }> = ({ post }) => {
+    const firstImage = post.attachments?.find((a) => a.file_type === "IMAGE");
+    return (
+        <div className="shared-post-preview" onClick={(e) => e.stopPropagation()}>
+            <div className="shared-preview-author">
+                <Avatar
+                    src={post.user.profile?.avatar_url || undefined}
+                    alt={post.user.username}
+                    width={30}
+                    height={30}
+                >
+                    {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
+                </Avatar>
+                <div className="shared-preview-meta">
+                    <span className="shared-preview-name">{getDisplayName(post.user)}</span>
+                    <span className="shared-preview-time">{formatRelativeTime(post.created_at)}</span>
+                </div>
+            </div>
+            {post.content && (
+                <p className="shared-preview-content">{post.content}</p>
+            )}
+            {firstImage && (
+                <div className="shared-preview-image">
+                    <img src={firstImage.url} alt="" />
+                </div>
+            )}
+            {!post.content && !firstImage && (
+                <p className="shared-preview-deleted">Bài viết gốc không có nội dung</p>
+            )}
+        </div>
+    );
+};
+
+/**
+ * Media Grid Component — supports IMAGE, VIDEO, FILE
  */
 const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments }) => {
     const images = attachments.filter((a) => a.file_type === "IMAGE");
-    if (images.length === 0) return null;
+    const videos = attachments.filter((a) => a.file_type === "VIDEO");
+    const files  = attachments.filter((a) => a.file_type === "FILE");
+
+    if (images.length === 0 && videos.length === 0 && files.length === 0) return null;
 
     const gridClass =
         images.length === 1 ? "post-media-grid single"
@@ -62,15 +142,59 @@ const MediaGrid: React.FC<{ attachments: Post["attachments"] }> = ({ attachments
                     : "post-media-grid quad";
 
     return (
-        <div className={gridClass}>
-            {images.slice(0, 4).map((img, index) => (
-                <div key={img.id} className="post-media-item">
-                    <img src={img.url} alt={`Media ${index + 1}`} />
-                    {images.length > 4 && index === 3 && (
-                        <div className="post-media-more">+{images.length - 4}</div>
-                    )}
+        <div className="post-media-container">
+            {/* Images */}
+            {images.length > 0 && (
+                <div className={gridClass}>
+                    {images.slice(0, 4).map((img, index) => (
+                        <div key={img.id} className="post-media-item">
+                            <img src={img.url} alt={`Media ${index + 1}`} />
+                            {images.length > 4 && index === 3 && (
+                                <div className="post-media-more">+{images.length - 4}</div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Videos */}
+            {videos.map((vid) => (
+                <div key={vid.id} className="post-video-item" onClick={(e) => e.stopPropagation()}>
+                    <video
+                        src={vid.url}
+                        controls
+                        preload="metadata"
+                        className="post-video-player"
+                    />
                 </div>
             ))}
+
+            {/* Files */}
+            {files.length > 0 && (
+                <div className="post-files-list">
+                    {files.map((file) => {
+                        const fileName = file.url.split('/').pop() || 'Tệp đính kèm';
+                        return (
+                            <a
+                                key={file.id}
+                                href={file.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="post-file-item"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" className="post-file-icon">
+                                    <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+                                </svg>
+                                <span className="post-file-name">{decodeURIComponent(fileName)}</span>
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="post-file-download">
+                                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                                </svg>
+                            </a>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
@@ -80,15 +204,25 @@ interface LikeState {
     count: number;
 }
 
-const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, onPostDeleted, onPostReported, onLoadMore, hasMore, isLoadingMore }) => {
+const PostList: React.FC<PostListProps> = ({
+    posts,
+    isLoading,
+    onPostUpdated,
+    onPostDeleted,
+    onLoadMore,
+    hasMore,
+    isLoadingMore,
+}) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
     const [showReportForm, setShowReportForm] = useState(false);
     const [focusComment, setFocusComment] = useState(false);
     const [editingPostId, setEditingPostId] = useState<number | null>(null);
     const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
     const [reportingPost, setReportingPost] = useState<Post | null>(null);
+    const [sharingPost, setSharingPost] = useState<Post | null>(null);
 
     // Optimistic like state
     const [likeStates, setLikeStates] = useState<Record<number, LikeState>>({});
@@ -112,7 +246,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
             return next;
         });
 
-        // FIX 3: tương tự, chỉ khởi tạo commentCounts cho post chưa có
+        // Chỉ khởi tạo commentCounts cho post chưa có
         setCommentCounts((prev) => {
             const next = { ...prev };
             posts.forEach((p) => {
@@ -124,21 +258,19 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         });
     }, [posts]);
 
-    // Use refs to avoid stale closures in scroll handler
     const onLoadMoreRef = useRef(onLoadMore);
     const hasMoreRef = useRef(hasMore);
     const isLoadingMoreRef = useRef(isLoadingMore);
     const listRef = useRef<HTMLDivElement>(null);
+
+    // Sync refs mỗi render
     onLoadMoreRef.current = onLoadMore;
     hasMoreRef.current = hasMore;
     isLoadingMoreRef.current = isLoadingMore;
 
-    // Find the nearest scrollable parent and listen for scroll
     useEffect(() => {
-        // Don't set up scroll listener while loading or if list isn't in DOM
         if (isLoading || !listRef.current) return;
 
-        // Find scrollable ancestor
         const findScrollParent = (el: HTMLElement | null): HTMLElement | Window => {
             while (el) {
                 const style = window.getComputedStyle(el);
@@ -167,7 +299,6 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 clientHeight = scrollContainer.clientHeight;
             }
 
-            // Trigger when within 300px of bottom
             if (scrollTop + clientHeight >= scrollHeight - 300) {
                 onLoadMoreRef.current();
             }
@@ -176,10 +307,9 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
         return () => scrollContainer.removeEventListener('scroll', handleScroll);
     }, [isLoading]);
-    // Get post ID from URL
+
     const postIdFromUrl = searchParams.get("post");
 
-    // Open modal when URL has post parameter
     useEffect(() => {
         if (postIdFromUrl && posts.length > 0) {
             const post = posts.find((p) => p.id.toString() === postIdFromUrl);
@@ -187,14 +317,17 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         }
     }, [postIdFromUrl, posts]);
 
-    // Open modal normally and update URL
     const handlePostClick = (post: Post) => {
         setSelectedPost(post);
         setFocusComment(false);
         setSearchParams({ post: post.id.toString() });
     };
 
-    // Open modal and focus on comment input
+    const handleProfileClick = (userId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/profile/${userId}`);
+    };
+
     const handleCommentClick = (post: Post, e: React.MouseEvent) => {
         e.stopPropagation();
         setSelectedPost(post);
@@ -202,25 +335,21 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         setSearchParams({ post: post.id.toString() });
     };
 
-    // Close modal and remove URL param
     const handleCloseModal = () => {
         setSelectedPost(null);
         setFocusComment(false);
         setEditingPostId(null);
         setDeletingPostId(null);
-        // Remove post param from URL
         searchParams.delete("post");
         setSearchParams(searchParams);
     };
 
-    // Handle edit click from PostMenu - open modal in edit mode
     const handleEditClick = (post: Post) => {
         setSelectedPost(post);
         setEditingPostId(post.id);
         setSearchParams({ post: post.id.toString() });
     };
 
-    // Handle delete click from PostMenu - open modal with delete confirm
     const handleDeleteClick = (post: Post) => {
         setSelectedPost(post);
         setDeletingPostId(post.id);
@@ -245,13 +374,8 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         }
     };
 
-    const handleShare = async (postId: number) => {
-        try {
-            await sharePost(postId);
-            onPostUpdated?.();
-        } catch (e) {
-            console.error(e);
-        }
+    const handleShare = (post: Post) => {
+        setSharingPost(post);
     };
 
     // Callback nhận từ modal khi comment được tạo thành công
@@ -262,33 +386,41 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
         }));
     };
 
-    const handleReportClick = (post: Post)=>{
+    const handleReportClick = (post: Post) => {
         setSelectedPost(null);
         setShowReportForm(true);
         setReportingPost(post);
-    }
+    };
 
-    const handleReportSubmit = async(reason: string, detail: string)=>{
-        let newReport = {
-            reporter_id:Number(currentUser.id),
+    const handleReportSubmit = async (reason: string, detail?: string) => {
+        if (!reportingPost || !currentUser) return;
+
+        const newReport: CreateReportDto = {
+            reporter_id: Number(currentUser.id),
             target_author_id: reportingPost.user_id,
             target_type: 'POST',
-            target_preview: detail,
+            target_preview: detail ?? '', 
             target_id: reportingPost.id,
             reason: reason,
+        };
+
+        try {
+            const result = await createReport(newReport);
+            if (result.success) {
+                Swal.fire({
+                    title: 'Thành công',
+                    text: 'Đã báo cáo thành công',
+                    icon: 'success',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                setShowReportForm(false);
+            }
+        } catch (e) {
+            console.error(e);
         }
-        let result = await createReport(newReport);
-        if(result.success){
-            Swal.fire({
-                title: 'Thành công',
-                text: 'Đã báo cáo thành công',
-                icon: 'success', // warning, error, success, info, question
-                showConfirmButton: false,
-                timer: 1500
-            });
-            setShowReportForm(false);
-        }
-    }
+    };
+
     if (isLoading) {
         return (
             <div className="post-loading">
@@ -312,7 +444,8 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
 
     return (
         <>
-            <div ref={listRef} className="post-list">
+            {/* ✅ Thêm ref vào div wrapper */}
+            <div className="post-list" ref={listRef}>
                 {posts.map((post) => {
                     const isOwner = currentUser?.id?.toString() === post.user_id?.toString();
                     const likeState = likeStates[post.id] ?? {
@@ -329,21 +462,36 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                             style={{ cursor: "pointer" }}
                         >
                             <div className="post-header">
-                                <Avatar
-                                    src={post.user.profile?.avatar_url || undefined}
-                                    alt={post.user.username}
-                                    width={44}
-                                    height={44}
-                                    className="post-avatar"
-                                >
-                                    {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
-                                </Avatar>
-                                <div className="post-user-info">
-                                    <span className="post-username">{getDisplayName(post.user)}</span>
-                                    <span className="post-time">{formatRelativeTime(post.created_at)}</span>
+                                <div onClick={(e) => handleProfileClick(post.user.id, e)}>
+                                    <Avatar
+                                        src={post.user.profile?.avatar_url || undefined}
+                                        alt={post.user.username}
+                                        width={44}
+                                        height={44}
+                                        className="post-avatar"
+                                    >
+                                        {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
+                                    </Avatar>
                                 </div>
-
-                                {/* Reusable PostMenu component */}
+                                <div className="post-user-info">
+                                    <span 
+                                        className="post-username"
+                                        onClick={(e) => handleProfileClick(post.user.id, e)}
+                                        style={{ cursor: "pointer" }}
+                                    >
+                                        {getDisplayName(post.user)}
+                                    </span>
+                                    <span className="post-time">
+                                        {formatRelativeTime(post.created_at)}
+                                        <span 
+                                            className="post-privacy-icon" 
+                                            style={{ marginLeft: '4px', fontSize: '0.8em', color: '#64748b' }}
+                                            title={post.privacy === "FRIENDS" ? "Bạn bè" : post.privacy === "ONLY_ME" ? "Chỉ mình tôi" : "Công khai"}
+                                        >
+                                            · {post.privacy === "FRIENDS" ? "👥" : post.privacy === "ONLY_ME" ? "🔒" : "🌎"}
+                                        </span>
+                                    </span>
+                                </div>
                                 <PostMenu
                                     isOwner={isOwner}
                                     onEdit={() => handleEditClick(post)}
@@ -354,11 +502,15 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
 
                             {post.content && (
                                 <div className="post-content">
-                                    <p className="post-text">{post.content}</p>
+                                    <div className="post-text">{renderContentWithHashtags(post.content)}</div>
                                 </div>
                             )}
 
-                            {post.attachments && post.attachments.length > 0 && (
+                            {/* Embedded original post for shares */}
+                            {post.parent && <SharedPostPreview post={post.parent} />}
+
+                            {/* Attachments only on non-share posts */}
+                            {!post.parent && post.attachments && post.attachments.length > 0 && (
                                 <MediaGrid attachments={post.attachments} />
                             )}
 
@@ -389,7 +541,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                                     className="post-action-btn"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleShare(post.id);
+                                        handleShare(post);
                                     }}
                                 >
                                     <span>↗️</span>
@@ -401,6 +553,7 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 })}
             </div>
 
+            {/* ✅ Chỉ render PostDetailModal 1 lần duy nhất */}
             <PostDetailModal
                 open={selectedPost !== null}
                 onClose={handleCloseModal}
@@ -411,8 +564,12 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 startEditing={editingPostId === selectedPost?.id}
                 startDeleting={deletingPostId === selectedPost?.id}
                 onCommentAdded={handleCommentAdded}
+                initialLikeState={selectedPost ? likeStates[selectedPost.id] : undefined}
+                onLikeChanged={(postId, liked, count) => {
+                    setLikeStates((prev) => ({ ...prev, [postId]: { liked, count } }));
+                }}
             />
-            {/* Loading more indicator */}
+
             {isLoadingMore && (
                 <div className="post-loading-more">
                     <div className="loading-spinner" />
@@ -420,27 +577,24 @@ const PostList: React.FC<PostListProps> = ({ posts, isLoading, onPostUpdated, on
                 </div>
             )}
 
-            {selectedPost && (
-                <PostDetailModal
-                    open={selectedPost !== null}
-                    onClose={handleCloseModal}
-                    post={selectedPost}
-                    onPostUpdated={onPostUpdated}
-                    onPostDeleted={onPostDeleted}
-                    focusComment={focusComment}
-                    startEditing={editingPostId === selectedPost?.id}
-                    startDeleting={deletingPostId === selectedPost?.id}
+            {showReportForm && reportingPost && (
+                <PostReportModal
+                    open={showReportForm}
+                    postId={reportingPost.id}
+                    onClose={() => setShowReportForm(false)}
+                    onSubmit={async (reason, detail) => handleReportSubmit(reason, detail)}
                 />
             )}
 
-            {showReportForm &&(
-                <PostReportModal
-                  open={showReportForm}
-                  postId={reportingPost.id}
-                  onClose={() => setShowReportForm(false)}
-                  onSubmit={async (reason, detail) => handleReportSubmit(reason, detail) }
-                />
-            )}
+            <SharePostModal
+                open={sharingPost !== null}
+                onClose={() => setSharingPost(null)}
+                post={sharingPost}
+                onPostShared={() => {
+                    setSharingPost(null);
+                    onPostUpdated?.();
+                }}
+            />
         </>
     );
 };

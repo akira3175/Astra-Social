@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
-import { UserCard } from "../../../components/common";
+import HomeFriendSuggestionCard from "./HomeFriendSuggestionCard";
+import TrendingHashtags from "./TrendingHashtags";
 import type { UserCardData } from "../../../components/common/UserCard/UserCard";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import { getFriendSuggestions, getFriends, sendFriendRequest, removeSuggestion } from "../../../services/friendshipService";
@@ -71,6 +72,8 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ className }) => {
 
     return (
         <div className={`right-sidebar ${className || ""}`}>
+            <TrendingHashtags />
+
             {/* Friend Suggestions Section */}
             {suggestions.length > 0 && (
                 <div className="sidebar-section">
@@ -80,12 +83,11 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ className }) => {
                             Xem tất cả
                         </Link>
                     </div>
-                    <div className="suggestions-list">
+                    <div className="suggestions-list grid grid-cols-1 gap-4">
                         {suggestions.map(suggestion => (
-                            <UserCard
+                            <HomeFriendSuggestionCard
                                 key={suggestion.id}
                                 user={toUserCardData(suggestion.user)}
-                                variant="suggestion"
                                 onClick={() => navigate(`/profile/${suggestion.user.id}`)}
                                 onPrimaryAction={() => handleSendRequest(suggestion)}
                                 onSecondaryAction={() => handleRemoveSuggestion(suggestion.id)}

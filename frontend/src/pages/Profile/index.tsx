@@ -3,6 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getProfileById, uploadAvatar, uploadCover, updateCoverPosition } from "../../services/profileService";
 import { getPostsByUserId } from "../../services/postService";
 import { useCurrentUser } from "../../context/currentUserContext";
+import {
+    getFriendshipStatus,
+    sendFriendRequest,
+    cancelFriendRequest,
+    acceptFriendRequest,
+    declineFriendRequest,
+    unfriend,
+    blockUser,
+    unblockUser,
+} from "../../services/friendshipService";
+import type { FriendshipRelationStatus } from "../../types/friendship";
 import type { User } from "../../types/user";
 import type { Post } from "../../types/post";
 import EditProfileModal from "./components/EditProfileModal";
@@ -69,6 +80,11 @@ const ProfilePage = () => {
     // Check if viewing own profile
     const isOwnProfile = currentUser && profile && String(currentUser.id) === String(profile.id);
 
+    // ── Friendship state ───────────────────────────────────────
+    const [friendStatus, setFriendStatus] = useState<FriendshipRelationStatus | null>(null);
+    const [activeMenu, setActiveMenu] = useState<'friends' | 'more' | null>(null);
+    const [friendActionLoading, setFriendActionLoading] = useState(false);
+    const moreMenuRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         const loadProfile = async () => {
             if (!userId) {
@@ -93,6 +109,77 @@ const ProfilePage = () => {
 
         loadProfile();
     }, [userId]);
+
+    // Fetch friendship status when viewing someone else's profile
+    useEffect(() => {
+        if (!userId || !currentUser) return;
+        if (String(currentUser.id) === String(userId)) return;
+
+        getFriendshipStatus(Number(userId))
+            .then(setFriendStatus)
+            .catch(() => setFriendStatus('none'));
+    }, [userId, currentUser]);
+
+    // Close more-menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+                setActiveMenu(null);
+            }
+        };
+        if (activeMenu) document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [activeMenu]);
+
+    // ── Friendship action handlers ─────────────────────────────
+    const handleFriendAction = useCallback(async (
+        action: () => Promise<unknown>,
+        nextStatus: FriendshipRelationStatus,
+        successMsg: string,
+    ) => {
+        if (friendActionLoading) return;
+        setFriendActionLoading(true);
+        try {
+            await action();
+            setFriendStatus(nextStatus);
+            setNotification({ type: 'success', message: successMsg });
+        } catch {
+            setNotification({ type: 'error', message: 'Có lỗi xảy ra, vui lòng thử lại.' });
+        } finally {
+            setFriendActionLoading(false);
+        }
+    }, [friendActionLoading]);
+
+    const handleAddFriend = () =>
+        handleFriendAction(() => sendFriendRequest(Number(userId)), 'pending_sent', 'Đã gửi lời mời kết bạn.');
+
+    const handleCancelRequest = () =>
+        handleFriendAction(() => cancelFriendRequest(Number(userId)), 'none', 'Đã hủy lời mời kết bạn.');
+
+    const handleAccept = () =>
+        handleFriendAction(() => acceptFriendRequest(Number(userId)), 'friends', 'Đã chấp nhận lời mời kết bạn!');
+
+    const handleDecline = () =>
+        handleFriendAction(() => declineFriendRequest(Number(userId)), 'none', 'Đã từ chối lời mời kết bạn.');
+
+    const handleUnfriend = () => {
+        setActiveMenu(null);
+        handleFriendAction(() => unfriend(Number(userId)), 'none', 'Đã hủy kết bạn.');
+    };
+
+    const handleBlock = () => {
+        setActiveMenu(null);
+        handleFriendAction(() => blockUser(Number(userId)), 'blocked_by_me', 'Đã chặn người dùng.');
+    };
+
+    const handleUnblock = () => {
+        setActiveMenu(null);
+        handleFriendAction(() => unblockUser(Number(userId)), 'none', 'Đã bỏ chặn người dùng.');
+    };
+
+    const handleMessage = () => {
+        navigate(`/messages?userId=${userId}`);
+    };
 
     // Fetch posts for this user (page 1 / reset)
     const fetchUserPosts = useCallback(async () => {
@@ -472,6 +559,152 @@ const ProfilePage = () => {
                     {/* Verified badge */}
                     {profile.isVerified && (
                         <span className="profile-verified">✓ Đã xác minh</span>
+                    )}
+
+                    {/* ── Friend Action Buttons (only on other profiles) ── */}
+                    {!isOwnProfile && friendStatus && friendStatus !== 'self' && (
+                        <div className="profile-friend-actions" ref={moreMenuRef}>
+                            {/* none → Add Friend */}
+                            {friendStatus === 'none' && (
+                                <button
+                                    className="profile-friend-btn profile-friend-btn--add"
+                                    onClick={handleAddFriend}
+                                    disabled={friendActionLoading}
+                                >
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                        <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                    Thêm bạn bè
+                                </button>
+                            )}
+
+                            {/* pending_sent → Waiting + Cancel */}
+                            {friendStatus === 'pending_sent' && (
+                                <>
+                                    <button
+                                        className="profile-friend-btn profile-friend-btn--pending"
+                                        disabled
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                                        </svg>
+                                        Đang chờ phản hồi
+                                    </button>
+                                    <button
+                                        className="profile-friend-btn profile-friend-btn--cancel"
+                                        onClick={handleCancelRequest}
+                                        disabled={friendActionLoading}
+                                    >
+                                        Hủy yêu cầu
+                                    </button>
+                                </>
+                            )}
+
+                            {/* pending_received → Accept + Decline */}
+                            {friendStatus === 'pending_received' && (
+                                <>
+                                    <button
+                                        className="profile-friend-btn profile-friend-btn--accept"
+                                        onClick={handleAccept}
+                                        disabled={friendActionLoading}
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                        </svg>
+                                        Đồng ý
+                                    </button>
+                                    <button
+                                        className="profile-friend-btn profile-friend-btn--decline"
+                                        onClick={handleDecline}
+                                        disabled={friendActionLoading}
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                        </svg>
+                                        Từ chối
+                                    </button>
+                                </>
+                            )}
+
+                            {/* friends → Friends dropdown + Message */}
+                            {friendStatus === 'friends' && (
+                                <>
+                                    <div className="profile-friend-dropdown">
+                                        <button
+                                            className="profile-friend-btn profile-friend-btn--friends"
+                                            onClick={() => setActiveMenu(prev => prev === 'friends' ? null : 'friends')}
+                                            disabled={friendActionLoading}
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                            </svg>
+                                            Bạn bè
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" style={{marginLeft: 4}}>
+                                                <path d="M7 10l5 5 5-5z"/>
+                                            </svg>
+                                        </button>
+                                        {activeMenu === 'friends' && (
+                                            <div className="profile-more-menu">
+                                                <button className="profile-more-menu-item profile-more-menu-item--danger" onClick={handleUnfriend}>
+                                                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                        <path d="M14 8c0-2.21-1.79-4-4-4S6 5.79 6 8s1.79 4 4 4 4-1.79 4-4zm3 2v2h6v-2h-6zm-3 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                                    </svg>
+                                                    Hủy kết bạn
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        className="profile-friend-btn profile-friend-btn--message"
+                                        onClick={handleMessage}
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                                        </svg>
+                                        Nhắn tin
+                                    </button>
+                                </>
+                            )}
+
+                            {/* blocked_by_me → Unblock */}
+                            {friendStatus === 'blocked_by_me' && (
+                                <button
+                                    className="profile-friend-btn profile-friend-btn--blocked"
+                                    onClick={handleUnblock}
+                                    disabled={friendActionLoading}
+                                >
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/>
+                                    </svg>
+                                    Đã chặn · Bỏ chặn?
+                                </button>
+                            )}
+
+                            {/* Three-dot more menu (block option) – shown when not already blocked */}
+                            {friendStatus !== 'blocked_by_me' && friendStatus !== 'blocked_by_them' && (
+                                <div className="profile-friend-dropdown">
+                                    <button
+                                        className="profile-more-btn"
+                                        onClick={() => setActiveMenu(prev => prev === 'more' ? null : 'more')}
+                                        title="Tùy chọn khác"
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                                        </svg>
+                                    </button>
+                                    {activeMenu === 'more' && (
+                                        <div className="profile-more-menu profile-more-menu--right">
+                                            <button className="profile-more-menu-item profile-more-menu-item--danger" onClick={handleBlock}>
+                                                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                    <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                                                </svg>
+                                                Chặn người dùng
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 

@@ -423,9 +423,6 @@ export default function RegisterPage() {
                     <Typography variant="h1" className="register-branding-title">
                         AstraSocial
                     </Typography>
-                    <Box className="logo-container">
-                        <img src={logo} alt="AstraSocial Logo" />
-                    </Box>
                     <Typography variant="body1" className="register-branding-text">
                         Tham gia AstraSocial ngay hôm nay để kết nối với bạn bè và thế giới.
                     </Typography>

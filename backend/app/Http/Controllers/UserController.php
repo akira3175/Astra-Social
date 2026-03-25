@@ -63,7 +63,7 @@ class UserController extends Controller{
      */
     public function updateActive(Request $request){
         $params = $request->all();
-        $user = $this->userService->updateActive($params['params']);
+        $user = $this->userService->updateActive($params);
         if ($user){
             return response()->json([
                 'success' => true,
@@ -78,7 +78,7 @@ class UserController extends Controller{
 
     public function updateRole(Request $request){
         $params = $request->all();
-        $user = $this->userService->updateRole($params['params']);
+        $user = $this->userService->updateRole($params);
         if ($user){
             return response()->json([
                 'success' => true,

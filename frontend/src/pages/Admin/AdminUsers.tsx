@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
     SearchIcon,
     EyeIcon,
@@ -6,16 +6,15 @@ import {
     PersonIcon,
 } from "../../components/ui";
 import { getUsers, updateIsActiveUser, changeUserRole, getRoles } from "../../services/adminService";
-import type { AdminUser, Role } from "../../types/admin";
+import type { AdminUser, Role, UsersResponse, RolesResponse } from "../../types/admin";
 import "./AdminTable.css";
 import { useCurrentUser } from "../../context/currentUserContext";
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 
 const AdminUsers: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
-    const [users, setUsers] = useState<AdminUser[]>([]);
-    const [roles, setRoles] = useState<Role[]>([]);
+    const [users, setUsers] = useState<UsersResponse | null>(null);
+    const [roles, setRoles] = useState<RolesResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState<string>("");
@@ -83,7 +82,8 @@ const AdminUsers: React.FC = () => {
     };
 
     const handleRoleChange = async () => {
-        let result = await changeUserRole(Number(changingRole.userId), Number( changingRole.roleId));
+        if (!changingRole) return;
+        let result = await changeUserRole(Number(changingRole.userId), Number(changingRole.roleId));
         if(result.success){
             Swal.fire({
                 title: 'Thành công',
@@ -114,14 +114,15 @@ const AdminUsers: React.FC = () => {
         }
     };
 
-    let totalPages;
-    if(!loading){
+    let totalPages: number = 0;
+    if(!loading && users?.data){
         totalPages = users.data.last_page;
     }
-    let activeCount;
-    if (!loading){
+    let activeCount: number = 0;
+    if (!loading && users?.data){
         activeCount = users.data.data.filter(u=>u.is_active===true).length;
     }
+    
     return (
         <div>
             {/* Header */}
@@ -144,7 +145,7 @@ const AdminUsers: React.FC = () => {
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
                         <option value="">Tất cả vai trò</option>
-                        {!loading && roles.data.map(role => (
+                        {!loading && roles?.data?.map(role => (
                             <option key={role.name} value={role.name}>{role.name}</option>
                         ))}
                     </select>
@@ -187,7 +188,7 @@ const AdminUsers: React.FC = () => {
                                     ))}
                                 </tr>
                             ))
-                        ) : !users.success ? (
+                        ) : !users?.success ? (
                             <tr>
                                 <td colSpan={9}>
                                     <div className="admin-empty">
@@ -219,7 +220,7 @@ const AdminUsers: React.FC = () => {
                                         <div className="cell-content" style={{ maxWidth: 180 }}>{user.email}</div>
                                     </td>
                                     <td>
-                                        <span className={`status-badge ${getRoleBadgeClass(user.role.name)}`}>
+                                        <span className={`status-badge ${getRoleBadgeClass(user.role.name || "")}`}>
                                             {user.role.name}
                                         </span>
                                     </td>
@@ -243,7 +244,7 @@ const AdminUsers: React.FC = () => {
                                     </td>
                                     <td>
                                         <div className="cell-actions d-flex flex-row justify-content-center">
-                                            {currentUser.role.permissions.find(p=>p.slug==='user.view') && (
+                                            {currentUser?.role?.permissions.find(p=>p.slug==='user.view') && (
                                                 <button
                                                     className="action-btn view"
                                                     title="Xem chi tiết"
@@ -254,7 +255,7 @@ const AdminUsers: React.FC = () => {
                                                 )
                                             }
 
-                                            {currentUser.role.permissions.find(p=>p.slug==='user.ban') && (
+                                            {currentUser?.role?.permissions.find(p=>p.slug==='user.ban') && (
                                                 user.is_active ? (
                                                     <button
                                                         className="action-btn delete"
@@ -281,7 +282,7 @@ const AdminUsers: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                {!loading && users.success && (
+                {!loading && users?.success && (
                     <div className="admin-pagination">
                         <span className="admin-pagination-info">
                             Hiển thị {users.data.data.length}–{users.data.total} người dùng
@@ -350,7 +351,7 @@ const AdminUsers: React.FC = () => {
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Vai trò</span>
                                 <span className="admin-detail-value">
-                                    <span className={`status-badge ${getRoleBadgeClass(selectedUser.role.name)}`}>
+                                    <span className={`status-badge ${getRoleBadgeClass(selectedUser.role.name || "")}`}>
                                         {selectedUser.role.name}
                                     </span>
                                 </span>
@@ -386,7 +387,7 @@ const AdminUsers: React.FC = () => {
 
                             {/* Actions in modal */}
                             <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                            {currentUser.role.permissions.find(p=> p.slug==='user.ban') && (
+                            {currentUser?.role?.permissions.find(p=> p.slug==='user.ban') && (
                                 selectedUser.is_active ? (
                                     <button
                                         style={{
@@ -414,7 +415,7 @@ const AdminUsers: React.FC = () => {
                                 )
                                 )
                             }
-                            {currentUser.role.permissions.find(p=>p.slug==='user.assign_role') && (
+                            {currentUser?.role?.permissions.find(p=>p.slug==='user.assign_role') && (
                                 <button
                                     style={{
                                         flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
@@ -422,7 +423,7 @@ const AdminUsers: React.FC = () => {
                                         fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
                                         minWidth: 120,
                                     }}
-                                    onClick={() => setChangingRole({ userId: selectedUser.id, roleId: selectedUser.role.id })}
+                                    onClick={() => setChangingRole({ userId: selectedUser.id, roleId: selectedUser.role.id || 0 })}
                                 >
                                     🔄 Đổi vai trò
                                 </button>
@@ -453,9 +454,9 @@ const AdminUsers: React.FC = () => {
                                     className="admin-filter-select"
                                     style={{ width: "100%" }}
                                     value={changingRole.roleId}
-                                    onChange={(e) => setChangingRole({ ...changingRole, roleId: e.target.value })}
+                                    onChange={(e) => setChangingRole({ ...changingRole, roleId: Number(e.target.value) })}
                                 >
-                                    {roles.data.map(role => (
+                                    {roles?.data?.map(role => (
                                         <option key={role.id} value={role.id}>{role.name} — {role.description}</option>
                                     ))}
                                 </select>

@@ -9,6 +9,18 @@
 export type FriendshipStatus = 'PENDING' | 'ACCEPTED' | 'BLOCKED';
 
 /**
+ * Relation status from current user's perspective (for profile page buttons)
+ */
+export type FriendshipRelationStatus =
+    | 'none'
+    | 'pending_sent'
+    | 'pending_received'
+    | 'friends'
+    | 'blocked_by_me'
+    | 'blocked_by_them'
+    | 'self';
+
+/**
  * Friendship relationship data
  */
 export interface Friendship {
