@@ -27,7 +27,7 @@ const api: AxiosInstance = axios.create({
         "Content-Type": "application/json",
         "Access": "application/json",
     },
-    timeout: 15000,
+    timeout: 60000,
 });
 
 const apiNoAuth = axios.create({

@@ -49,7 +49,16 @@ const TrendingHashtags: React.FC = () => {
     }
 
     if (trending.length === 0) {
-        return null;
+        return (
+            <div className="sidebar-section">
+                <div className="section-header">
+                    <h3 className="section-title">Thịnh hành</h3>
+                </div>
+                <div className="trending-empty">
+                    Chưa có chủ đề nào thịnh hành
+                </div>
+            </div>
+        );
     }
 
     return (

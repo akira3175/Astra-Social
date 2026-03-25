@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { Avatar } from "../../../components/ui";
 import { useCurrentUser } from "../../../context/currentUserContext";
 import {
@@ -48,6 +49,45 @@ const getDisplayName = (user: Post["user"]): string => {
         return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
     }
     return user.username;
+};
+
+/**
+ * Render text with clickable hashtags
+ */
+const renderContentWithHashtags = (content: string) => {
+    if (!content) return null;
+    
+    // Phân tách văn bản dựa trên hashtag (bắt đầu bằng #, theo sau là chữ Unicode, số hoặc dấu gạch dưới)
+    // Sử dụng flag 'u' và \p{L} để hỗ trợ các ký tự Unicode (tiếng Việt)
+    const hashtagRegex = /(#[\p{L}0-9_]+)/gu;
+    const parts = content.split(hashtagRegex);
+    
+    return (
+        <>
+            {parts.map((part, i) => {
+                // Kiểm tra xem part có phải là hashtag không (bắt đầu bằng #)
+                if (part.startsWith('#') && part.match(/^#[\p{L}0-9_]+$/u)) {
+                    const tagContent = part.slice(1); // Bỏ dấu # lúc truyền lên URL search
+                    return (
+                        <Link 
+                            key={i} 
+                            to={`/search?q=%23${encodeURIComponent(tagContent)}`}
+                            className="post-hashtag"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {part}
+                        </Link>
+                    );
+                }
+                // Text bình thường có thể bao gồm xuống dòng
+                return (
+                    <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+                        {part}
+                    </span>
+                );
+            })}
+        </>
+    );
 };
 
 const PostDetailModal: React.FC<PostDetailModalProps> = ({
@@ -442,7 +482,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                                 </div>
                             </div>
                         ) : (
-                            post.content && <p className="pdm-text">{post.content}</p>
+                            post.content && <p className="pdm-text">{renderContentWithHashtags(post.content)}</p>
                         )}
                     </div>
 
@@ -704,7 +744,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                         <span className="pdm-comment-author">{displayName}</span>
                         {isAuthor && <span className="pdm-comment-author-badge">Tác giả</span>}
                     </div>
-                    <p className="pdm-comment-text">{comment.content}</p>
+                    <p className="pdm-comment-text">{renderContentWithHashtags(comment.content)}</p>
                     {likeCount > 0 && (
                         <div className="pdm-comment-like-count">
                             <span className="icon">👍</span>

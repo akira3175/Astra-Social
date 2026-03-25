@@ -15,8 +15,7 @@ Route::get('/posts/{id}', [PostController::class, 'show'])->where('id', '[0-9]+'
 Route::get('/users/{userId}/posts', [PostController::class, 'byUser'])->where('userId', '[0-9]+');
 Route::get('/hashtags/search', [PostController::class, 'searchHashtag']);
 Route::get('/hashtags/trending', [PostController::class, 'trendingHashtags']);
-Route::get('/hashtags/{hashtagName}', [PostController::class, 'hashtagPosts'])
-    ->where('hashtagName', '[A-Za-z0-9_]+');
+Route::get('/hashtags/{hashtagName}', [PostController::class, 'hashtagPosts']);
 Route::get('/search', [PostController::class, 'search']);
 
 

@@ -54,13 +54,16 @@ const getDisplayName = (user: Post["user"]): string => {
 const renderContentWithHashtags = (content: string) => {
     if (!content) return null;
     
-    // Phân tách văn bản dựa trên hashtag (bắt đầu bằng #, theo sau là chữ, số hoặc dấu gạch dưới)
-    const parts = content.split(/(#[a-zA-Z0-9_]+)/g);
+    // Phân tách văn bản dựa trên hashtag (bắt đầu bằng #, theo sau là chữ Unicode, số hoặc dấu gạch dưới)
+    // Sử dụng flag 'u' và \p{L} để hỗ trợ các ký tự Unicode (tiếng Việt)
+    const hashtagRegex = /(#[\p{L}0-9_]+)/gu;
+    const parts = content.split(hashtagRegex);
     
     return (
         <>
             {parts.map((part, i) => {
-                if (part.match(/^#[a-zA-Z0-9_]+$/)) {
+                // Kiểm tra xem part có phải là hashtag không (bắt đầu bằng #)
+                if (part.startsWith('#') && part.match(/^#[\p{L}0-9_]+$/u)) {
                     const tagContent = part.slice(1); // Bỏ dấu # lúc truyền lên URL search
                     return (
                         <Link 

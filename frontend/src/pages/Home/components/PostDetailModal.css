@@ -812,3 +812,16 @@
     color: #65676b;
     margin-top: 2px;
 }
+
+/* Hashtag Styles */
+.post-hashtag {
+    color: #1877f2;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.post-hashtag:hover {
+    text-decoration: underline;
+    color: #166fe5;
+}
