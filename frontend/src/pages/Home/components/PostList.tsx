@@ -6,9 +6,11 @@ import type { Post } from "../../../types/post";
 import PostDetailModal from "./PostDetailModal";
 import { createReport, CreateReportDto } from "../../../services/ReportService";
 import PostMenu from "./PostMenu";
-import { toggleLike, sharePost } from "../../../services/postService";
+import { toggleLike } from "../../../services/postService";
 import PostReportModal from "./PostReportModal";
+import SharePostModal from "./SharePostModal";
 import "./PostList.css";
+import "./SharePostModal.css";
 import Swal from 'sweetalert2';
 // import withReactContent from 'sweetalert2-react-content';
 
@@ -43,7 +45,7 @@ const formatRelativeTime = (dateString: string): string => {
  */
 const getDisplayName = (user: Post["user"]): string => {
     if (user.profile?.first_name || user.profile?.last_name) {
-        return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
+        return `${user.profile.last_name || ""} ${user.profile.first_name || ""}`.trim();
     }
     return user.username;
 };
@@ -84,6 +86,42 @@ const renderContentWithHashtags = (content: string) => {
                 );
             })}
         </>
+    );
+};
+
+/**
+ * Embedded shared post preview — shown inside a post card when post.parent exists
+ */
+const SharedPostPreview: React.FC<{ post: Post }> = ({ post }) => {
+    const firstImage = post.attachments?.find((a) => a.file_type === "IMAGE");
+    return (
+        <div className="shared-post-preview" onClick={(e) => e.stopPropagation()}>
+            <div className="shared-preview-author">
+                <Avatar
+                    src={post.user.profile?.avatar_url || undefined}
+                    alt={post.user.username}
+                    width={30}
+                    height={30}
+                >
+                    {getDisplayName(post.user)[0]?.toUpperCase() || "U"}
+                </Avatar>
+                <div className="shared-preview-meta">
+                    <span className="shared-preview-name">{getDisplayName(post.user)}</span>
+                    <span className="shared-preview-time">{formatRelativeTime(post.created_at)}</span>
+                </div>
+            </div>
+            {post.content && (
+                <p className="shared-preview-content">{post.content}</p>
+            )}
+            {firstImage && (
+                <div className="shared-preview-image">
+                    <img src={firstImage.url} alt="" />
+                </div>
+            )}
+            {!post.content && !firstImage && (
+                <p className="shared-preview-deleted">Bài viết gốc không có nội dung</p>
+            )}
+        </div>
     );
 };
 
@@ -184,6 +222,7 @@ const PostList: React.FC<PostListProps> = ({
     const [editingPostId, setEditingPostId] = useState<number | null>(null);
     const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
     const [reportingPost, setReportingPost] = useState<Post | null>(null);
+    const [sharingPost, setSharingPost] = useState<Post | null>(null);
 
     // Optimistic like state
     const [likeStates, setLikeStates] = useState<Record<number, LikeState>>({});
@@ -335,13 +374,8 @@ const PostList: React.FC<PostListProps> = ({
         }
     };
 
-    const handleShare = async (postId: number) => {
-        try {
-            await sharePost(postId);
-            onPostUpdated?.();
-        } catch (e) {
-            console.error(e);
-        }
+    const handleShare = (post: Post) => {
+        setSharingPost(post);
     };
 
     // Callback nhận từ modal khi comment được tạo thành công
@@ -472,7 +506,11 @@ const PostList: React.FC<PostListProps> = ({
                                 </div>
                             )}
 
-                            {post.attachments && post.attachments.length > 0 && (
+                            {/* Embedded original post for shares */}
+                            {post.parent && <SharedPostPreview post={post.parent} />}
+
+                            {/* Attachments only on non-share posts */}
+                            {!post.parent && post.attachments && post.attachments.length > 0 && (
                                 <MediaGrid attachments={post.attachments} />
                             )}
 
@@ -503,7 +541,7 @@ const PostList: React.FC<PostListProps> = ({
                                     className="post-action-btn"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleShare(post.id);
+                                        handleShare(post);
                                     }}
                                 >
                                     <span>↗️</span>
@@ -547,6 +585,16 @@ const PostList: React.FC<PostListProps> = ({
                     onSubmit={async (reason, detail) => handleReportSubmit(reason, detail)}
                 />
             )}
+
+            <SharePostModal
+                open={sharingPost !== null}
+                onClose={() => setSharingPost(null)}
+                post={sharingPost}
+                onPostShared={() => {
+                    setSharingPost(null);
+                    onPostUpdated?.();
+                }}
+            />
         </>
     );
 };

@@ -152,14 +152,18 @@ class PostService
 
         $bindings = array_merge($friendIds, $followeeIds);
 
-        // 4. Add score column (do NOT re-select posts.* — Eloquent already selects *)
+        // 4. Add score column
+        // Gravity decay: Score = Base / (AgeHours + 2)^1.5
         $query->selectRaw(
             "posts.*, (
-                (posts.likes_count * 2)
-                + (posts.comments_count * 3)
-                + ({$relationBoostExpr})
-                + (CASE WHEN EXISTS (SELECT 1 FROM media_attachments ma WHERE ma.entity_id = posts.id AND ma.entity_type = 'POST') THEN 4 ELSE 0 END)
-                - (TIMESTAMPDIFF(HOUR, posts.created_at, NOW()) * 0.3)
+                (
+                    (posts.likes_count * 3)
+                    + (posts.comments_count * 10)
+                    + ((SELECT COUNT(*) FROM posts shares WHERE shares.parent_id = posts.id AND shares.deleted_at IS NULL) * 15)
+                    + ({$relationBoostExpr})
+                    + (CASE WHEN EXISTS (SELECT 1 FROM media_attachments ma WHERE ma.entity_id = posts.id AND ma.entity_type = 'POST') THEN 4 ELSE 0 END)
+                    + (CASE WHEN TIMESTAMPDIFF(MINUTE, posts.created_at, NOW()) < 60 THEN 20 ELSE 0 END)
+                ) / POWER(TIMESTAMPDIFF(HOUR, posts.created_at, NOW()) + 2, 1.5)
             ) AS feed_score",
             $bindings
         );
@@ -370,6 +374,11 @@ class PostService
         $post->fill(array_intersect_key($data, array_flip(['content', 'privacy'])));
         $post->save();
 
+        if (array_key_exists('content', $data)) {
+            $tags = $this->hashtagService->extract($data['content'] ?? '');
+            $this->hashtagService->syncForPost($post, $tags);
+        }
+
         $post->load([
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
@@ -396,6 +405,8 @@ class PostService
 
         // Delete attachments from Cloudinary and database
         $this->mediaService->deleteForEntity(MediaAttachment::ENTITY_POST, $post->id);
+
+        $this->hashtagService->detachFromPost($post);
 
         $post->delete();
 
@@ -434,6 +445,12 @@ class PostService
         $post = Post::withTrashed()->find((int) $id);
         if ($post) {
             $post->restore();
+
+            if (!empty($post->content)) {
+                $tags = $this->hashtagService->extract($post->content);
+                $this->hashtagService->attachToPost($post, $tags);
+            }
+
             return $post;
         }
         return false;
@@ -443,6 +460,8 @@ class PostService
     {
         $post = Post::find($id);
         if (empty($post)) return false;
+
+        $this->hashtagService->detachFromPost($post);
 
         $post->delete();
 
@@ -516,7 +535,36 @@ class PostService
 
     public function getTrendingHashtags(): array
     {
-        return Redis::zrevrange('trending:hashtags', 0, 9, 'WITHSCORES');
+        try {
+            $redisData = Redis::zrevrange('trending:hashtags', 0, 9, 'WITHSCORES');
+            if (!empty($redisData)) {
+                // If it's an associative array (phpredis), convert to flat array for frontend
+                if (is_array($redisData) && !array_is_list($redisData)) {
+                    $flat = [];
+                    foreach ($redisData as $key => $value) {
+                        $flat[] = $key;
+                        $flat[] = (string) $value;
+                    }
+                    return $flat;
+                }
+                return $redisData;
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Redis connection failed in getTrendingHashtags: ' . $e->getMessage());
+        }
+
+        // Fallback to database if Redis fails or is empty
+        $hashtags = \App\Models\Hashtag::orderByDesc('posts_count')
+            ->limit(10)
+            ->get(['name', 'posts_count']);
+
+        $formatted = [];
+        foreach ($hashtags as $hashtag) {
+            $formatted[] = $hashtag->name;
+            $formatted[] = (string) $hashtag->posts_count;
+        }
+
+        return $formatted;
     }
 
     // Search 

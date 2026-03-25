@@ -60,7 +60,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         if (otherMember?.user) {
             const { firstName, lastName, username } = otherMember.user;
             if (firstName || lastName) {
-                return `${firstName || ""} ${lastName || ""}`.trim();
+                return `${lastName || ""} ${firstName || ""}`.trim();
             }
             return username;
         }

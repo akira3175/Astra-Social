@@ -265,10 +265,12 @@ export const toggleCommentLike = async (
 // ============ Share API ============
 
 export const sharePost = async (
-    postId: number
+    postId: number,
+    caption?: string
 ): Promise<{ success: boolean; data: unknown }> => {
     const response = await api.post<{ success: boolean; data: unknown }>(
-        ENDPOINTS.POST_SHARE(postId)
+        ENDPOINTS.POST_SHARE(postId),
+        { caption: caption || undefined }
     );
     return response.data;
 };

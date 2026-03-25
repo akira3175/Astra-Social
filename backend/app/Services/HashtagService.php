@@ -45,4 +45,62 @@ class HashtagService
             }
         }
     }
+
+    /**
+     * Remove or decrement hashtags when a post is deleted
+     */
+    public function detachFromPost(Post $post): void
+    {
+        $hashtags = $post->hashtags()->get();
+
+        foreach ($hashtags as $hashtag) {
+            if ($hashtag->posts_count > 0) {
+                $hashtag->decrement('posts_count');
+            }
+
+            try {
+                Redis::zincrby('trending:hashtags', -1, $hashtag->name);
+                $score = Redis::zscore('trending:hashtags', $hashtag->name);
+                if ($score !== false && $score <= 0) {
+                    Redis::zrem('trending:hashtags', $hashtag->name);
+                }
+            } catch (\Throwable $e) {
+                // Ignore redis failures
+            }
+        }
+    }
+
+    /**
+     * Sync hashtags when a post is updated
+     */
+    public function syncForPost(Post $post, array $newTags): void
+    {
+        $currentTags = $post->hashtags()->pluck('name')->toArray();
+        
+        $addedTags = array_diff($newTags, $currentTags);
+        $removedTags = array_diff($currentTags, $newTags);
+        
+        // Decrement removed
+        if (!empty($removedTags)) {
+            $hashtagsToRemove = Hashtag::whereIn('name', $removedTags)->get();
+            foreach ($hashtagsToRemove as $hashtag) {
+                if ($hashtag->posts_count > 0) {
+                    $hashtag->decrement('posts_count');
+                }
+                try {
+                    Redis::zincrby('trending:hashtags', -1, $hashtag->name);
+                    $score = Redis::zscore('trending:hashtags', $hashtag->name);
+                    if ($score !== false && $score <= 0) {
+                        Redis::zrem('trending:hashtags', $hashtag->name);
+                    }
+                } catch (\Throwable $e) {}
+            }
+            $post->hashtags()->detach($hashtagsToRemove->pluck('id'));
+        }
+        
+        // Increment added
+        if (!empty($addedTags)) {
+            $this->attachToPost($post, $addedTags);
+        }
+    }
 }

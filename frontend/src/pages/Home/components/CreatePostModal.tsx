@@ -161,7 +161,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ open, onClose, onPost
                         <div className="create-post-user-info">
                             <span className="create-post-username">
                                 {currentUser?.firstName || currentUser?.lastName
-                                    ? `${currentUser?.firstName || ""} ${currentUser?.lastName || ""}`.trim()
+                                    ? `${currentUser?.lastName || ""} ${currentUser?.firstName || ""}`.trim()
                                     : currentUser?.username}
                             </span>
                             

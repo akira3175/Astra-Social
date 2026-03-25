@@ -48,7 +48,7 @@ const formatRelativeTime = (dateString: string): string => {
 
 const getDisplayName = (user: Post["user"]): string => {
     if (user.profile?.first_name || user.profile?.last_name) {
-        return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
+        return `${user.profile.last_name || ""} ${user.profile.first_name || ""}`.trim();
     }
     return user.username;
 };
@@ -727,7 +727,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
     const displayName =
         comment.user.profile?.first_name || comment.user.profile?.last_name
-            ? `${comment.user.profile.first_name || ""} ${comment.user.profile.last_name || ""}`.trim()
+            ? `${comment.user.profile.last_name || ""} ${comment.user.profile.first_name || ""}`.trim()
             : comment.user.username;
 
     const isAuthor = postAuthorId !== undefined && comment.user_id === postAuthorId;

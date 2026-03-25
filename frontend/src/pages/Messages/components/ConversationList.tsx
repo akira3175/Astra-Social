@@ -33,7 +33,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
         if (otherMember?.user) {
             const { firstName, lastName, username } = otherMember.user;
-            if (firstName || lastName) return `${firstName || ""} ${lastName || ""}`.trim();
+            if (firstName || lastName) return `${lastName || ""} ${firstName || ""}`.trim();
             return username;
         }
     
@@ -78,7 +78,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
     const getFriendName = (friend: Friend): string => {
         const { firstName, lastName, username } = friend.user;
-        if (firstName || lastName) return `${firstName || ""} ${lastName || ""}`.trim();
+        if (firstName || lastName) return `${lastName || ""} ${firstName || ""}`.trim();
         return username;
     };
 

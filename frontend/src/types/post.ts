@@ -40,10 +40,13 @@ export interface Post {
     privacy: 'PUBLIC' | 'FRIENDS' | 'ONLY_ME';
     likes_count: number;
     comments_count: number;
+    shares_count?: number;
     created_at: string;
     deleted_at: string | null;
     user: PostAuthor;
     attachments: MediaAttachment[];
+    /** Embedded original post when this is a share */
+    parent?: Post | null;
 }
 
 /**
