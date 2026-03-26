@@ -180,9 +180,18 @@ const AdminRoles: React.FC = () => {
             });
             await loadData();
         } catch (err: any) {
+            const errorMessage = err.response?.data?.message || '';
+            let displayText = 'Không thể xóa vai trò này';
+            
+            if (errorMessage.includes('SQLSTATE[23000]') || errorMessage.includes('1451')) {
+                displayText = 'Không thể xóa quyền có người dùng';
+            } else if (errorMessage) {
+                displayText = errorMessage;
+            }
+
             Swal.fire({
                 title: 'Lỗi',
-                text: err.response?.data?.message || 'Không thể xóa vai trò này',
+                text: displayText,
                 icon: 'error',
                 showConfirmButton: false,
                 timer: 3000,
