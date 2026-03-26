@@ -625,6 +625,28 @@ class PostService
             ->limit(10)
             ->get(['id', 'username', 'email']);
 
+        // Check friendship status
+        if ($authUserId) {
+            foreach ($users as $user) {
+                if ($user->id === $authUserId) {
+                    $user->setAttribute('friendship_status', 'self');
+                    continue;
+                }
+
+                $friendship = \App\Models\Friendship::between($authUserId, $user->id)->first();
+
+                if (!$friendship) {
+                    $user->setAttribute('friendship_status', 'none');
+                } elseif ($friendship->status === 'accepted') {
+                    $user->setAttribute('friendship_status', 'friends');
+                } elseif ($friendship->requester_id === $authUserId) {
+                    $user->setAttribute('friendship_status', 'pending_sent');
+                } else {
+                    $user->setAttribute('friendship_status', 'pending_received');
+                }
+            }
+        }
+
         //  Tìm posts theo content hoặc hashtag 
         $cleanKeyword = ltrim($keyword, '#');
 

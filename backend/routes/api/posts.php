@@ -16,11 +16,11 @@ Route::get('/users/{userId}/posts', [PostController::class, 'byUser'])->where('u
 Route::get('/hashtags/search', [PostController::class, 'searchHashtag']);
 Route::get('/hashtags/trending', [PostController::class, 'trendingHashtags']);
 Route::get('/hashtags/{hashtagName}', [PostController::class, 'hashtagPosts']);
-Route::get('/search', [PostController::class, 'search']);
 
 
 // Tất cả routes cần auth đều dùng jwt.auth
 Route::middleware('jwt.auth')->group(function () {
+    Route::get('/search', [PostController::class, 'search']);
     Route::get('posts-admin', [PostController::class, 'adminIndex']);
     Route::get('/posts-admin/{id}', [PostController::class, 'adminShow'])->where('id', '[0-9]+');
     Route::get('count-posts-admin-days/{days}', [PostController::class, 'adminGetCountByDays']);

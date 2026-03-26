@@ -97,6 +97,7 @@ const AdminRoles: React.FC = () => {
         setSaving(true);
         try {
             let result;
+            const actionText = editingRole ? 'Cập nhật' : 'Tạo';
             if (editingRole) {
                 result = await updateRole(editingRole.id, {
                     description: formDesc,
@@ -111,46 +112,82 @@ const AdminRoles: React.FC = () => {
                 });
             }
             if(!result.success){
-                setError(result.errors);
-                setTimeout(()=>{
-                    setError(null);
-                },3000);
-            }
-            else{
                 Swal.fire({
-                    title: 'Thành công',
-                    text: result.message,
-                    icon: 'success', // warning, error, success, info, question
+                    title: 'Thất bại',
+                    text: result.message || result.errors || `${actionText} vai trò thất bại`,
+                    icon: 'error',
                     showConfirmButton: false,
                     timer: 3000
                 });
+                return;
             }
+            
+            Swal.fire({
+                title: 'Thành công',
+                text: result.message || `${actionText} vai trò thành công`,
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 3000
+            });
 
             await loadData();
             setShowModal(false);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Save role error:", err);
+            Swal.fire({
+                title: 'Lỗi',
+                text: err.response?.data?.message || 'Có lỗi xảy ra khi lưu vai trò',
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 3000
+            });
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        const result = await deleteRole(id);
-        if (!result.success) {
-            setError(result.errors);
-            setTimeout(() => setError(null), 3000);
-            return;
-        }
-        Swal.fire({
-            title: 'Thành công',
-            text: result.message,
-            icon: 'success', // warning, error, success, info, question
-            showConfirmButton: false,
-            timer: 3000
+        const confirm = await Swal.fire({
+            title: 'Xác nhận xóa',
+            text: 'Bạn có chắc muốn xóa vai trò này không?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy',
         });
+        if (!confirm.isConfirmed) return;
 
-        await loadData();
+        try {
+            const result = await deleteRole(id);
+            if (!result.success) {
+                Swal.fire({
+                    title: 'Thất bại',
+                    text: result.message || 'Vai trò này đã có người dùng, không thể xóa',
+                    icon: 'error',
+                    showConfirmButton: false,
+                    timer: 3000,
+                });
+                return;
+            }
+            Swal.fire({
+                title: 'Thành công',
+                text: result.message || 'Đã xóa vai trò thành công',
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 2000,
+            });
+            await loadData();
+        } catch (err: any) {
+            Swal.fire({
+                title: 'Lỗi',
+                text: err.response?.data?.message || 'Không thể xóa vai trò này',
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 3000,
+            });
+        }
     };
 
     const getPermLabel = (permId: number) => {
