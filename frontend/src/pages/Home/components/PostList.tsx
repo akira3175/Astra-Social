@@ -29,9 +29,14 @@ interface PostListProps {
  * Format relative time
  */
 const formatRelativeTime = (dateString: string): string => {
-    const localDateString = dateString.replace(/Z$/i, "");
-    const date = new Date(localDateString);
-    if (isNaN(date.getTime())) return dateString;
+    // Ensure ISO format for Safari compatibility and preserve 'Z' for UTC
+    let formattedString = dateString.replace(" ", "T");
+    if (!formattedString.endsWith("Z") && !formattedString.includes("+")) {
+        formattedString += "Z";
+    }
+    const date = new Date(formattedString);
+    if (isNaN(date.getTime())) return "Gần đây";
+    
     const diffInSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diffInSeconds < 0) return "Vừa xong";
     if (diffInSeconds < 60) return "Vừa xong";
@@ -320,7 +325,7 @@ const PostList: React.FC<PostListProps> = ({
     const handlePostClick = (post: Post) => {
         setSelectedPost(post);
         setFocusComment(false);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleProfileClick = (userId: number, e: React.MouseEvent) => {
@@ -332,7 +337,7 @@ const PostList: React.FC<PostListProps> = ({
         e.stopPropagation();
         setSelectedPost(post);
         setFocusComment(true);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleCloseModal = () => {
@@ -340,20 +345,19 @@ const PostList: React.FC<PostListProps> = ({
         setFocusComment(false);
         setEditingPostId(null);
         setDeletingPostId(null);
-        searchParams.delete("post");
-        setSearchParams(searchParams);
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete("post"); return next; });
     };
 
     const handleEditClick = (post: Post) => {
         setSelectedPost(post);
         setEditingPostId(post.id);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleDeleteClick = (post: Post) => {
         setSelectedPost(post);
         setDeletingPostId(post.id);
-        setSearchParams({ post: post.id.toString() });
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("post", post.id.toString()); return next; });
     };
 
     const handleLike = async (postId: number) => {

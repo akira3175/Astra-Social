@@ -20,13 +20,24 @@ const ENDPOINTS = {
  * Get user profile by ID
  */
 export const getProfileById = async (userId: number | string) => {
-    const response = await api.get<UserProfileResponse>(`${ENDPOINTS.PROFILE}/${userId}`);
+    try {
+        const response = await api.get<UserProfileResponse>(`${ENDPOINTS.PROFILE}/${userId}`);
 
-    if (response.data.success && response.data.data) {
-        return transformUserProfile(response.data.data);
+        if (response.data.success && response.data.data) {
+            return transformUserProfile(response.data.data);
+        }
+
+        throw new Error(response.data.message || "Failed to get profile");
+    } catch (err: any) {
+        // Re-throw with reason so callers can detect 'blocked'
+        if (err?.response) {
+            const e: any = new Error(err.response.data?.message || "Failed to get profile");
+            e.status = err.response.status;
+            e.reason = err.response.data?.reason;
+            throw e;
+        }
+        throw err;
     }
-
-    throw new Error(response.data.message || "Failed to get profile");
 };
 
 /**

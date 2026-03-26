@@ -49,6 +49,7 @@ class NotificationService{
             $result = Notification::create([
                 'receiver_id'=>$noti['receiver_id'],
                 'actor_id'=>$noti['actor_id'],
+                'type'=>$noti['type'] ?? null,
                 'entity_type'=>$noti['entity_type'],
                 'entity_id'=>$noti['entity_id'],
                 'message'=> $noti['message'],

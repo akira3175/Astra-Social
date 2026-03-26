@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { IconButton } from "../ui/IconButton";
 import { BellIcon } from "../ui/Icons";
 import { Badge } from "../ui/Badge/Badge";
-import NotificationItem from "./NotificationItem";
+import NotificationItem, { inferType } from "./NotificationItem";
 import {
     getNotifications,
     markAsRead,
@@ -13,6 +13,46 @@ import {
 import type { Notification } from "../../types/notification";
 import { useCurrentUser } from "../../context/currentUserContext";
 import "./NotificationDropdown.css";
+
+/** Group LIKE/COMMENT/REPLY by (type, entityId) so we can show
+ *  "A, B and N others liked your post" compactly.
+ */
+interface GroupedNotification {
+    key: string;
+    latest: Notification;
+    actors: Notification[];
+    hasUnread: boolean;
+}
+
+function groupNotifications(notifications: Notification[]): GroupedNotification[] {
+    const GROUPABLE = new Set(["LIKE", "COMMENT", "REPLY"]);
+    const map = new Map<string, GroupedNotification>();
+    const order: string[] = [];
+
+    for (const n of notifications) {
+        const anyN = n as any;
+        const type = inferType(n);
+        const entityId = anyN.entityId || anyN.entity_id;
+        const isRead = anyN.isRead !== undefined ? anyN.isRead : anyN.is_read;
+
+        if (GROUPABLE.has(type)) {
+            const key = `${type}__${entityId}`;
+            if (!map.has(key)) {
+                map.set(key, { key, latest: n, actors: [], hasUnread: false });
+                order.push(key);
+            }
+            const g = map.get(key)!;
+            g.actors.push(n);
+            if (!isRead) g.hasUnread = true;
+        } else {
+            const key = `solo__${anyN.id}`;
+            map.set(key, { key, latest: n, actors: [n], hasUnread: !isRead });
+            order.push(key);
+        }
+    }
+
+    return order.map(k => map.get(k)!);
+}
 
 const NotificationDropdown: React.FC = () => {
     const { currentUser } = useCurrentUser() ?? {};
@@ -79,20 +119,7 @@ const NotificationDropdown: React.FC = () => {
         setIsOpen(!isOpen);
     };
 
-    const handleNotificationClick = async (notification: Notification) => {
-        if (!notification.isRead) {
-            try {
-                await markAsRead(notification.id);
-                setNotifications((prev) =>
-                    prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
-                );
-                setUnreadCount((prev) => Math.max(0, prev - 1));
-            } catch (error) {
-                console.error("Error marking notification as read:", error);
-            }
-        }
-        setIsOpen(false);
-    };
+
 
     const handleMarkAllAsRead = async () => {
         if (!currentUser?.id) return;
@@ -138,12 +165,52 @@ const NotificationDropdown: React.FC = () => {
                                 <p>Không có thông báo nào</p>
                             </div>
                         ) : (
-                            <ul className="notification-list">
-                                {notifications.map((notification) => (
+                    <ul className="notification-list">
+                                {groupNotifications(notifications).map((group) => (
                                     <NotificationItem
-                                        key={notification.id}
-                                        notification={notification}
-                                        onClick={handleNotificationClick}
+                                        key={group.key}
+                                        notification={group.latest}
+                                        actorCount={group.actors.length}
+                                        secondActorName={
+                                            group.actors.length > 1
+                                                ? `${group.actors[1].actor?.lastName ?? ""} ${group.actors[1].actor?.firstName ?? ""}`.trim()
+                                                : undefined
+                                        }
+                                        hasUnread={group.hasUnread}
+                                        onClick={() => {
+                                            // Mark all unread in the group
+                                            group.actors
+                                                .filter(n => {
+                                                    const anyN = n as any;
+                                                    const isRead = anyN.isRead !== undefined ? anyN.isRead : anyN.is_read;
+                                                    return !isRead;
+                                                })
+                                                .forEach(n => markAsRead(n.id));
+                                            
+                                            setNotifications(prev =>
+                                                prev.map(n => {
+                                                    const isRelevant = group.actors.some(a => a.id === n.id);
+                                                    if (isRelevant) {
+                                                        // Update both potential keys
+                                                        const updated = { ...n, isRead: true } as any;
+                                                        if ('is_read' in updated) updated.is_read = true;
+                                                        return updated;
+                                                    }
+                                                    return n;
+                                                })
+                                            );
+                                            
+                                            const unreadInGroup = group.actors.filter(n => {
+                                                const anyN = n as any;
+                                                const isRead = anyN.isRead !== undefined ? anyN.isRead : anyN.is_read;
+                                                return !isRead;
+                                            }).length;
+                                            
+                                            setUnreadCount(prev => Math.max(0, prev - unreadInGroup));
+                                            
+                                            // Close dropdown with a slight delay to allow Link to process
+                                            setTimeout(() => setIsOpen(false), 50);
+                                        }}
                                     />
                                 ))}
                             </ul>

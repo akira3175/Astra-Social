@@ -108,10 +108,18 @@ const NotificationsPage: React.FC = () => {
     // Filter dữ liệu cho các Tab
     const filteredNotifications =
         activeTab === "unread"
-            ? notifications.filter((n) => !n.isRead)
+            ? notifications.filter((n) => {
+                const anyN = n as any;
+                const isRead = anyN.isRead !== undefined ? anyN.isRead : anyN.is_read;
+                return !isRead;
+            })
             : notifications;
 
-    const unreadCount = notifications.filter((n) => !n.isRead).length;
+    const unreadCount = notifications.filter((n) => {
+        const anyN = n as any;
+        const isRead = anyN.isRead !== undefined ? anyN.isRead : anyN.is_read;
+        return !isRead;
+    }).length;
 
     return (
         <div className="notifications-page">

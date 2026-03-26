@@ -7,10 +7,15 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Friendship;
 use App\Models\UserBlock;
+use App\Models\Notification;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 
 class FriendshipController extends Controller
 {
+    public function __construct(
+        private NotificationService $notiService
+    ) {}
 
    public function sendRequest(Request $request, $userId)
     {
@@ -57,6 +62,16 @@ class FriendshipController extends Controller
             'status'       => 'pending',
         ]);
 
+        // Notify the receiver
+        $this->notiService->create([
+            'receiver_id' => $userId,
+            'actor_id'    => $authUser->id,
+            'type'        => 'FRIEND_REQ',
+            'entity_type' => Notification::ENTITY_TYPE_FRIEND,
+            'entity_id'   => $authUser->id,
+            'message'     => 'đã gửi lời mời kết bạn cho bạn',
+        ]);
+
         return response()->json([
             'message' => 'Đã gửi lời mời kết bạn.'
         ], 201);
@@ -73,7 +88,18 @@ class FriendshipController extends Controller
                 'status' => 'accepted',
                 'accepted_at' => now()
             ]);
-        return response() -> json([
+
+        // Notify the original requester that their request was accepted
+        $this->notiService->create([
+            'receiver_id' => $userId,
+            'actor_id'    => $authUser->id,
+            'type'        => 'FRIEND_ACCEPT',
+            'entity_type' => Notification::ENTITY_TYPE_FRIEND,
+            'entity_id'   => $authUser->id,
+            'message'     => 'đã chấp nhận lời mời kết bạn của bạn',
+        ]);
+
+        return response()->json([
             'message' => 'Lời mời kết bạn đã được chấp nhận.'
         ]);
     }

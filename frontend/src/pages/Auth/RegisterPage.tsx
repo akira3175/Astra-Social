@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { sendRegisterOtp, register } from "../../services/authService";
+import { sendRegisterOtp, register, validateRegisterStep1 } from "../../services/authService";
 import { useCurrentUser } from "../../context/currentUserContext";
 import {
     Box,
@@ -32,6 +32,7 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const userContext = useCurrentUser();
@@ -89,26 +90,50 @@ export default function RegisterPage() {
         }
     };
 
-    const handleStep1Submit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleStep1Submit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
+        setFieldErrors({});
 
         if (password !== passwordConfirmation) {
-            setError("Mật khẩu xác nhận không khớp!");
+            setFieldErrors({ password_confirmation: "Mật khẩu xác nhận không khớp!" });
             return;
         }
 
         if (password.length < 6) {
-            setError("Mật khẩu phải có ít nhất 6 ký tự!");
+            setFieldErrors({ password: "Mật khẩu phải có ít nhất 6 ký tự!" });
             return;
         }
 
         if (username.length < 3) {
-            setError("Tên người dùng phải có ít nhất 3 ký tự!");
+            setFieldErrors({ username: "Tên người dùng phải có ít nhất 3 ký tự!" });
             return;
         }
 
-        setStep(2);
+        setIsLoading(true);
+        try {
+            await validateRegisterStep1({
+                email,
+                username,
+                password,
+                password_confirmation: passwordConfirmation,
+            });
+            setStep(2);
+        } catch (err: unknown) {
+            const axiosErr = err as AxiosErrorResponse;
+            const serverErrors = axiosErr?.response?.data?.errors;
+            if (serverErrors) {
+                const newFieldErrors: Record<string, string> = {};
+                for (const key in serverErrors) {
+                    newFieldErrors[key] = serverErrors[key][0];
+                }
+                setFieldErrors(newFieldErrors);
+            } else {
+                setError(axiosErr?.response?.data?.message || "Đã có lỗi xảy ra! Vui lòng thử lại.");
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleStep2Submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -222,10 +247,15 @@ export default function RegisterPage() {
                 label="Email"
                 placeholder="Nhập email của bạn"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: "" });
+                }}
                 required
                 fullWidth
                 autoComplete="email"
+                error={!!fieldErrors.email}
+                helperText={fieldErrors.email}
             />
 
             <TextField
@@ -234,10 +264,15 @@ export default function RegisterPage() {
                 label="Tên người dùng"
                 placeholder="Nhập tên người dùng"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (fieldErrors.username) setFieldErrors({ ...fieldErrors, username: "" });
+                }}
                 required
                 fullWidth
                 autoComplete="username"
+                error={!!fieldErrors.username}
+                helperText={fieldErrors.username}
             />
 
             <TextField
@@ -246,7 +281,10 @@ export default function RegisterPage() {
                 label="Mật khẩu"
                 placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: "" });
+                }}
                 required
                 fullWidth
                 autoComplete="new-password"
@@ -255,6 +293,8 @@ export default function RegisterPage() {
                         {showPassword ? <VisibilityOffIcon size={20} /> : <VisibilityIcon size={20} />}
                     </IconButton>
                 }
+                error={!!fieldErrors.password}
+                helperText={fieldErrors.password}
             />
 
             <TextField
@@ -263,7 +303,10 @@ export default function RegisterPage() {
                 label="Xác nhận mật khẩu"
                 placeholder="Nhập lại mật khẩu"
                 value={passwordConfirmation}
-                onChange={(e) => setPasswordConfirmation(e.target.value)}
+                onChange={(e) => {
+                    setPasswordConfirmation(e.target.value);
+                    if (fieldErrors.password_confirmation) setFieldErrors({ ...fieldErrors, password_confirmation: "" });
+                }}
                 required
                 fullWidth
                 autoComplete="new-password"
@@ -272,11 +315,14 @@ export default function RegisterPage() {
                         {showConfirmPassword ? <VisibilityOffIcon size={20} /> : <VisibilityIcon size={20} />}
                     </IconButton>
                 }
+                error={!!fieldErrors.password_confirmation}
+                helperText={fieldErrors.password_confirmation}
             />
 
             <Button
                 type="submit"
                 fullWidth
+                loading={isLoading}
             >
                 Tiếp tục
             </Button>

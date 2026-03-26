@@ -11,13 +11,16 @@ interface CreatePostProps {
 const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
     const { currentUser } = useCurrentUser() ?? {};
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [initialAction, setInitialAction] = useState<"photo" | "video" | null>(null);
 
-    const handleOpenModal = () => {
+    const handleOpenModal = (action: "photo" | "video" | null = null) => {
+        setInitialAction(action);
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
+        setInitialAction(null);
     };
 
     return (
@@ -33,24 +36,20 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
                     >
                         {!currentUser?.avatar && (currentUser?.firstName?.[0] || currentUser?.username?.[0] || "U")}
                     </Avatar>
-                    <div className="create-post-input" onClick={handleOpenModal}>
+                    <div className="create-post-input" onClick={() => handleOpenModal(null)}>
                         <span className="create-post-placeholder">
                             Bạn đang nghĩ gì, {currentUser?.firstName || "bạn"}?
                         </span>
                     </div>
                 </div>
                 <div className="create-post-actions">
-                    <button className="create-post-action-btn" onClick={handleOpenModal}>
+                    <button className="create-post-action-btn" onClick={() => handleOpenModal("photo")}>
                         <span className="action-icon-photo">📷</span>
                         <span>Ảnh</span>
                     </button>
-                    <button className="create-post-action-btn" onClick={handleOpenModal}>
+                    <button className="create-post-action-btn" onClick={() => handleOpenModal("video")}>
                         <span className="action-icon-video">🎥</span>
                         <span>Video</span>
-                    </button>
-                    <button className="create-post-action-btn" onClick={handleOpenModal}>
-                        <span className="action-icon-event">📅</span>
-                        <span>Sự kiện</span>
                     </button>
                 </div>
             </div>
@@ -59,6 +58,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
                 open={isModalOpen}
                 onClose={handleCloseModal}
                 onPostCreated={onPostCreated}
+                initialAction={initialAction}
             />
         </>
     );

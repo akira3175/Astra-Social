@@ -138,8 +138,12 @@
 }
 
 .notifications-list .notification-item {
-    padding: 16px 20px;
+    padding: 0;
     border-bottom: 1px solid #f3f4f6;
+}
+
+.notifications-list .notification-item-link {
+    padding: 16px 20px;
 }
 
 .notifications-list .notification-item:last-child {
