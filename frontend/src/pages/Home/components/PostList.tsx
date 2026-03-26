@@ -451,6 +451,7 @@ const PostList: React.FC<PostListProps> = ({
             {/* ✅ Thêm ref vào div wrapper */}
             <div className="post-list" ref={listRef}>
                 {posts.map((post) => {
+                    if (!post.user) return null;
                     const isOwner = currentUser?.id?.toString() === post.user_id?.toString();
                     const likeState = likeStates[post.id] ?? {
                         liked: post.is_liked ?? false,

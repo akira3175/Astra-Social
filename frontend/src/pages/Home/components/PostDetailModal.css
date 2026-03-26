@@ -187,6 +187,9 @@
     padding-right: 12px;
     border-bottom: 1px solid #eee;
 }
+.pdm-header-no-images {
+    padding-right: 52px;
+}
 
 .pdm-user-info {
     flex: 1;

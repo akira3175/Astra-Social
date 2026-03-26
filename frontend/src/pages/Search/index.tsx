@@ -49,6 +49,7 @@ const SearchPage: React.FC = () => {
                             lastName: u.profile?.last_name || '',
                             avatarUrl: u.profile?.avatar_url || null,
                             bio: null,
+                            friendshipStatus: (u as any).friendship_status || 'none',
                         }));
                     setUsers(mappedUsers);
                     setPosts(res.data.posts || []);
@@ -81,6 +82,9 @@ const SearchPage: React.FC = () => {
     const handleAddFriend = async (userId: number) => {
         try {
             await sendFriendRequest(userId);
+            setUsers(prev => prev.map(u => 
+                u.id === userId ? { ...u, friendshipStatus: 'pending_sent' } : u
+            ));
         } catch (err) {
             console.error("Friend request error:", err);
         }
@@ -175,14 +179,32 @@ const SearchPage: React.FC = () => {
                                 </div>
                             )}
                             <div className="user-list">
-                                {(activeTab === "all" ? users.slice(0, 3) : users).map(user => (
-                                    <UserCard
-                                        key={user.id}
-                                        user={user}
-                                        onClick={() => handleUserClick(user.id)}
-                                        onPrimaryAction={() => handleAddFriend(user.id)}
-                                    />
-                                ))}
+                                {(activeTab === "all" ? users.slice(0, 3) : users).map(user => {
+                                    let label = "Kết bạn";
+                                    let disabled = false;
+                                    
+                                    if (user.friendshipStatus === 'friends') {
+                                        label = "Bạn bè";
+                                        disabled = true;
+                                    } else if (user.friendshipStatus === 'pending_sent') {
+                                        label = "Đã gửi lời mời";
+                                        disabled = true;
+                                    } else if (user.friendshipStatus === 'pending_received') {
+                                        label = "Chờ phản hồi";
+                                        disabled = true;
+                                    }
+
+                                    return (
+                                        <UserCard
+                                            key={user.id}
+                                            user={user}
+                                            onClick={() => handleUserClick(user.id)}
+                                            onPrimaryAction={() => handleAddFriend(user.id)}
+                                            primaryActionLabel={label}
+                                            primaryActionDisabled={disabled}
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable
 {
@@ -34,15 +35,18 @@ class User extends Authenticatable
         'password',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'is_active' => 'boolean',
+        'is_verified' => 'boolean',
+        'last_login' => 'datetime',
+        'created_at' => 'datetime',
+    ];
+
+    public function setPasswordAttribute($value)
     {
-        return [
-            'password' => 'hashed',
-            'is_active' => 'boolean',
-            'is_verified' => 'boolean',
-            'last_login' => 'datetime',
-            'created_at' => 'datetime',
-        ];
+        if (!empty($value)) {
+            $this->attributes['password'] = Hash::make($value);
+        }
     }
 
     public function role(): BelongsTo

@@ -402,7 +402,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
         }
     };
 
-    if (!open || !post) return null;
+    if (!open || !post || !post.user) return null;
 
     const modalContent = (
         <div
@@ -441,7 +441,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                     )}
 
                     {/* Header */}
-                    <div className="pdm-header">
+                    <div className={`pdm-header ${!hasImages ? 'pdm-header-no-images' : ''}`}>
                         <div onClick={(e) => handleProfileClick(post.user.id, e)} style={{ cursor: "pointer" }}>
                             <Avatar
                                 src={post.user.profile?.avatar_url || undefined}
@@ -783,6 +783,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
     depth = 0,
     onNavigateProfile,
 }) => {
+    if (!comment.user) return null;
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState("");
     const [submitting, setSubmitting] = useState(false);

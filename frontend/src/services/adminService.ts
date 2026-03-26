@@ -215,25 +215,25 @@ export const createRole = async (data: {
     name: string;
     description: string;
     permissions: number[];
-}): Promise<Role> => {
-    const response = await api.post<RolesResponse>(ENDPOINTS.ROLES, data);
-    return response.data.data[0];
+}): Promise<{ success: boolean; data: Role; message?: string; errors?: any }> => {
+    const response = await api.post<any>(ENDPOINTS.ROLES, data);
+    return response.data;
 };
 
 export const updateRole = async (
     id: number,
     data: { description?: string; permissions?: number[] },
-): Promise<Role> => {
-    const response = await api.patch<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id), {
+): Promise<{ success: boolean; data: Role; message?: string; errors?: any }> => {
+    const response = await api.patch<any>(ENDPOINTS.ROLES_BY_ID(id), {
         id,
         ...data,
     });
-    return response.data.data[0];
+    return response.data;
 };
 
-export const deleteRole = async (id: number): Promise<Role> => {
-    const response = await api.delete<RolesResponse>(ENDPOINTS.ROLES_BY_ID(id));
-    return response.data.data[0];
+export const deleteRole = async (id: number): Promise<{ success: boolean; data?: Role; message?: string; errors?: any }> => {
+    const response = await api.delete<any>(ENDPOINTS.ROLES_BY_ID(id));
+    return response.data;
 };
 
 export default {

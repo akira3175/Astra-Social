@@ -10,6 +10,7 @@ export interface UserCardData {
     bio: string | null;
     isVerified?: boolean;
     mutualFriends?: number;
+    friendshipStatus?: string;
 }
 
 export type UserCardVariant = "default" | "suggestion" | "request" | "friend" | "blocked";
@@ -23,6 +24,8 @@ export interface UserCardProps {
     onBlock?: () => void;
     isLoading?: boolean;
     showAction?: boolean;
+    primaryActionLabel?: string;
+    primaryActionDisabled?: boolean;
 }
 
 const baseActionClass =
@@ -48,6 +51,8 @@ const UserCard: React.FC<UserCardProps> = ({
     onBlock,
     isLoading = false,
     showAction = true,
+    primaryActionLabel,
+    primaryActionDisabled = false,
 }) => {
     const displayName = `${user.lastName} ${user.firstName}`.trim() || user.username;
     const [showDropdown, setShowDropdown] = useState(false);
@@ -206,10 +211,11 @@ const UserCard: React.FC<UserCardProps> = ({
             default:
                 return (
                     <button
-                        className={`${baseActionClass} mt-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 active:scale-[0.98]`}
+                        className={`${baseActionClass} mt-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 active:scale-[0.98] disabled:bg-slate-50 disabled:text-slate-500`}
                         onClick={handlePrimaryClick}
+                        disabled={isLoading || primaryActionDisabled}
                     >
-                        Kết bạn
+                        {isLoading ? <span className={spinnerClass} style={{ borderColor: "rgb(79 70 229 / 0.3)", borderTopColor: "rgb(79 70 229)" }} /> : primaryActionLabel || "Kết bạn"}
                     </button>
                 );
         }
