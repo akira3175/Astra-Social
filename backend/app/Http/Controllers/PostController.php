@@ -197,9 +197,10 @@ class PostController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
-        $keyword = trim($request->query('q', ''));
-        $page    = (int) $request->query('page', 1);
-        $perPage = (int) $request->query('per_page', 10);
+        $keyword    = trim($request->query('q', ''));
+        $page       = (int) $request->query('page', 1);
+        $perPage    = (int) $request->query('per_page', 10);
+        $authUserId = $request->user()?->id;
 
         if ($keyword === '') {
             return response()->json([
@@ -208,7 +209,7 @@ class PostController extends Controller
             ], 422);
         }
 
-        $result = $this->postService->search($keyword, $page, $perPage);
+        $result = $this->postService->search($keyword, $page, $perPage, $authUserId);
 
         return response()->json([
             'success'    => true,

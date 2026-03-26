@@ -46,6 +46,7 @@ const ProfilePage = () => {
 
     const [profile, setProfile] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isBlocked, setIsBlocked] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -96,12 +97,17 @@ const ProfilePage = () => {
             try {
                 setIsLoading(true);
                 setError(null);
+                setIsBlocked(false);
                 const data = await getProfileById(userId);
                 setProfile(data);
                 setTempPosition(data.backgroundPosition ?? 50);
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Failed to load profile:", err);
-                setError("Profile not found");
+                if (err?.reason === 'blocked' || err?.status === 403) {
+                    setIsBlocked(true);
+                } else {
+                    setError("Profile not found");
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -408,6 +414,24 @@ const ProfilePage = () => {
             <div className="profile-page">
                 <div className="profile-loading">
                     <div className="profile-spinner"></div>
+                </div>
+            </div>
+        );
+    }
+
+    // Blocked state
+    if (isBlocked) {
+        return (
+            <div className="profile-page">
+                <div className="profile-error">
+                    <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</p>
+                    <p className="profile-error-text">Bạn không thể xem hồ sơ này.</p>
+                    <button
+                        className="btn btn-contained btn-primary btn-medium"
+                        onClick={() => navigate(-1)}
+                    >
+                        Quay lại
+                    </button>
                 </div>
             </div>
         );

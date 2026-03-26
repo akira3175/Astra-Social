@@ -31,8 +31,22 @@ class ProfileController extends Controller
     /**
      * Get user profile by ID (public).
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
+        // Resolve authenticated user if a valid JWT token is present (optional auth)
+        $authUser = $request->user('api');
+
+        // Mutual block check: if either party has blocked the other, deny access
+        if ($authUser && $authUser->id !== $id) {
+            if ($authUser->hasBlockedUser($id) || $authUser->isBlockedBy($id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xem hồ sơ này.',
+                    'reason'  => 'blocked',
+                ], 403);
+            }
+        }
+
         $result = $this->profileService->getProfileById($id);
 
         if (!$result['success']) {
@@ -44,7 +58,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $result['data'],
+            'data'    => $result['data'],
         ]);
     }
 

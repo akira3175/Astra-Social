@@ -29,6 +29,14 @@ class PostService
      */
     public function getPosts(int $page = 1, int $perPage = 10, ?int $userId = null): array
     {
+        // Exclude posts from blocked users (both directions) when viewer is logged in
+        $blockedIds = [];
+        if ($userId) {
+            $blockedByMe = \App\Models\UserBlock::where('blocker_id', $userId)->pluck('blocked_id')->toArray();
+            $blockedMe   = \App\Models\UserBlock::where('blocked_id', $userId)->pluck('blocker_id')->toArray();
+            $blockedIds  = array_unique(array_merge($blockedByMe, $blockedMe));
+        }
+
         $query = Post::query()
             ->with([
                 'user:id,username',
@@ -56,6 +64,7 @@ class PostService
                     $q->orWhere('user_id', $userId);
                 }
             })
+            ->when(!empty($blockedIds), fn ($q) => $q->whereNotIn('user_id', $blockedIds))
             ->withCount(['likes', 'comments'])
             ->when($userId, function (Builder $q) use ($userId) {
                 $q->withExists([
@@ -108,7 +117,12 @@ class PostService
             ->pluck('followee_id')
             ->toArray();
 
-        // 2. Visibility: PUBLIC posts of everyone + FRIENDS posts of friends + own posts
+        // 2. Blocked IDs (both directions) — exclude their posts from feed
+        $blockedByMe = \App\Models\UserBlock::where('blocker_id', $userId)->pluck('blocked_id')->toArray();
+        $blockedMe   = \App\Models\UserBlock::where('blocked_id', $userId)->pluck('blocker_id')->toArray();
+        $blockedIds  = array_unique(array_merge($blockedByMe, $blockedMe));
+
+        // 3. Visibility: PUBLIC posts of everyone + FRIENDS posts of friends + own posts
         $query = Post::query()
             ->with([
                 'user:id,username',
@@ -134,7 +148,8 @@ class PostService
                             ->whereIn('user_id', $friendIds);
                     }
                 });
-            });
+            })
+            ->when(!empty($blockedIds), fn ($q) => $q->whereNotIn('user_id', $blockedIds));
 
         // 3. Build relationship_boost CASE expression
         $friendPlaceholders = count($friendIds)
@@ -573,7 +588,7 @@ class PostService
      * Tìm kiếm tổng hợp: users + posts (content + hashtag).
      * Trả về { users, posts, pagination_posts }
      */
-    public function search(string $keyword, int $page = 1, int $perPage = 10): array
+    public function search(string $keyword, int $page = 1, int $perPage = 10, ?int $authUserId = null): array
     {
         $keyword = trim($keyword);
         if ($keyword === '') {
@@ -581,8 +596,17 @@ class PostService
         }
 
         //  Tìm users theo username hoặc first_name/last_name 
+        // Lấy danh sách blocked IDs (cả 2 chiều) để loại khỏi kết quả
+        $blockedIds = [];
+        if ($authUserId) {
+            $blockedByMe = \App\Models\UserBlock::where('blocker_id', $authUserId)->pluck('blocked_id')->toArray();
+            $blockedMe   = \App\Models\UserBlock::where('blocked_id', $authUserId)->pluck('blocker_id')->toArray();
+            $blockedIds  = array_unique(array_merge($blockedByMe, $blockedMe));
+        }
+
         $users = User::query()
             ->with('profile:user_id,first_name,last_name,avatar_url')
+            ->when(!empty($blockedIds), fn ($q) => $q->whereNotIn('id', $blockedIds))
             ->where(function ($q) use ($keyword) {
                 $q->where('username', 'like', '%' . $keyword . '%')
                   ->orWhereHas('profile', function ($pq) use ($keyword) {
@@ -610,6 +634,7 @@ class PostService
             ])
             ->withCount(['likes', 'comments'])
             ->where('privacy', Post::PRIVACY_PUBLIC)
+            ->when(!empty($blockedIds), fn ($q) => $q->whereNotIn('user_id', $blockedIds))
             ->where(function ($q) use ($cleanKeyword) {
                 // Tìm theo nội dung bài viết
                 $q->where('content', 'like', '%' . $cleanKeyword . '%')
