@@ -359,7 +359,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                     </ListItem>
                     <ListItem
                         component={Link}
-                        to={currentUser ? `/profile/${currentUser.email}` : "/profile"}
+                        to={currentUser ? `/profile/${currentUser.id}` : "/profile"}
                         onClick={() => setMobileMenuOpen(false)}
                     >
                         <ListItemIcon>

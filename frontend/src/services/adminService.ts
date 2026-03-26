@@ -92,6 +92,11 @@ export const getPosts = async (
     return response.data;
 };
 
+export const getAdminPostById = async (id: number): Promise<{ success: boolean; data: any }> => {
+    const response = await api.get<{ success: boolean; data: any }>(ENDPOINTS.POSTS_ADMIN_BY_ID(id));
+    return response.data;
+};
+
 export const deletePost = async (id: number): Promise<{ success: boolean; message?: string }> => {
     const response = await api.delete<{ success: boolean; message?: string }>(ENDPOINTS.POSTS_ADMIN_BY_ID(id));
     return response.data;
@@ -239,6 +244,7 @@ export default {
     getDailyActivity,
     getUsers,
     getPosts,
+    getAdminPostById,
     getComments,
     getReports,
     getPermissions,

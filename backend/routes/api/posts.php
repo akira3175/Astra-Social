@@ -22,6 +22,7 @@ Route::get('/search', [PostController::class, 'search']);
 // Tất cả routes cần auth đều dùng jwt.auth
 Route::middleware('jwt.auth')->group(function () {
     Route::get('posts-admin', [PostController::class, 'adminIndex']);
+    Route::get('/posts-admin/{id}', [PostController::class, 'adminShow'])->where('id', '[0-9]+');
     Route::get('count-posts-admin-days/{days}', [PostController::class, 'adminGetCountByDays']);
     Route::get('/posts/me', [PostController::class, 'myPosts']);
     Route::get('/posts/feed', [PostController::class, 'newsfeed']);

@@ -10,7 +10,6 @@ interface PostMenuProps {
 
 const PostMenu: React.FC<PostMenuProps> = ({ isOwner, onEdit, onDelete, onReport }) => {
     const [showDropdown, setShowDropdown] = useState(false);
-    const [showReportForm, setShowReportForm] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Close dropdown when clicking outside
@@ -41,8 +40,6 @@ const PostMenu: React.FC<PostMenuProps> = ({ isOwner, onEdit, onDelete, onReport
         onDelete?.();
     };
 
-    if (!isOwner) return null;
-
     return (
         <div className="post-menu" ref={dropdownRef}>
             <button
@@ -59,18 +56,24 @@ const PostMenu: React.FC<PostMenuProps> = ({ isOwner, onEdit, onDelete, onReport
 
             {showDropdown && (
                 <div className="post-menu-dropdown">
-                    <button className="post-menu-item" onClick={(e)=>handleReportClick(e)}>
-                        <span className="post-menu-icon">🏴</span>
-                        <span>Báo cáo bài viết</span>
-                    </button>
-                    <button className="post-menu-item" onClick={handleEditClick}>
-                        <span className="post-menu-icon">✏️</span>
-                        <span>Chỉnh sửa bài viết</span>
-                    </button>
-                    <button className="post-menu-item post-menu-danger" onClick={handleDeleteClick}>
-                        <span className="post-menu-icon">🗑️</span>
-                        <span>Xóa bài viết</span>
-                    </button>
+                    {!isOwner && (
+                        <button className="post-menu-item" onClick={(e)=>handleReportClick(e)}>
+                            <span className="post-menu-icon">🏴</span>
+                            <span>Báo cáo bài viết</span>
+                        </button>
+                    )}
+                    {isOwner && (
+                        <>
+                            <button className="post-menu-item" onClick={handleEditClick}>
+                                <span className="post-menu-icon">✏️</span>
+                                <span>Chỉnh sửa bài viết</span>
+                            </button>
+                            <button className="post-menu-item post-menu-danger" onClick={handleDeleteClick}>
+                                <span className="post-menu-icon">🗑️</span>
+                                <span>Xóa bài viết</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
         </div>

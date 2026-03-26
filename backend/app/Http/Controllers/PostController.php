@@ -304,6 +304,17 @@ class PostController extends Controller
 
     // Admin 
 
+    public function adminShow(Request $request, int $id): JsonResponse
+    {
+        $result = $this->postService->getPostById($id, $request->user()?->id, true);
+
+        if (!$result['success']) {
+            return response()->json(['success' => false, 'message' => $result['message']], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => $result['data']]);
+    }
+
     public function adminIndex(Request $request): JsonResponse
     {
         $posts = $this->postService->getAdminPost($request->all());

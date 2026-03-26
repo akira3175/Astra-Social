@@ -51,7 +51,7 @@ class ReportService{
     		'reporter_id'=>$user['id'],
             'target_author_id' => $data['target_author_id'],
             'target_type'=>$data['target_type'],
-            'target_preview' => $data['target_preview'],
+            'target_preview' => $data['target_preview'] ?? '',
     		'target_id' => $data['target_id'],
             'reason' => $data['reason'],
     	]);

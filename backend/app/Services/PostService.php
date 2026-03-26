@@ -201,9 +201,9 @@ class PostService
     /**
      * Get single post by ID.
      */
-    public function getPostById(int $id, ?int $userId = null): array
+    public function getPostById(int $id, ?int $userId = null, bool $withTrashed = false): array
     {
-        $post = Post::with([
+        $query = Post::with([
             'user:id,username',
             'user.profile:user_id,first_name,last_name,avatar_url',
             'attachments:id,url,file_type,entity_type,entity_id',
@@ -221,8 +221,13 @@ class PostService
                 $q->withExists([
                     'likes as is_liked' => fn($sub) => $sub->where('user_id', $userId)
                 ]);
-            })
-            ->find($id);
+            });
+
+        if ($withTrashed) {
+            $query->withTrashed();
+        }
+
+        $post = $query->find($id);
 
         if (!$post) {
             return ['success' => false, 'message' => 'Post not found'];
