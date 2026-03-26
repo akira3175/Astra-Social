@@ -6,8 +6,10 @@ import {
     EyeIcon,
     FlagIcon,
 } from "../../components/ui";
-import { getReports, handleStatus } from "../../services/adminService";
+import { getReports, handleStatus, getAdminPostById } from "../../services/adminService";
 import type { AdminReport } from "../../types/admin";
+import type { Post } from "../../types/post";
+import PostDetailModal from "../Home/components/PostDetailModal";
 import "./AdminTable.css";
 import Swal from "sweetalert2";
 import { useCurrentUser } from "../../context/currentUserContext";
@@ -26,8 +28,27 @@ const AdminReports: React.FC = () => {
     const [itemsPerPage, setItemsPerPage]     = useState<number>(10);
     const [total, setTotal]                   = useState<number>(0);
     const [urlPostReported, setUrlPostReported] = useState<string>("");
+    const [previewPost, setPreviewPost] = useState<Post | null>(null);
 
     const totalPages = Math.ceil(total / itemsPerPage);
+
+    const handlePreviewPost = async (postId: number) => {
+        try {
+            const res = await getAdminPostById(postId);
+            if (res.success && res.data) {
+                setPreviewPost(res.data);
+            }
+        } catch (error) {
+            console.error("Error previewing post:", error);
+            Swal.fire({
+                title: 'Lỗi',
+                text: 'Không thể tải chi tiết bài viết (có thể bài viết không tồn tại)',
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -61,7 +82,7 @@ const AdminReports: React.FC = () => {
     );
 
     const handleResolve = async (id: number) => {
-        const result = await handleStatus(id, "RESOLVED", Number(currentUser.id));
+        const result = await handleStatus(id, "RESOLVED", Number(currentUser?.id || 0));
         if (result.success) {
             setReports((prev) =>
                 prev.map((r) => (r.id === id ? { ...r, status: "RESOLVED" } : r)),
@@ -245,10 +266,16 @@ const AdminReports: React.FC = () => {
                                             {hasPermission("report.resolve") && (
                                                 <button
                                                     className="action-btn resolve"
-                                                    title="Xử lý báo cáo"
-                                                    onClick={() => {
-                                                        handleResolve(report.id);
-                                                        setSelectedReport(null);
+                                                    title={report.status !== "PENDING" ? "Báo cáo này đã được xử lý" : "Xử lý báo cáo"}
+                                                    disabled={report.status !== "PENDING"}
+                                                    style={report.status !== "PENDING" ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                                                    onClick={(e) => {
+                                                        if (report.status === "PENDING") {
+                                                            handleResolve(report.id);
+                                                            setSelectedReport(null);
+                                                        } else {
+                                                            e.preventDefault();
+                                                        }
                                                     }}
                                                 >
                                                     <CheckCircleIcon size={16} />
@@ -257,10 +284,16 @@ const AdminReports: React.FC = () => {
                                             {hasPermission("report.reject") && (
                                                 <button
                                                     className="action-btn reject"
-                                                    title="Từ chối báo cáo"
-                                                    onClick={() => {
-                                                        handleReject(report.id);
-                                                        setSelectedReport(null);
+                                                    title={report.status !== "PENDING" ? "Báo cáo này đã được xử lý" : "Từ chối báo cáo"}
+                                                    disabled={report.status !== "PENDING"}
+                                                    style={report.status !== "PENDING" ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                                                    onClick={(e) => {
+                                                        if (report.status === "PENDING") {
+                                                            handleReject(report.id);
+                                                            setSelectedReport(null);
+                                                        } else {
+                                                            e.preventDefault();
+                                                        }
                                                     }}
                                                 >
                                                     <CloseIcon size={16} />
@@ -348,9 +381,22 @@ const AdminReports: React.FC = () => {
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Nội dung</span>
-                                <a href={urlPostReported} className="admin-detail-value text-primary">
-                                    Xem ở đây
-                                </a>
+                                {selectedReport.target_type === 'POST' ? (
+                                    <button 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handlePreviewPost(selectedReport.target_id);
+                                        }} 
+                                        style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+                                        className="admin-detail-value text-primary"
+                                    >
+                                        Xem bài viết
+                                    </button>
+                                ) : (
+                                    <a href={urlPostReported} className="admin-detail-value text-primary" target="_blank" rel="noopener noreferrer">
+                                        Xem ở đây
+                                    </a>
+                                )}
                             </div>
                             <div className="admin-detail-row">
                                 <span className="admin-detail-label">Lý do</span>
@@ -381,38 +427,63 @@ const AdminReports: React.FC = () => {
                                 </div>
                             )}
 
-                            {selectedReport.status === "PENDING" && (
-                                <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                                    {hasPermission("report.resolve") && (
-                                        <button
-                                            style={{
-                                                flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
-                                                background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
-                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
-                                            }}
-                                            onClick={() => { handleResolve(selectedReport.id); setSelectedReport(null); }}
-                                        >
-                                            ✓ Xử lý vi phạm
-                                        </button>
-                                    )}
-                                    {hasPermission("report.reject") && (
-                                        <button
-                                            style={{
-                                                flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
-                                                background: "white", color: "#ef4444",
-                                                fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
-                                            }}
-                                            onClick={() => { handleReject(selectedReport.id); setSelectedReport(null); }}
-                                        >
-                                            ✕ Từ chối báo cáo
-                                        </button>
-                                    )}
-                                </div>
-                            )}
+                            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                                {hasPermission("report.resolve") && (
+                                    <button
+                                        style={{
+                                            flex: 1, padding: "10px 16px", border: "none", borderRadius: 10,
+                                            background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
+                                            fontWeight: 600, fontSize: 13, cursor: selectedReport.status === "PENDING" ? "pointer" : "not-allowed",
+                                            opacity: selectedReport.status === "PENDING" ? 1 : 0.5, transition: "all 0.2s",
+                                        }}
+                                        disabled={selectedReport.status !== "PENDING"}
+                                        title={selectedReport.status !== "PENDING" ? "Báo cáo này đã được xử lý" : "Xử lý vi phạm"}
+                                        onClick={(e) => {
+                                            if (selectedReport.status === "PENDING") {
+                                                handleResolve(selectedReport.id);
+                                                setSelectedReport(null);
+                                            } else {
+                                                e.preventDefault();
+                                            }
+                                        }}
+                                    >
+                                        ✓ Xử lý vi phạm
+                                    </button>
+                                )}
+                                {hasPermission("report.reject") && (
+                                    <button
+                                        style={{
+                                            flex: 1, padding: "10px 16px", border: "1px solid #e2e8f0", borderRadius: 10,
+                                            background: "white", color: "#ef4444",
+                                            fontWeight: 600, fontSize: 13, cursor: selectedReport.status === "PENDING" ? "pointer" : "not-allowed",
+                                            opacity: selectedReport.status === "PENDING" ? 1 : 0.5, transition: "all 0.2s",
+                                        }}
+                                        disabled={selectedReport.status !== "PENDING"}
+                                        title={selectedReport.status !== "PENDING" ? "Báo cáo này đã được xử lý" : "Từ chối báo cáo"}
+                                        onClick={(e) => {
+                                            if (selectedReport.status === "PENDING") {
+                                                handleReject(selectedReport.id);
+                                                setSelectedReport(null);
+                                            } else {
+                                                e.preventDefault();
+                                            }
+                                        }}
+                                    >
+                                        ✕ Từ chối báo cáo
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Full Post Preview Modal */}
+            <PostDetailModal
+                open={!!previewPost}
+                onClose={() => setPreviewPost(null)}
+                post={previewPost}
+            />
         </div>
     );
 };

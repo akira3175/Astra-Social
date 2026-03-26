@@ -8,8 +8,10 @@ import {
     CloseIcon,
     FileTextIcon,
 } from "../../components/ui";
-import {ENDPOINTS, getPosts, deletePost, restorePost } from "../../services/adminService";
+import {ENDPOINTS, getPosts, deletePost, restorePost, getAdminPostById } from "../../services/adminService";
 import type { AdminPost, PostsResponse } from "../../types/admin";
+import type { Post } from "../../types/post";
+import PostDetailModal from "../Home/components/PostDetailModal";
 import "./AdminTable.css";
 import { useCurrentUser } from "../../context/currentUserContext";
 import Swal from 'sweetalert2';
@@ -68,9 +70,25 @@ const AdminPosts: React.FC = () => {
         }
     };
 
-    const handleView= (id:number)=>{
-        navigate(`${ENDPOINTS.POSTS_BY_ID(id)}`);
-    }
+    const [previewPost, setPreviewPost] = useState<Post | null>(null);
+
+    const handlePreviewPost = async (id: number) => {
+        try {
+            const res = await getAdminPostById(id);
+            if (res.success && res.data) {
+                setPreviewPost(res.data);
+            }
+        } catch (error) {
+            console.error("Error previewing post:", error);
+            Swal.fire({
+                title: 'Lỗi',
+                text: 'Không thể tải chi tiết bài viết',
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    };
     
     const handleRestore = async (id: number) => {
         let result = await restorePost(id);
@@ -377,7 +395,7 @@ const AdminPosts: React.FC = () => {
                                         fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.2s",
                                         minWidth: 120, alignItems: "center", justifyContent: "center"
                                     }}
-                                        onClick={() => handleView(selectedPost.id)}
+                                        onClick={() => handlePreviewPost(selectedPost.id)}
                                 >
                                     <EyeIcon size={16} />
                                     Nguồn bài viết
@@ -387,6 +405,12 @@ const AdminPosts: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* Full Post Preview Modal */}
+            <PostDetailModal
+                open={!!previewPost}
+                onClose={() => setPreviewPost(null)}
+                post={previewPost}
+            />
         </div>
     );
 };

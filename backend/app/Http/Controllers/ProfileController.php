@@ -4,13 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
 use App\Services\ProfileService;
+use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
     public function __construct(
-        private ProfileService $profileService
+        private ProfileService $profileService,
+        private AuthService $authService
     ) {}
 
     /**
@@ -34,7 +36,12 @@ class ProfileController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         // Resolve authenticated user if a valid JWT token is present (optional auth)
-        $authUser = $request->user('api');
+        $authUser = null;
+        $header = $request->header('Authorization');
+        if ($header && str_starts_with($header, 'Bearer ')) {
+            $token = substr($header, 7);
+            $authUser = $this->authService->getUserFromToken($token);
+        }
 
         // Mutual block check: if either party has blocked the other, deny access
         if ($authUser && $authUser->id !== $id) {

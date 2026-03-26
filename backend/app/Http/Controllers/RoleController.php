@@ -50,7 +50,6 @@ class RoleController extends Controller{
         }
         $role = Role::create([
             'name'=>$data['name'],
-            'is_default'=>false,
             'description' => $data['description'] ?? null,
         ]);
 

@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { UserCard } from "../../components/common";
 import PostList from "../Home/components/PostList";
 import postService from "../../services/postService";
+import { sendFriendRequest } from "../../services/friendshipService";
+import { useCurrentUser } from "../../context/currentUserContext";
 import type { Post } from "../../types/post";
 import type { UserCardData } from "../../components/common/UserCard/UserCard";
 import "./SearchPage.css";
@@ -14,6 +16,7 @@ type SearchTab = "all" | "users" | "posts";
  */
 const SearchPage: React.FC = () => {
     const navigate = useNavigate();
+    const { currentUser } = useCurrentUser() ?? {};
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Get query from URL parameter
@@ -37,14 +40,16 @@ const SearchPage: React.FC = () => {
         postService.searchAll(query, 1, 50)
             .then(res => {
                 if (res.success) {
-                    const mappedUsers: UserCardData[] = (res.data.users || []).map(u => ({
-                        id: u.id,
-                        username: u.username,
-                        firstName: u.profile?.first_name || '',
-                        lastName: u.profile?.last_name || '',
-                        avatarUrl: u.profile?.avatar_url || null,
-                        bio: null,
-                    }));
+                    const mappedUsers: UserCardData[] = (res.data.users || [])
+                        .filter(u => u.id !== Number(currentUser?.id))
+                        .map(u => ({
+                            id: u.id,
+                            username: u.username,
+                            firstName: u.profile?.first_name || '',
+                            lastName: u.profile?.last_name || '',
+                            avatarUrl: u.profile?.avatar_url || null,
+                            bio: null,
+                        }));
                     setUsers(mappedUsers);
                     setPosts(res.data.posts || []);
                 }
@@ -71,6 +76,14 @@ const SearchPage: React.FC = () => {
     // Handle user click
     const handleUserClick = (userId: number) => {
         navigate(`/profile/${userId}`);
+    };
+
+    const handleAddFriend = async (userId: number) => {
+        try {
+            await sendFriendRequest(userId);
+        } catch (err) {
+            console.error("Friend request error:", err);
+        }
     };
 
     return (
@@ -167,6 +180,7 @@ const SearchPage: React.FC = () => {
                                         key={user.id}
                                         user={user}
                                         onClick={() => handleUserClick(user.id)}
+                                        onPrimaryAction={() => handleAddFriend(user.id)}
                                     />
                                 ))}
                             </div>

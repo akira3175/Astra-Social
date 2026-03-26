@@ -9,13 +9,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Role extends Model
 {
     use SoftDeletes;
-    public $timestamps = true;
+    public $timestamps = false;
     const UPDATED_AT = null;
 
     protected $fillable = [
         'name',
         'description',
-        'is_default',
     ];
 
     protected function casts(): array
